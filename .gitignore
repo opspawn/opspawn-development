@@ -154,3 +154,8 @@ cython_debug/
 
 # Research directory
 Research/
+
+# Sub-repositories (managed separately)
+agentkit/
+ops-core/
+ops-docs/
