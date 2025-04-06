@@ -2,18 +2,21 @@ dd# Active Context: Opspawn Core Foundation (Phase 2 In Progress)
 
 ## Current Focus
 - **Phase 2: Core Module Development:** Continuing development of core components.
-- **Task 2.3: Develop Agentkit Dynamic Tool Integration:** Starting work on integrating dynamic tools into `agentkit`.
+- **Task 2.4: Define & Implement Internal Interfaces for Agentkit Modules:** Starting work on defining interfaces between agentkit modules.
+- **Task MCP.3: Implement `ops-core` Proxy Tool Injection:** Continuing MCP integration work.
 
 ## Recent Activities (Current Session)
 - Completed Phase 1 (Tasks 1.1 - 1.4).
-- **Completed Task 2.1:**
-    - Implemented `ops_core/models/tasks.py` (Pydantic models, timezone-aware).
-    - Implemented `ops_core/metadata/store.py` (`InMemoryMetadataStore` with CRUD methods).
-    - Implemented `ops_core/scheduler/engine.py` (`InMemoryScheduler` interacting with store).
-    - Added `pytest`, `pydantic` to `ops-core/requirements.txt`.
-    - Created and passed unit tests for store and scheduler (`tests/test_metadata_store.py`, `tests/test_scheduler_engine.py`).
-    - Committed and pushed changes to `ops-core` repository.
-    - Updated `23-opspawn/TASK.md` to mark Task 2.1 complete.
+- **Completed Task 2.1 (Ops-core Scheduler & Metadata Store MVP):** `(Completed 2025-04-05)`
+    - Created `ops_core/models/tasks.py` with `Task` model and `TaskStatus` enum.
+    - Created `ops_core/models/__init__.py`.
+    - Created `ops_core/metadata/` directory and `__init__.py`.
+    - Implemented `ops_core/metadata/store.py` (`InMemoryMetadataStore`).
+    - Created `ops_core/scheduler/` directory and `__init__.py`.
+    - Implemented `ops_core/scheduler/engine.py` (`InMemoryScheduler`).
+    - Created unit tests: `ops-core/tests/metadata/test_store.py` and `ops-core/tests/scheduler/test_engine.py`.
+    - Fixed test failures related to `task_id` attribute and test timing. All 52 `ops-core` tests pass (2025-04-05).
+    - Updated `TASK.md`.
 - **Completed Task 2.2:**
     - Created `agentkit` package structure (`agentkit/agentkit/`, `agentkit/tests/`).
     - Implemented `agentkit/memory/short_term.py` (`ShortTermMemory` class).
@@ -33,8 +36,41 @@ dd# Active Context: Opspawn Core Foundation (Phase 2 In Progress)
     - Updated `agentkit/tests/test_agent.py` to reflect changes in agent execution flow and memory updates.
     - Ran all `agentkit` tests successfully.
     - Committed changes to `agentkit` repository.
-    - Updated `TASK.md` to mark Task 2.3 as "In Progress".
+- **Completed Task 2.3 (Develop Agentkit Dynamic Tool Integration):** `(Completed 2025-04-05)`
+    - Implemented `agentkit/tools/execution.py` with `execute_tool_safely` using `multiprocessing` for sandboxed execution with timeouts.
+    - Refactored `Tool` base class into `agentkit/tools/schemas.py` to resolve circular imports.
+    - Updated `agentkit/tools/registry.py` (`ToolRegistry.execute_tool`) to use `execute_tool_safely`.
+    - Updated `agentkit/core/agent.py` (`Agent._execute_step`) to use `execute_tool_safely`.
+    - Created example tools (`AddTool`, `SubtractTool`) in `agentkit/tools/examples/simple_math.py`.
+    - Updated tool tests (`tests/test_tools.py`) to use new `Tool` subclass structure and added tests for example tools.
+    - Created tests for safe execution (`tests/tools/test_execution.py`).
+    - Fixed various import errors and test failures related to refactoring and multiprocessing.
+    - Confirmed all 40 `agentkit` tests pass.
+    - Updated `TASK.md`.
+- **Started Task MCP.1 (Implement `ops-core` MCP Client Module):**
+    - Created `ops_core/mcp_client/client.py` based on quickstart.
+    - Added `mcp`, `anthropic`, `python-dotenv` to `ops-core/requirements.txt`.
+    - Created `ops_core/tests/mcp_client/test_client.py` with basic structure.
+    - Created `ops_core/mcp_client/__init__.py`.
+    - Updated `TASK.md` to mark MCP.1 as "In Progress".
+- **Started Task MCP.2 (Implement `ops-core` MCP Configuration):**
+    - Created `ops_core/config/mcp_servers.yaml` with example structure.
+    - Added `PyYAML` to `ops-core/requirements.txt`.
+    - Created `ops_core/config/loader.py` with Pydantic validation and env var resolution.
+    - Created `ops_core/tests/config/test_loader.py` with basic tests.
+    - Created `ops_core/config/__init__.py`.
+    - Updated `TASK.md` to mark MCP.2 as "In Progress".
+- **Testing & Debugging (MCP.1 & MCP.2):**
+    - Created `ops-core/pyproject.toml` to make `ops-core` installable.
+    - Installed `ops-core` in editable mode (`pip install -e .`).
+    - Installed dependencies (`pip install -r requirements.txt`), including adding `pytest-asyncio`.
+    - Ran `pytest` within the activated `ops-core/.venv`.
+    - Debugged and fixed import errors, mocking issues, and asyncio test setup.
+    - Confirmed all 56 tests in `ops-core/tests` pass after fixes (2025-04-05).
 - Reviewed all project documentation and Memory Bank files at the start of the session.
+- Corrected Memory Bank and TASK.md regarding Task 2.1 status (2025-04-05).
+- Updated Memory Bank (`activeContext.md`, `progress.md`) after completing Task 2.1 (2025-04-05).
+- Updated Memory Bank (`activeContext.md`, `progress.md`) and `TASK.md` after completing Task 2.3 (2025-04-05).
 
 ## Key Research Takeaways & Design Principles (Consolidated)
 - **`agentkit`:**
@@ -58,12 +94,10 @@ dd# Active Context: Opspawn Core Foundation (Phase 2 In Progress)
     - Document decisions via ADRs.
 
 ## Immediate Next Steps
-1.  **Continue Task 2.3:** Develop Agentkit Dynamic Tool Integration.
-    - Define clear interfaces/protocols for how tools should be implemented (e.g., base class, function signature requirements).
-    - Implement basic security considerations (e.g., input validation is done, consider function call safety, potential sandboxing research).
-    - Refine tool execution logic in `Agent` if needed (e.g., better error handling, memory updates).
-2.  **Start MCP Integration (Phase 3.5):** Begin work on the MCP integration tasks, starting with Task MCP.1 (Implement `ops-core` MCP Client Module).
-3.  **Start Task 2.4:** Define & Implement Internal Interfaces for Agentkit Modules once Task 2.3 is sufficiently complete.
+1.  **Start Task 2.4:** Define & Implement Internal Interfaces for Agentkit Modules.
+2.  **Continue MCP Integration (Phase 3.5):** Proceed with Task MCP.3 (Proxy Tool Injection).
+3.  Review and potentially refine error handling and memory update logic in `Agent._execute_step` related to tool results.
+
 
 ## Active Decisions & Considerations
 - **MCP Integration Strategy:** Decided to use the **Dynamic Proxy Pattern**, where `ops-core` acts as the MCP Host/Client and injects a proxy tool into `agentkit` agents for controlled external access (Decision Date: 2025-04-05).

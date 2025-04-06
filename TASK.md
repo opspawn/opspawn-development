@@ -36,10 +36,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 - **Task 2.2:** **Develop Agentkit Core-Agent MVP**  
   Create the basic core-agent module with short-term memory management and a simple planning component.
 
-- **Task 2.3:** **Implement Dynamic Tool Integration in Agentkit**  
-  Build a basic tool registry and integration mechanism, allowing the agent to register and invoke external tools.
+- **Task 2.3:** **Implement Dynamic Tool Integration in Agentkit**
+  Build a tool registry and integration mechanism, allowing the agent to register and invoke external tools securely via sandboxing.
 
-- **Task 2.4:** **Define & Implement Internal Interfaces**  
+- **Task 2.4:** **Define & Implement Internal Interfaces**
   Establish clear interfaces for agentkit submodules (planner, memory, tool manager, security) and document these contracts.
 
 ---
@@ -127,20 +127,20 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 
 ### Phase 2: Core Module Development
 
-- [x] **Task 2.1: Ops-core Scheduler & Metadata Store MVP** `(Completed 2025-04-05)`  
-  *Description:* Develop a basic scheduling engine and metadata store for job queuing and state persistence.  
-  *Dependencies:* Task 1.4  
-    *Comments:* Implemented InMemoryScheduler and InMemoryMetadataStore with basic tests.
+- [x] **Task 2.1: Ops-core Scheduler & Metadata Store MVP** `(Completed 2025-04-05)`
+  *Description:* Develop a basic scheduling engine and metadata store for job queuing and state persistence.
+  *Dependencies:* Task 1.4
+    *Comments:* Implemented `models/tasks.py`, `models/__init__.py`, `metadata/store.py`, `metadata/__init__.py`, `scheduler/engine.py`, `scheduler/__init__.py`, and corresponding unit tests (`tests/metadata/test_store.py`, `tests/scheduler/test_engine.py`).
 
 - [x] **Task 2.2: Agentkit Core-Agent MVP** `(Completed 2025-04-05)`
   *Description:* Build a minimal version of the core-agent with essential features like short-term memory and basic planning.
   *Dependencies:* Task 1.4
   *Comments:* Implemented core Agent, ShortTermMemory, SimplePlanner (placeholder), and basic unit tests. Tests passed. Committed to `agentkit` repo.
 
-- [ ] **Task 2.3: Dynamic Tool Integration** `(In Progress - Core registry/schemas/agent integration done 2025-04-05)`
-  *Description:* Implement a tool registry and integration mechanism within agentkit to allow for dynamic invocation of external tools.
+- [x] **Task 2.3: Dynamic Tool Integration** `(Completed 2025-04-05)`
+  *Description:* Implement a tool registry and integration mechanism within agentkit to allow for dynamic invocation of external tools, including secure execution.
   *Dependencies:* Task 2.2
-  *Comments:* Implemented ToolSpec/ToolResult schemas, Tool/ToolRegistry classes, integrated registry into Agent, added/passed unit tests. Next: Define interfaces, consider security.
+  *Comments:* Implemented ToolSpec/ToolResult schemas, Tool/ToolRegistry classes. Moved Tool base class to schemas.py. Implemented safe tool execution via multiprocessing in `tools/execution.py` and integrated into Agent and ToolRegistry. Added example tools (AddTool, SubtractTool). Refactored tests. All agentkit tests pass.
 
 - [ ] **Task 2.4: Internal Interfaces for Agentkit Modules**  
   *Description:* Define and implement clear interfaces for the planner, memory, tool manager, and security modules.  
@@ -176,15 +176,15 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 
 ### Phase 3.5: MCP Integration (Dynamic Proxy Pattern)
 
-- [ ] **Task MCP.1: Implement `ops-core` MCP Client Module**
+- [~] **Task MCP.1: Implement `ops-core` MCP Client Module** `(In Progress - Initial client.py, tests structure, and requirements added 2025-04-05)`
   *Description:* Create `ops_core/mcp_client/` with logic to connect to MCP servers and execute `call_tool`/`read_resource`. Add MCP SDK dependency.
   *Dependencies:* Task 1.4 (Architecture)
-  *Comments:* Requires selecting and adding a Python MCP SDK library.
+  *Comments:* Requires selecting and adding a Python MCP SDK library. Initial structure and dependencies added. Needs further implementation and testing.
 
-- [ ] **Task MCP.2: Implement `ops-core` MCP Configuration**
+- [~] **Task MCP.2: Implement `ops-core` MCP Configuration** `(In Progress - YAML config file, loader module, and tests created 2025-04-05)`
   *Description:* Define and implement how `ops-core` discovers/configures MCP server details (e.g., via config file or env vars).
   *Dependencies:* Task MCP.1
-  *Comments:* Needs decision on configuration method.
+  *Comments:* Needs decision on configuration method. YAML approach chosen. Config file, loader, and tests created.
 
 - [ ] **Task MCP.3: Implement `ops-core` Proxy Tool Injection**
   *Description:* Add logic to `ops-core` orchestrator to conditionally inject the `mcp_proxy_tool` into an `agentkit` agent's `ToolRegistry`.
