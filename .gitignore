@@ -158,4 +158,5 @@ Research/
 # Sub-repositories (managed separately)
 agentkit/
 ops-core/
+ops_core/
 ops-docs/

@@ -18,8 +18,9 @@
 ## 3. Development Environment & Tooling
 
 -   **Version Control:** Git (Assumed, standard practice). Hosted on GitHub (Implied by `TASK.md` Task 1.1).
--   **Package Management:** `pip` with `requirements.txt` or potentially Poetry/PDM (TBD).
+-   **Package Management:** `pip` with `pyproject.toml` (using `setuptools` backend) for defining dependencies and making packages installable (Implemented 2025-04-05).
 -   **Testing Framework:** Pytest (Mandated by `.clinerules` for unit tests).
+-   **Test Runner:** `tox` (Introduced 2025-04-05 for managing test environments, especially for inter-package dependencies like `ops-core` needing `agentkit`).
 -   **Code Formatting:** Black (Mandated by `.clinerules`).
 -   **Linting:** Flake8 or Ruff (Recommended for code quality, TBD).
 -   **Type Checking:** Mypy (Recommended given the use of type hints).
@@ -35,8 +36,8 @@
 
 ## 5. Key Dependencies & Libraries (Anticipated)
 
--   **`agentkit`:** LLM client libraries (e.g., `openai`, `anthropic`), vector database clients, potentially LangChain components (if used for specific modules).
--   **`ops-core`:** FastAPI, Uvicorn (ASGI server), database drivers (e.g., `psycopg2`), ORM (SQLAlchemy/SQLModel), potentially Celery or similar task queue library, gRPC libraries.
+-   **`agentkit`:** `pydantic`, `pytest`, `pytest-asyncio`. (LLM clients, vector DBs TBD).
+-   **`ops-core`:** `pydantic`, `mcp`, `anthropic`, `python-dotenv`, `PyYAML`, `pytest`, `pytest-asyncio`. (FastAPI, DB drivers, ORM TBD).
 
 ## 6. Technical Constraints & Considerations
 
