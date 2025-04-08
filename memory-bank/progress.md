@@ -2,10 +2,10 @@
 
 ## Current Status (Updated 2025-04-08 3:18 PM)
 - **Phase:** Phase 4 Completed. All core functionality and integrations verified.
-- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Task 5.1 completed. Maintenance tasks Maint.1, Maint.2, Maint.3 completed. Phase 5 documentation tasks (5.2-5.5) deferred.
-- **Current Task:** None. Ready for next steps (e.g., fixing Google client test, Maint.4/5, Phase 5).
+- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Task 5.1 completed. Maintenance tasks Maint.1, Maint.2, Maint.3, Maint.6, Maint.7 completed. Phase 5 documentation tasks (5.2-5.5) deferred.
+- **Current Task:** None. Ready for next steps (e.g., Maint.4, Maint.5, Phase 5).
 
-## What Works (As of 2025-04-08 3:50 PM)
+## What Works (As of 2025-04-08 4:01 PM)
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented. All 104 `ops-core` tests pass via `tox`.
 - **Task 2.2 (Reimplemented):** `agentkit` core agent MVP reimplemented (`ShortTermMemory`, `PlaceholderPlanner`, `Agent`, interfaces, tests).
 - **Task 2.3 (Reimplemented):** `agentkit` dynamic tool integration reimplemented (`schemas`, `registry`, `execution`, tests, agent integration).
@@ -44,8 +44,10 @@
     - Task Maint.1: Test warnings fixed.
     - Task Maint.2: Agentkit import/test fixes completed. All agentkit tests pass. (Completed 2025-04-08).
     - Task Maint.3: LLM Client verification and Google Client/Test updates completed. `ops-core` tests pass. (Completed 2025-04-08).
+    - Task Maint.6: Fixed `agentkit` test structure. (Completed 2025-04-08).
+    - Task Maint.7: Fixed failing Google client test (`test_google_client_generate_success`) by correcting mock setup. (Completed 2025-04-08).
 
-## What Works (As of 2025-04-08 3:18 PM)
+## What Works (As of 2025-04-08 4:01 PM)
 - **`ops-core`:**
     - Core functionality (Scheduler, Store, Models, APIs, gRPC, MCP Client/Config, Async Messaging) implemented and tested (as of Tasks 2.1, 3.x, 4.x, MCP.x completion dates).
     - LLM integration (Task 2.12) implemented, including switch to `google-genai` SDK.
@@ -56,7 +58,7 @@
     - LLM Clients (OpenAI, Anthropic, Google, OpenRouter) implemented (Tasks 2.6-2.9). Google client refactored for `google-genai` SDK (2025-04-08).
     - ReAct Planner implemented (Task 2.10).
     - LLM integration into Agent core completed (Task 2.11).
-    - **Test Status:** 56 tests passed, 1 xfailed (`test_google_client_generate_success`) via `pytest` using Python 3.12 interpreter and explicit PYTHONPATH (Tasks Maint.2, Maint.6, MCP.5, and test fixes completed 2025-04-08).
+    - **Test Status:** All 57 tests pass via `pytest` using Python 3.12 interpreter and explicit PYTHONPATH (Tasks Maint.2, Maint.6, Maint.7, MCP.5, and test fixes completed 2025-04-08).
 - **Integration:** Async messaging (Dramatiq/RabbitMQ) implemented and verified (Task 3.4). MCP client/config implemented (MCP.1, MCP.2). MCP Proxy Tool injection logic implemented and tested (MCP.3, MCP.4, MCP.6). Integration between `ops-core` and `agentkit` verified via passing `ops-core` `tox` tests (re-verified after Task Maint.3).
 - **Testing:** Load testing setup complete (Task 4.3). Security/Error handling tests added (Task 4.4). Testing docs created (Task 4.5). API docs enhanced (Task 5.1).
 
@@ -73,7 +75,6 @@
 - **Phase 5:** Tasks 5.2-5.5 (Deferred).
 
 ## Known Issues / Blockers
-- **Google Client Test Mocking:** Persistent issue mocking `response.text` in `test_google_client_generate_success` (marked xfail).
 - `InMemoryMetadataStore` is not persistent or thread-safe (MVP limitation).
 - CI workflows currently lack linting/type checking steps (commented out).
 - Integration testing of Dramatiq actor dependencies remains challenging (workaround applied in Task 4.1.1).

@@ -80,13 +80,16 @@
     - Failure persisted (`AssertionError: assert '' == 'Generated Google text.'`).
     - Reverted client code changes.
     - Marked `test_google_client_generate_success` as `@pytest.mark.xfail` due to mocking difficulties.
-- **Completed Task MCP.5 (Enhance `agentkit` Planner/Agent):**
-    - Verified `ReActPlanner` and `Agent` logic handle `mcp_proxy_tool` correctly.
-    - Added unit tests for MCP proxy tool call parsing to `test_react_planner.py`.
-    - Added unit tests for MCP proxy tool success/failure handling to `test_agent.py`.
-- **Verified `agentkit` Tests:** Ran `pytest` for `agentkit`. Result: 56 passed, 1 xfailed.
-- **Added Maintenance Tasks:** Added Maint.4 (Refactor `OpsMcpClient` Server Management) and Maint.5 (Add Timeouts to `OpsMcpClient.call_tool`) to `TASK.md` based on MCP documentation review.
-- **Updated Documentation:** Updated `TASK.md` to reflect task completions (MCP.5, Maint.6) and additions (Maint.4, Maint.5).
+- **Completed Task MCP.5 (Enhance `agentkit` Planner/Agent):** Verified logic and added unit tests.
+- **Verified `agentkit` Tests:** Ran `pytest` for `agentkit`. Result: 56 passed, 1 xfailed (before Maint.7).
+- **Added Maintenance Tasks:** Added Maint.4 (Refactor `OpsMcpClient` Server Management) and Maint.5 (Add Timeouts to `OpsMcpClient.call_tool`) to `TASK.md`.
+- **Completed Task Maint.7 (Fix Failing Google Client Test):** `(Current Session - 2025-04-08)`
+    - Investigated persistent failure in `test_google_client_generate_success`.
+    - Used debug print statements to identify `AttributeError: __annotations__` when client code accessed mocked `GenerationConfig`.
+    - Fixed test mock by adding `__annotations__ = {}` to the `GenerationConfig` mock in the `mock_genai_and_types` fixture.
+    - Removed `@pytest.mark.xfail` marker.
+    - Verified all 57 `agentkit` tests now pass.
+- **Updated Documentation:** Updated `TASK.md` to reflect task completions (MCP.5, Maint.6, Maint.7) and additions (Maint.4, Maint.5).
 
 ## Recent Activities (Previous Session - 2025-04-08 Morning)
 - **Attempted Task Maint.2 Verification:**

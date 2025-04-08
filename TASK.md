@@ -281,6 +281,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
     *Description:* Reorganize the `agentkit` test files to consistently mirror the source structure under `agentkit/agentkit/tests/`. Move existing tests from `agentkit/tests/` subdirectories (e.g., `core/`, `memory/`, `planning/`) to the correct locations (e.g., `agentkit/agentkit/tests/core/`). Remove any duplicate or outdated test files found directly under `agentkit/tests/`.
     *Dependencies:* None (Can be done independently, but ideally before adding more tests)
 
+- [x] **Task Maint.7: Fix Failing Google Client Test** `(Completed 2025-04-08)`
+    *Description:* Investigate and resolve the persistent mocking issue in `agentkit/agentkit/tests/llm_clients/test_google_client.py::test_google_client_generate_success`. Remove the `@pytest.mark.xfail` marker.
+    *Dependencies:* Task Maint.3
+
 - [x] **Task 4.2: End-to-End Integration Testing** `(Completed 2025-04-06)`
   *Description:* Develop comprehensive integration tests to simulate complete workflows from scheduling to agent task execution.
   *Dependencies:* Task 3.5, Task 4.1.1
