@@ -234,12 +234,12 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 - [x] **Task MCP.4: Define `agentkit` MCP Proxy Tool Spec** `(Completed 2025-04-05 - Blocked by Task 2.3)`
   *Description:* Define the `ToolSpec` for the `mcp_proxy_tool` within `agentkit` (e.g., `agentkit/tools/mcp_proxy.py`) so agents understand its inputs (server, tool, args).
   *Dependencies:* Task 2.3 (Reimplementation Needed)
-  *Comments:* File `agentkit/tools/mcp_proxy.py` likely missing as part of Task 2.3.
+  *Comments:* File `agentkit/tools/mcp_proxy.py` likely missing as part of Task 2.3. (Note: File exists, comment outdated).
 
-- [ ] **Task MCP.5: Enhance `agentkit` Planner/Agent (Optional)**
+- [x] **Task MCP.5: Enhance `agentkit` Planner/Agent (Optional)** `(Completed 2025-04-08)`
   *Description:* Update planner logic to recognize/utilize the `mcp_proxy_tool`. Ensure agent execution loop handles proxy results.
   *Dependencies:* Task MCP.4
-  *Comments:* Improves agent's ability to leverage external tools dynamically.
+  *Comments:* Verified planner and agent logic are sufficient. Added unit tests to `test_react_planner.py` and `test_agent.py` covering MCP proxy tool usage.
 
 - [x] **Task MCP.6: Add MCP Integration Tests** `(Completed & Debugged 2025-04-06)`
   *Description:* Create tests verifying the end-to-end flow: agent plans -> calls proxy -> ops-core calls MCP server -> result returns to agent.
@@ -268,6 +268,18 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 - [x] **Task Maint.3: Verify LLM Clients & Update Google Client/Tests** `(Completed 2025-04-08)`
     *Description:* Verified `AnthropicClient` and `GoogleClient` against SDK documentation. Refactored `GoogleClient` and its tests (`test_google_client.py`) for `google-genai` async interface and input structure. Verified `ops-core` tests pass via `tox -r`.
     *Dependencies:* Task Maint.2
+
+- [ ] **Task Maint.4: Refactor `OpsMcpClient` Server Management** `(Added 2025-04-08)`
+    *Description:* Refactor `ops_core/ops_core/mcp_client/client.py` (`start_all_servers`, `close_all_servers`) to use `contextlib.AsyncExitStack` for more robust resource management (server processes, client sessions) based on MCP Quickstart best practices.
+    *Dependencies:* Task MCP.1
+
+- [ ] **Task Maint.5: Add Timeouts to `OpsMcpClient.call_tool`** `(Added 2025-04-08)`
+    *Description:* Add a configurable timeout mechanism to `ops_core/ops_core/mcp_client/client.py` (`call_tool`) to prevent indefinite hangs when communicating with potentially unresponsive MCP servers.
+    *Dependencies:* Task MCP.1
+
+- [x] **Task Maint.6: Fix `agentkit` Test Structure** `(Completed 2025-04-08)`
+    *Description:* Reorganize the `agentkit` test files to consistently mirror the source structure under `agentkit/agentkit/tests/`. Move existing tests from `agentkit/tests/` subdirectories (e.g., `core/`, `memory/`, `planning/`) to the correct locations (e.g., `agentkit/agentkit/tests/core/`). Remove any duplicate or outdated test files found directly under `agentkit/tests/`.
+    *Dependencies:* None (Can be done independently, but ideally before adding more tests)
 
 - [x] **Task 4.2: End-to-End Integration Testing** `(Completed 2025-04-06)`
   *Description:* Develop comprehensive integration tests to simulate complete workflows from scheduling to agent task execution.
