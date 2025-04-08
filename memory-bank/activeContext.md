@@ -41,12 +41,19 @@
     - Fixed subsequent E2E test failures (`TypeError: llm_client must be an instance of BaseLlmClient`, `AttributeError: Mock object has no attribute 'is_available'`, `NameError: name 'BaseLlmClient' is not defined`, `TypeError: object dict can't be used in 'await' expression`, `AttributeError: Mock object has no attribute 'memory'`, `AssertionError` on result structure) by correcting mock setup in `ops_core/tests/integration/test_e2e_workflow.py`.
     - Ran `cd ops_core && tox -r`. **Succeeded (104 tests passed).**
     - **Status:** Task 2.12 verification is **Completed (2025-04-08)**.
-- **Attempted Task Maint.2 Verification (Current Session):**
-    - Ran `pytest agentkit/agentkit/tests`.
-    - **Failed** with multiple `ModuleNotFoundError` errors during collection, including the persistent `No module named 'agentkit.core.interfaces.llm_client'`.
-    - Verified `agentkit/agentkit/core/interfaces/__init__.py` exists.
-    - Read `agentkit/pyproject.toml` - configuration seems correct (`where = ["agentkit"]`).
-    - **Status:** Task Maint.2 remains **Partially Completed - Blocked by ModuleNotFoundError**. Next step is to try running pytest with explicit PYTHONPATH.
+- **Completed Task Maint.2 (Fix Agentkit Imports & Tests) (Current Session - 2025-04-08 Afternoon):**
+    - Ran `PYTHONPATH=agentkit/ pytest agentkit/agentkit/tests`. Resolved initial `ModuleNotFoundError` but encountered `ModuleNotFoundError: No module named 'google'`.
+    - Identified Python environment mismatch (pip install used 3.12, pytest used 3.10).
+    - Installed `agentkit` editable dependencies (`pip install -e .`) into Python 3.12 env (`/home/sf2/miniforge3/bin/python`).
+    - Installed test dependencies (`pytest`, `pytest-asyncio`) into Python 3.12 env.
+    - Re-ran tests using explicit Python 3.12 interpreter: `PYTHONPATH=agentkit/ /home/sf2/miniforge3/bin/python -m pytest agentkit/agentkit/tests`. Encountered numerous test failures in LLM clients due to incorrect mocking.
+    - Refactored `test_google_client.py` to use `@patch` with correct target (`agentkit.llm_clients.google_client.genai` and `...genai_types`) and fixture structure. Fixed `generate_content` mock type (MagicMock vs AsyncMock) and `ValueError` handling logic in `google_client.py`.
+    - Refactored `test_anthropic_client.py` to use `@patch` with correct target (`agentkit.llm_clients.anthropic_client.AsyncAnthropic`) and fixture structure.
+    - Refactored `test_openai_client.py` to use `@patch` with correct target (`agentkit.llm_clients.openai_client.AsyncOpenAI`) and fixture structure. Fixed `messages` list creation in `openai_client.py` to handle `system_prompt`.
+    - Refactored `test_openrouter_client.py` to use `@patch` with correct target (`agentkit.llm_clients.openrouter_client.AsyncOpenAI`) and fixture structure. Fixed `messages` list creation in `openrouter_client.py` to handle `system_prompt`.
+    - Ran `PYTHONPATH=agentkit/ /home/sf2/miniforge3/bin/python -m pytest agentkit/agentkit/tests`. **Succeeded (33 tests passed).**
+    - Ran `cd ops_core && tox -r`. **Succeeded (104 tests passed).**
+    - **Status:** Task Maint.2 is **Completed (2025-04-08)**. Agentkit tests pass and ops-core integration verified.
 
 ## Recent Activities (Previous Session - 2025-04-08 Morning)
 - **Attempted Task Maint.2 Verification:**

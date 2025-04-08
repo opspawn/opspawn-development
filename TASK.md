@@ -260,10 +260,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
     - Fixed test failures related to validation, assertions, and error handling (2025-04-06).
     - All 70 `agentkit` tests pass via `pytest`. (Note: This was before the reimplementation and subsequent import issues).
 
-- [ ] **Task Maint.2: Fix Agentkit Imports & Tests** `(Partially Completed 2025-04-08)`
+- [x] **Task Maint.2: Fix Agentkit Imports & Tests** `(Completed 2025-04-08)`
   *Description:* Resolve import errors, file location issues, and dependency problems preventing `agentkit` tests from running correctly after Phase 2 reimplementation and LLM integration.
   *Dependencies:* Tasks 2.1-2.12
-  *Comments:* Fixed circular imports, added missing class definitions, moved misplaced source files, recreated `.venv`, installed dependencies, fixed Pydantic error. **Encountered persistent `ModuleNotFoundError: No module named 'agentkit.core.interfaces.llm_client'` during `pytest agentkit/agentkit/tests`. Extensive troubleshooting (cache clearing, venv recreation, import changes, file renaming, PYTHONPATH) failed to resolve. Issue seems environmental, preventing correct reading of `agentkit/core/interfaces/__init__.py`. Task paused.** Switched Google client to `google-genai` SDK (see Task 2.12 comments). Moved `tests/llm_clients` to `agentkit/agentkit/tests/`.
+  *Comments:* Fixed initial `ModuleNotFoundError` by running tests with explicit `PYTHONPATH=agentkit/`. Fixed subsequent `ModuleNotFoundError: No module named 'google'` by identifying Python interpreter mismatch (pip used 3.12, pytest used 3.10) and installing dependencies (`agentkit -e .`, `pytest`, `pytest-asyncio`) into Python 3.12 env. Fixed numerous test failures in LLM clients (`test_google_client.py`, `test_anthropic_client.py`, `test_openai_client.py`, `test_openrouter_client.py`) by refactoring mock patch targets and fixture structure. Verified all 33 tests pass using `/home/sf2/miniforge3/bin/python -m pytest agentkit/agentkit/tests`.
 
 - [x] **Task 4.2: End-to-End Integration Testing** `(Completed 2025-04-06)`
   *Description:* Develop comprehensive integration tests to simulate complete workflows from scheduling to agent task execution.
