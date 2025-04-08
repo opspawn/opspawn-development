@@ -5,7 +5,7 @@
 - **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Task 5.1 completed. Maintenance tasks Maint.1, Maint.2, Maint.3, Maint.5, Maint.6, Maint.7 completed. Phase 5 documentation tasks (5.2-5.5) deferred. Task Maint.8 added.
 - **Current Task:** None. Ready for next steps (e.g., Maint.8, Phase 5).
 
-## What Works (As of 2025-04-08 4:33 PM)
+## What Works (As of 2025-04-08 4:38 PM)
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented. All 104 `ops-core` tests pass via `tox`.
 - **Task 2.2 (Reimplemented):** `agentkit` core agent MVP reimplemented (`ShortTermMemory`, `PlaceholderPlanner`, `Agent`, interfaces, tests).
 - **Task 2.3 (Reimplemented):** `agentkit` dynamic tool integration reimplemented (`schemas`, `registry`, `execution`, tests, agent integration).
@@ -66,7 +66,7 @@
 ## What's Left to Build (Immediate Focus)
 - **Fix Google Client Test:** Investigate and resolve the persistent mocking issue in `agentkit/agentkit/tests/llm_clients/test_google_client.py::test_google_client_generate_success`.
 - **Task Maint.4:** Refactor `OpsMcpClient` server management to use `AsyncExitStack`. (Verified already complete).
-- **Task Maint.8:** Revisit Dramatiq Integration Testing.
+- **Task Maint.8:** Revisit Dramatiq Integration Testing (Next Task).
 - **Review Deferred Tasks:** Re-evaluate Phase 5 documentation tasks (5.2-5.5).
 - **(Optional) Live LLM Testing:** Implement basic tests using real API keys.
 
@@ -79,6 +79,7 @@
 - `InMemoryMetadataStore` is not persistent or thread-safe (MVP limitation).
 - CI workflows currently lack linting/type checking steps (commented out).
 - Integration testing of Dramatiq actor dependencies remains challenging (workaround applied in Task 4.1.1, to be revisited in Maint.8).
+- Restored `memory-bank/integration_test_challenges.md` from Git history (2025-04-08).
 
 ## Evolution of Project Decisions
 - **LLM Client Verification (2025-04-08):** Verified Anthropic client. Refactored Google client and tests for `google-genai` async interface and input structure (Task Maint.3). Confirmed `ops-core` tests still pass.
