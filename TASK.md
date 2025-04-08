@@ -269,11 +269,11 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
     *Description:* Verified `AnthropicClient` and `GoogleClient` against SDK documentation. Refactored `GoogleClient` and its tests (`test_google_client.py`) for `google-genai` async interface and input structure. Verified `ops-core` tests pass via `tox -r`.
     *Dependencies:* Task Maint.2
 
-- [ ] **Task Maint.4: Refactor `OpsMcpClient` Server Management** `(Added 2025-04-08)`
-    *Description:* Refactor `ops_core/ops_core/mcp_client/client.py` (`start_all_servers`, `close_all_servers`) to use `contextlib.AsyncExitStack` for more robust resource management (server processes, client sessions) based on MCP Quickstart best practices.
+- [x] **Task Maint.4: Refactor `OpsMcpClient` Server Management** `(Verified Complete 2025-04-08)`
+    *Description:* Refactor `ops_core/ops_core/mcp_client/client.py` (`start_all_servers`, `close_all_servers`) to use `contextlib.AsyncExitStack` for more robust resource management (server processes, client sessions) based on MCP Quickstart best practices. (Verified already implemented).
     *Dependencies:* Task MCP.1
 
-- [ ] **Task Maint.5: Add Timeouts to `OpsMcpClient.call_tool`** `(Added 2025-04-08)`
+- [x] **Task Maint.5: Add Timeouts to `OpsMcpClient.call_tool`** `(Completed 2025-04-08)`
     *Description:* Add a configurable timeout mechanism to `ops_core/ops_core/mcp_client/client.py` (`call_tool`) to prevent indefinite hangs when communicating with potentially unresponsive MCP servers.
     *Dependencies:* Task MCP.1
 

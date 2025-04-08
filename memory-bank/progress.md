@@ -2,10 +2,10 @@
 
 ## Current Status (Updated 2025-04-08 3:18 PM)
 - **Phase:** Phase 4 Completed. All core functionality and integrations verified.
-- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Task 5.1 completed. Maintenance tasks Maint.1, Maint.2, Maint.3, Maint.6, Maint.7 completed. Phase 5 documentation tasks (5.2-5.5) deferred.
-- **Current Task:** None. Ready for next steps (e.g., Maint.4, Maint.5, Phase 5).
+- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Task 5.1 completed. Maintenance tasks Maint.1, Maint.2, Maint.3, Maint.5, Maint.6, Maint.7 completed. Phase 5 documentation tasks (5.2-5.5) deferred.
+- **Current Task:** None. Ready for next steps (e.g., Maint.4, Phase 5).
 
-## What Works (As of 2025-04-08 4:01 PM)
+## What Works (As of 2025-04-08 4:20 PM)
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented. All 104 `ops-core` tests pass via `tox`.
 - **Task 2.2 (Reimplemented):** `agentkit` core agent MVP reimplemented (`ShortTermMemory`, `PlaceholderPlanner`, `Agent`, interfaces, tests).
 - **Task 2.3 (Reimplemented):** `agentkit` dynamic tool integration reimplemented (`schemas`, `registry`, `execution`, tests, agent integration).
@@ -46,8 +46,9 @@
     - Task Maint.3: LLM Client verification and Google Client/Test updates completed. `ops-core` tests pass. (Completed 2025-04-08).
     - Task Maint.6: Fixed `agentkit` test structure. (Completed 2025-04-08).
     - Task Maint.7: Fixed failing Google client test (`test_google_client_generate_success`) by correcting mock setup. (Completed 2025-04-08).
+    - Task Maint.5: Added configurable timeouts to `OpsMcpClient.call_tool` and verified with tests. (Completed 2025-04-08).
 
-## What Works (As of 2025-04-08 4:01 PM)
+## What Works (As of 2025-04-08 4:20 PM)
 - **`ops-core`:**
     - Core functionality (Scheduler, Store, Models, APIs, gRPC, MCP Client/Config, Async Messaging) implemented and tested (as of Tasks 2.1, 3.x, 4.x, MCP.x completion dates).
     - LLM integration (Task 2.12) implemented, including switch to `google-genai` SDK.
@@ -64,14 +65,13 @@
 
 ## What's Left to Build (Immediate Focus)
 - **Fix Google Client Test:** Investigate and resolve the persistent mocking issue in `agentkit/agentkit/tests/llm_clients/test_google_client.py::test_google_client_generate_success`.
-- **Task Maint.4:** Refactor `OpsMcpClient` server management to use `AsyncExitStack`.
-- **Task Maint.5:** Add configurable timeouts to `OpsMcpClient.call_tool`.
+- **Task Maint.4:** Refactor `OpsMcpClient` server management to use `AsyncExitStack`. (Verified already complete).
 - **Review Deferred Tasks:** Re-evaluate Phase 5 documentation tasks (5.2-5.5).
 - **(Optional) Live LLM Testing:** Implement basic tests using real API keys.
 
 ## What's Left to Build (High-Level from `TASK.md`)
 - **Phase 3.5:** All MCP tasks complete.
-- **Maintenance:** Tasks Maint.4, Maint.5.
+- **Maintenance:** Task Maint.4 (Verified complete).
 - **Phase 5:** Tasks 5.2-5.5 (Deferred).
 
 ## Known Issues / Blockers

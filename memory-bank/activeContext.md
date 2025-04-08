@@ -89,7 +89,14 @@
     - Fixed test mock by adding `__annotations__ = {}` to the `GenerationConfig` mock in the `mock_genai_and_types` fixture.
     - Removed `@pytest.mark.xfail` marker.
     - Verified all 57 `agentkit` tests now pass.
-- **Updated Documentation:** Updated `TASK.md` to reflect task completions (MCP.5, Maint.6, Maint.7) and additions (Maint.4, Maint.5).
+    - **Updated Documentation:** Updated `TASK.md` to reflect task completions (MCP.5, Maint.6, Maint.7) and additions (Maint.4, Maint.5).
+- **Completed Task Maint.5 (Add Timeouts to `OpsMcpClient.call_tool`):** `(Current Session - 2025-04-08)`
+    - Added `mcp_call_tool_timeout_seconds` field to `McpConfig` in `ops_core/config/loader.py`.
+    - Updated `OpsMcpClient.call_tool` in `ops_core/mcp_client/client.py` to use `asyncio.wait_for` and handle `TimeoutError`, raising `McpError`.
+    - Added `test_call_tool_timeout` to `ops_core/tests/mcp_client/test_client.py`.
+    - Fixed test assertions related to `McpError` attributes (`data`, `message`, `code`).
+    - Verified all 105 `ops-core` tests pass via `tox -r`.
+    - Updated `TASK.md`.
 
 ## Recent Activities (Previous Session - 2025-04-08 Morning)
 - **Attempted Task Maint.2 Verification:**
