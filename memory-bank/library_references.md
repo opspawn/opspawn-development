@@ -1,4 +1,4 @@
-# References
+# Library References
 
 This file contains links to documentation and version information for key external tools and libraries used in the Opspawn project.
 
@@ -26,3 +26,24 @@ This file contains links to documentation and version information for key extern
 - **Key Features:** Scalable, event-based, supports distributed testing, web UI for monitoring.
 - **PyPI:** [https://pypi.org/project/locust/](https://pypi.org/project/locust/)
 - **GitHub:** [https://github.com/locustio/locust](https://github.com/locustio/locust)
+
+## LLM SDKs (for Agentkit Integration)
+
+### OpenAI
+- **Official Documentation:** [https://platform.openai.com/docs/api-reference/introduction?lang=python](https://platform.openai.com/docs/api-reference/introduction?lang=python)
+- **GitHub:** [https://github.com/openai/openai-python](https://github.com/openai/openai-python)
+- **PyPI:** [https://pypi.org/project/openai/](https://pypi.org/project/openai/)
+
+### Anthropic
+- **Official Documentation:** [https://docs.anthropic.com/en/api/client-sdks](https://docs.anthropic.com/en/api/client-sdks)
+- **GitHub:** [https://github.com/anthropics/anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python)
+- **PyPI:** [https://pypi.org/project/anthropic/](https://pypi.org/project/anthropic/)
+
+### Google Gemini
+- **Official Documentation:** [https://ai.google.dev/gemini-api/docs/sdks](https://ai.google.dev/gemini-api/docs/sdks)
+- **Python SDK Docs:** [https://googleapis.github.io/python-genai/](https://googleapis.github.io/python-genai/)
+- **PyPI:** [https://pypi.org/project/google-generativeai/](https://pypi.org/project/google-generativeai/)
+
+### OpenRouter
+- **Official Documentation:** [https://openrouter.ai/docs/quickstart](https://openrouter.ai/docs/quickstart)
+- **Notes:** Uses OpenAI-compatible API structure. Can likely use the `openai` Python SDK with modified `base_url` and API key.

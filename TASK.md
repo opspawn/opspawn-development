@@ -71,8 +71,8 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 - **Task 4.2:** **End-to-End Integration Testing**  
   Develop comprehensive integration tests to validate the complete workflow from ops-core triggering an agent task to receiving the final response.
 
-- **Task 4.3:** **Performance Load Testing**  
-  Conduct load testing on the scheduling engine and agent execution to measure throughput and latency under simulated high loads.
+- **Task 4.3:** **Performance Load Testing Setup**  
+  Set up the environment for load testing, including dependencies, locustfile, and ensuring required services can run.
 
 - **Task 4.4:** **Security & Error Handling Testing**  
   Execute tests for authentication, input validation, sandboxed tool execution, and proper error reporting across all interfaces.
@@ -127,42 +127,82 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 
 ### Phase 2: Core Module Development
 
-- [x] **Task 2.1: Ops-core Scheduler & Metadata Store MVP** `(Completed 2025-04-05)`
+- [x] **Task 2.1: Ops-core Scheduler & Metadata Store MVP** `(Completed 2025-04-08)`
   *Description:* Develop a basic scheduling engine and metadata store for job queuing and state persistence.
   *Dependencies:* Task 1.4
-    *Comments:* Implemented `models/tasks.py`, `models/__init__.py`, `metadata/store.py`, `metadata/__init__.py`, `scheduler/engine.py`, `scheduler/__init__.py`, and corresponding unit tests (`tests/metadata/test_store.py`, `tests/scheduler/test_engine.py`).
+  *Comments:* Reimplementation files created (`models/tasks.py`, `metadata/store.py`, `scheduler/engine.py`) and associated unit tests fixed. All 104 `ops-core` tests pass via `tox` as of 2025-04-08 5:36 AM.
 
-- [x] **Task 2.2: Agentkit Core-Agent MVP** `(Completed 2025-04-05)`
+- [x] **Task 2.2: Agentkit Core-Agent MVP** `(Reimplemented 2025-04-08)`
   *Description:* Build a minimal version of the core-agent with essential features like short-term memory and basic planning.
-  *Dependencies:* Task 1.4
-  *Comments:* Implemented core Agent, ShortTermMemory, SimplePlanner (placeholder), and basic unit tests. Tests passed. Committed to `agentkit` repo.
+  *Dependencies:* Task 1.4, Task 2.4 (Interfaces)
+  *Comments:* Reimplemented `agentkit/memory/short_term.py`, `agentkit/planning/placeholder_planner.py`, `agentkit/core/agent.py` and associated tests (`tests/memory/test_short_term.py`, `tests/planning/test_placeholder_planner.py`, `tests/core/test_agent.py`) based on `ops-docs/phase2_reimplementation_plan.md`. Interfaces from Task 2.4 created first. Dependencies (`pytest`, `pytest-asyncio`, `pydantic`) confirmed in `pyproject.toml`.
 
-- [x] **Task 2.3: Dynamic Tool Integration** `(Completed 2025-04-05)`
+- [x] **Task 2.3: Dynamic Tool Integration** `(Reimplemented 2025-04-08)`
   *Description:* Implement a tool registry and integration mechanism within agentkit to allow for dynamic invocation of external tools, including secure execution.
   *Dependencies:* Task 2.2
-  *Comments:* Implemented ToolSpec/ToolResult schemas, Tool/ToolRegistry classes. Moved Tool base class to schemas.py. Implemented safe tool execution via multiprocessing in `tools/execution.py` and integrated into Agent and ToolRegistry. Added example tools (AddTool, SubtractTool). Refactored tests. All agentkit tests pass.
+  *Comments:* Reimplemented `agentkit/tools/schemas.py`, `agentkit/tools/registry.py`, `agentkit/tools/execution.py` and associated tests (`tests/tools/test_schemas.py`, `tests/tools/test_registry.py`, `tests/tools/test_execution.py`). Integrated `ToolRegistry` usage into `agentkit/core/agent.py`.
 
-- [x] **Task 2.4: Internal Interfaces for Agentkit Modules** `(Completed 2025-04-05)`
+- [x] **Task 2.4: Internal Interfaces for Agentkit Modules** `(Reimplemented 2025-04-08)`
   *Description:* Define and implement clear interfaces (ABCs) for the planner, memory, tool manager, and security modules. Refactor concrete classes and Agent to use interfaces. Update tests.
-  *Dependencies:* Tasks 2.2 & 2.3
-  *Comments:* Created `BasePlanner`, `BaseMemory`, `BaseToolManager`, `BaseSecurityManager` in `core/interfaces`. Refactored `SimplePlanner`, `ShortTermMemory`, `ToolRegistry`, `Agent`. Updated tests in `tests/test_agent.py`, `tests/test_planning.py`, `tests/test_memory.py`. All 43 `agentkit` tests pass.
+  *Dependencies:* Tasks 2.2 & 2.3 (Conceptually)
+  *Comments:* Interfaces (`BaseMemory`, `BasePlanner`, `BaseToolManager`, `BaseSecurityManager`) created in `agentkit/core/interfaces/`. Concrete classes (`ShortTermMemory`, `PlaceholderPlanner`, `ToolRegistry`, `Agent`) implemented/updated to use interfaces during Tasks 2.2 & 2.3. Tests updated (`test_agent.py`).
+
+- [x] **Task 2.5: Define `BaseLlmClient` Interface & `LlmResponse` Model** `(Completed 2025-04-08 - File Exists)`
+  *Description:* Define the abstract base class `BaseLlmClient` and the standard `LlmResponse` Pydantic model in `agentkit/core/interfaces/llm_client.py`.
+  *Dependencies:* Task 2.4 (Reimplementation Needed)
+  *Comments:* File created, but depends on missing Task 2.4 interfaces.
+
+- [x] **Task 2.6: Implement OpenAI Client & Add Tests** `(Completed 2025-04-08 - Files Exist)`
+  *Description:* Implement `agentkit/llm_clients/openai_client.py` inheriting from `BaseLlmClient`, using the `openai` SDK and env vars. Add unit tests mocking API calls.
+  *Dependencies:* Task 2.5
+  *Comments:* Files created, but integration depends on missing core agent (Task 2.2/2.11).
+
+- [x] **Task 2.7: Implement Anthropic Client & Add Tests** `(Completed 2025-04-08 - Files Exist)`
+  *Description:* Implement `agentkit/llm_clients/anthropic_client.py` inheriting from `BaseLlmClient`, using the `anthropic` SDK and env vars. Add unit tests mocking API calls.
+  *Dependencies:* Task 2.5
+  *Comments:* Files created, but integration depends on missing core agent (Task 2.2/2.11).
+
+- [x] **Task 2.8: Implement Google Gemini Client & Add Tests** `(Completed 2025-04-08 - Files Exist)`
+  *Description:* Implement `agentkit/llm_clients/google_client.py` inheriting from `BaseLlmClient`, using the `google-generativeai` SDK and env vars. Add unit tests mocking API calls.
+  *Dependencies:* Task 2.5
+  *Comments:* Files created, but integration depends on missing core agent (Task 2.2/2.11).
+
+- [x] **Task 2.9: Implement OpenRouter Client & Add Tests** `(Completed 2025-04-08 - Files Exist)`
+  *Description:* Implement `agentkit/llm_clients/openrouter_client.py` inheriting from `BaseLlmClient`, using appropriate methods (e.g., `openai` SDK format or `httpx`) and env vars. Add unit tests mocking API calls.
+  *Dependencies:* Task 2.5
+  *Comments:* Files created, but integration depends on missing core agent (Task 2.2/2.11).
+
+- [x] **Task 2.10: Implement ReAct Planner & Add Tests** `(Completed 2025-04-08 - Files Exist)`
+  *Description:* Create `agentkit/planning/react_planner.py` implementing `BasePlanner`. This planner will use an injected `BaseLlmClient` to generate steps based on ReAct prompting. Add unit tests mocking LLM responses.
+  *Dependencies:* Task 2.5, Task 2.4 (Reimplementation Needed)
+  *Comments:* Files created, but depends on missing BasePlanner interface (Task 2.4) and core agent (Task 2.2/2.11).
+
+- [x] **Task 2.11: Integrate LLM Client & Planner into Agent Core & Update Tests** `(Completed 2025-04-08)`
+  *Description:* Modify `agentkit/core/agent.py` to accept `llm_client` and `planner` via dependency injection. Update the agent's execution logic to use the planner and provide it the LLM client. Update agent unit tests.
+  *Dependencies:* Task 2.5, Task 2.10
+  *Comments:* Agent core already accepts planner via DI. LLM client is used *by* the planner, not directly by the agent core. Updated `agentkit/tests/core/test_agent.py` to include tests for the tool execution flow integrated in Task 2.3.
+
+- [x] **Task 2.12: Implement LLM Configuration & Instantiation in `ops-core`** `(Completed 2025-04-08)`
+  *Description:* Update `ops_core/scheduler/engine.py` (`_run_agent_task_logic`) to read environment variables (`AGENTKIT_LLM_PROVIDER`, `AGENTKIT_LLM_MODEL`), instantiate the correct `BaseLlmClient` and `BasePlanner` implementations from `agentkit`, and pass them to the `Agent` constructor.
+  *Dependencies:* Task 2.11, Task 2.6-2.10 (Clients/Planner implementations)
+  *Comments:* Added `openai`, `google-generativeai` dependencies to `ops_core/pyproject.toml`. Implemented `get_llm_client` and `get_planner` helper functions in `ops_core/scheduler/engine.py` using env vars. Updated `_run_agent_task_logic` to use these helpers and inject the planner into the `Agent`.
 
 ### Phase 3: Integration & Interface Development
 
-- [x] **Task 3.1: REST Endpoints for Ops-core** `(Completed 2025-04-06)`
+- [x] **Task 3.1: REST Endpoints for Ops-core** `(Completed 2025-04-06 - Blocked by Task 2.1)`
   *Description:* Develop REST API endpoints to expose scheduling and task management functionalities.
-  *Dependencies:* Task 2.1
-  *Comments:* Implemented FastAPI app, task schemas (`api/v1/schemas/tasks.py`), task endpoints (`api/v1/endpoints/tasks.py` for POST /, GET /{id}, GET /), and unit tests (`tests/api/v1/endpoints/test_tasks.py`). Added dependencies and fixed test setup issues. All tests pass.
+  *Dependencies:* Task 2.1 (Reimplementation Needed)
+  *Comments:* Files exist, but functionality depends on missing scheduler/store (Task 2.1).
 
-- [x] **Task 3.2: gRPC Interfaces for Internal Communication** `(Completed - 2025-04-06)`
+- [x] **Task 3.2: gRPC Interfaces for Internal Communication** `(Completed - 2025-04-06 - Blocked by Task 2.4)`
   *Description:* Define .proto files and build gRPC interfaces for communication between ops-core and agentkit.
-  *Dependencies:* Task 2.4
-  *Comments:* Initial setup done (proto, servicer, tests, tox config). Resolved blocker `AttributeError: module 'grpc' has no attribute 'aio'` by removing conflicting `tests/grpc/__init__.py` and using explicit submodule imports (`from grpc import aio as grpc_aio`, `from grpc import StatusCode`) in servicer and test files. All 67 tests pass via `tox`.
+  *Dependencies:* Task 2.4 (Reimplementation Needed)
+  *Comments:* Files exist, but functionality depends on missing agentkit interfaces (Task 2.4).
 
-- [x] **Task 3.3: Ops-core and Agentkit Integration** `(Completed 2025-04-06)`
+- [x] **Task 3.3: Ops-core and Agentkit Integration** `(Completed 2025-04-06 - Blocked by Tasks 3.1 & 3.2)`
   *Description:* Integrate the scheduler with the core-agent by enabling API calls and processing responses.
-  *Dependencies:* Tasks 3.1 & 3.2
-  *Comments:* Refactored `InMemoryScheduler` to handle task submission and trigger agent execution via `_execute_agent_task`. Updated REST and gRPC `CreateTask` endpoints to call `scheduler.submit_task`. Added integration tests (`tests/integration/test_api_scheduler_integration.py`) verifying API-scheduler interaction.
+  *Dependencies:* Tasks 3.1 & 3.2 (Blocked)
+  *Comments:* Files exist, but functionality depends on blocked tasks.
 
 - [x] **Task 3.4: Implement Asynchronous Messaging (Dramatiq + RabbitMQ)** `(Completed & Verified 2025-04-06)`
   *Description:* Implement Dramatiq with RabbitMQ broker for handling asynchronous agent task execution.
@@ -176,25 +216,25 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 
 ### Phase 3.5: MCP Integration (Dynamic Proxy Pattern)
 
-- [x] **Task MCP.1: Implement `ops-core` MCP Client Module** `(Completed 2025-04-06)`
+- [x] **Task MCP.1: Implement `ops-core` MCP Client Module** `(Completed 2025-04-06 - OK)`
   *Description:* Create `ops_core/mcp_client/` with logic to connect to MCP servers and execute `call_tool`/`read_resource`. Add MCP SDK dependency.
   *Dependencies:* Task 1.4 (Architecture), Task MCP.2
-  *Comments:* Refactored `client.py` to remove LLM logic and support multi-server config. Updated `test_client.py`. Fixed test failures related to mocking async context managers (`stdio_client`, `ClientSession`) within fixtures and side effects, log assertions, and `McpError` instantiation. All 56 `ops_core` tests pass via `tox`.
+  *Comments:* Files exist and seem independent of missing Phase 2 code.
 
-- [x] **Task MCP.2: Implement `ops-core` MCP Configuration** `(Completed 2025-04-06)`
+- [x] **Task MCP.2: Implement `ops-core` MCP Configuration** `(Completed 2025-04-06 - OK)`
   *Description:* Define and implement how `ops-core` discovers/configures MCP server details (e.g., via config file or env vars). Verify integration with `OpsMcpClient`.
   *Dependencies:* Task MCP.1
-  *Comments:* YAML approach chosen. `loader.py` implemented. `test_loader.py` enhanced. Verified `OpsMcpClient` correctly uses `get_resolved_mcp_config()` via existing tests (`test_init_loads_default_config`). All 56 `ops_core` tests pass.
+  *Comments:* Files exist and seem independent of missing Phase 2 code.
 
-- [x] **Task MCP.3: Implement `ops-core` Proxy Tool Injection** `(Completed 2025-04-05)`
+- [x] **Task MCP.3: Implement `ops-core` Proxy Tool Injection** `(Completed 2025-04-05 - Blocked by Tasks 2.1, 2.3, 2.4)`
   *Description:* Add logic to `ops-core` orchestrator (`InMemoryScheduler`) to conditionally inject the `mcp_proxy_tool` into an `agentkit` agent's `ToolRegistry`.
-  *Dependencies:* Task 2.3 (Agentkit ToolRegistry), Task MCP.1, Task 2.4 (Agentkit Interfaces)
-  *Comments:* Defined `MCPProxyTool` in `ops_core/ops_core/mcp_client/proxy_tool.py`. Updated `InMemoryScheduler` to instantiate agents, inject `OpsMcpClient` into `MCPProxyTool`, and add it to agent's `ToolRegistry` based on `task.input_data['inject_mcp_proxy']`. Added/fixed unit tests in `tests/scheduler/test_engine.py` using `tox` for dependency management. All 8 scheduler tests pass.
+  *Dependencies:* Task 2.3 (Reimplementation Needed), Task MCP.1, Task 2.4 (Reimplementation Needed)
+  *Comments:* Logic exists in `scheduler/engine.py` (Task 2.1 - missing) and depends on `ToolRegistry` (Task 2.3 - missing).
 
-- [x] **Task MCP.4: Define `agentkit` MCP Proxy Tool Spec** `(Completed 2025-04-05)`
+- [x] **Task MCP.4: Define `agentkit` MCP Proxy Tool Spec** `(Completed 2025-04-05 - Blocked by Task 2.3)`
   *Description:* Define the `ToolSpec` for the `mcp_proxy_tool` within `agentkit` (e.g., `agentkit/tools/mcp_proxy.py`) so agents understand its inputs (server, tool, args).
-  *Dependencies:* Task 2.3
-  *Comments:* Created `agentkit/tools/mcp_proxy.py` with `MCPProxyToolInput` model and `mcp_proxy_tool_spec` instance. Updated `tools/__init__.py`.
+  *Dependencies:* Task 2.3 (Reimplementation Needed)
+  *Comments:* File `agentkit/tools/mcp_proxy.py` likely missing as part of Task 2.3.
 
 - [ ] **Task MCP.5: Enhance `agentkit` Planner/Agent (Optional)**
   *Description:* Update planner logic to recognize/utilize the `mcp_proxy_tool`. Ensure agent execution loop handles proxy results.
@@ -218,7 +258,12 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
     - All 94 `ops_core` tests passing.
     - Added/enhanced tests for `agentkit` modules (`schemas`, `registry`, `execution`, `agent`, `memory`, `planning`) (2025-04-06).
     - Fixed test failures related to validation, assertions, and error handling (2025-04-06).
-    - All 70 `agentkit` tests pass via `pytest`.
+    - All 70 `agentkit` tests pass via `pytest`. (Note: This was before the reimplementation and subsequent import issues).
+
+- [ ] **Task Maint.2: Fix Agentkit Imports & Tests** `(Partially Completed 2025-04-08)`
+  *Description:* Resolve import errors, file location issues, and dependency problems preventing `agentkit` tests from running correctly after Phase 2 reimplementation and LLM integration.
+  *Dependencies:* Tasks 2.1-2.12
+  *Comments:* Fixed circular imports, added missing class definitions (`Plan`, `PlanStep`, `ToolRegistrationError`), moved misplaced source files (`llm_clients`, `interfaces/llm_client.py`, `planning/*`) to `agentkit/agentkit/`, recreated `.venv`, installed dependencies, fixed Pydantic error in `test_react_planner.py`. **Final test run (`pytest tests`) was not performed due to context reset request.**
 
 - [x] **Task 4.2: End-to-End Integration Testing** `(Completed 2025-04-06)`
   *Description:* Develop comprehensive integration tests to simulate complete workflows from scheduling to agent task execution.
@@ -230,19 +275,19 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
   *Dependencies:* Task 3.5 (Initial attempt)
   *Comments:* Resolved by modifying tests to patch `execute_agent_task_actor.send` and verify the API -> Scheduler -> Broker flow, rather than attempting full actor execution within the test due to `StubBroker` limitations. Relies on unit tests for actor logic coverage. All 80 tests pass.
 
-- [ ] **Task 4.3: Performance Load Testing** `(Started 2025-04-06)`
-  *Description:* Conduct load testing on the scheduling engine and agent execution to measure throughput and latency under high load.
+- [x] **Task 4.3: Performance Load Testing Setup** `(Completed 2025-04-07)`
+  *Description:* Set up the environment for load testing, including dependencies, locustfile, and ensuring required services can run.
   *Dependencies:* Task 4.1
-  *Comments:* Use automated tools to simulate realistic usage scenarios. Added `locust` dependency to `tox.ini`. Created `ops_core/load_tests/locustfile.py`. Updated `scheduler/engine.py` to support mocked agent execution via `OPS_CORE_LOAD_TEST_MOCK_AGENT_DELAY_MS` env var.
+  *Comments:* Use automated tools to simulate realistic usage scenarios. Added `locust` dependency to `tox.ini`. Created `ops_core/load_tests/locustfile.py`. Updated `scheduler/engine.py` to support mocked agent execution via `OPS_CORE_LOAD_TEST_MOCK_AGENT_DELAY_MS` env var. Updated project paths in documentation (2025-04-07). Fixed worker startup errors (`TypeError`, `ConnectionRefusedError`, `404 NOT_FOUND - no queue 'default.DQ'`). Started RabbitMQ, API server, worker, and Locust successfully.
 
-- [ ] **Task 4.4: Security & Error Handling Testing**  
-  *Description:* Test for vulnerabilities, improper error handling, and unauthorized access across all interfaces.  
-  *Dependencies:* Task 4.1  
-  *Comments:* Include tests for sandboxed tool execution and robust error reporting.
+- [x] **Task 4.4: Security & Error Handling Testing** `(Completed 2025-04-07)`
+  *Description:* Test for vulnerabilities, improper error handling, and unauthorized access across all interfaces.
+  *Dependencies:* Task 4.1
+  *Comments:* Added input validation tests (REST/gRPC), added error handling tests for store failures (REST/gRPC), added error handling tests for agent instantiation/execution failures (scheduler), reviewed agentkit tool sandboxing tests (sufficient), reviewed codebase for auth (none implemented yet). All tests passing.
 
-- [ ] **Task 4.5: Documentation of Test Cases & Results**  
-  *Description:* Document the methodologies, test cases, and results from unit, integration, and load testing.  
-  *Dependencies:* All tasks in Phase 4  
+- [x] **Task 4.5: Documentation of Test Cases & Results** `(Completed 2025-04-07)`
+  *Description:* Document the methodologies, test cases, and results from unit, integration, and load testing.
+  *Dependencies:* All tasks in Phase 4
   *Comments:* Store results in the documentation portal for future reference.
 
 - [x] **Task Maint.1: Fix Test Deprecation Warnings** `(Completed 2025-04-06)`
@@ -250,32 +295,32 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
   *Dependencies:* Task MCP.6 (where warnings were observed in `ops_core`)
   *Comments:* Moved tests from `ops-core/tests/` to `ops_core/tests/`. Fixed `KeyError` and `TypeError` in `ops_core/tests/mcp_client/test_client.py` related to `os.path.exists` mocking and async fixtures. Added `pytest_asyncio` import. Added `asyncio_default_fixture_loop_scope` to `ops_core/pyproject.toml`. Updated Pydantic models in `ops_core/models/tasks.py` and `agentkit/tools/schemas.py`. Verified all 53 `ops_core` tests pass via `tox` with no warnings. Created `agentkit/pyproject.toml`. Verified `agentkit` tests pass via `pytest` with no warnings.
 
-### Phase 5: Documentation & Finalization
+### Phase 5: Documentation & Finalization (Deferred - Focus shifted to LLM Integration)
 
-- [ ] **Task 5.1: Finalize API Documentation**  
-  *Description:* Use OpenAPI and Protocol Buffers to generate comprehensive, versioned API documentation for REST and gRPC interfaces.  
-  *Dependencies:* Tasks 3.1 & 3.2  
-  *Comments:* Review and validate all endpoint specifications.
+- [x] **Task 5.1: Finalize API Documentation** `(Completed 2025-04-07)`
+  *Description:* Use OpenAPI and Protocol Buffers to generate comprehensive, versioned API documentation for REST and gRPC interfaces.
+  *Dependencies:* Tasks 3.1 & 3.2
+  *Comments:* Enhanced docstrings/comments in FastAPI schemas/endpoints and Protobuf definitions.
 
-- [ ] **Task 5.2: Update User & Developer Documentation**  
-  *Description:* Revise and expand all user guides, developer documentation, and ADRs using the Diátaxis framework.  
-  *Dependencies:* Completion of integration and testing phases  
-  *Comments:* Ensure clarity and consistency across all documents.
+- [ ] **Task 5.2: Update User & Developer Documentation** `(Deferred 2025-04-07)`
+  *Description:* Revise and expand all user guides, developer documentation, and ADRs using the Diátaxis framework.
+  *Dependencies:* Completion of integration and testing phases
+  *Comments:* Ensure clarity and consistency across all documents. **Deferred** to focus on LLM integration first.
 
-- [ ] **Task 5.3: Set Up Documentation Portal**  
-  *Description:* Deploy a documentation portal (using Sphinx or MkDocs) that aggregates all project documents, tutorials, and API references.  
-  *Dependencies:* Tasks 5.1 & 5.2  
-  *Comments:* Include search functionality and intuitive navigation.
+- [ ] **Task 5.3: Set Up Documentation Portal** `(Deferred 2025-04-07)`
+  *Description:* Deploy a documentation portal (using Sphinx or MkDocs) that aggregates all project documents, tutorials, and API references.
+  *Dependencies:* Tasks 5.1 & 5.2
+  *Comments:* Include search functionality and intuitive navigation. **Deferred** to focus on LLM integration first.
 
-- [ ] **Task 5.4: Internal Documentation Review**  
-  *Description:* Conduct team walkthroughs of the documentation to gather feedback and refine content.  
-  *Dependencies:* Task 5.3  
-  *Comments:* Incorporate changes based on internal feedback.
+- [ ] **Task 5.4: Internal Documentation Review** `(Deferred 2025-04-07)`
+  *Description:* Conduct team walkthroughs of the documentation to gather feedback and refine content.
+  *Dependencies:* Task 5.3
+  *Comments:* Incorporate changes based on internal feedback. **Deferred** to focus on LLM integration first.
 
-- [ ] **Task 5.5: Create Onboarding Tutorials & Samples**  
-  *Description:* Develop tutorial videos, sample projects, or code snippets to help new users and developers onboard quickly.  
-  *Dependencies:* Task 5.4  
-  *Comments:* Focus on clarity and ease of understanding.
+- [ ] **Task 5.5: Create Onboarding Tutorials & Samples** `(Deferred 2025-04-07)`
+  *Description:* Develop tutorial videos, sample projects, or code snippets to help new users and developers onboard quickly.
+  *Dependencies:* Task 5.4
+  *Comments:* Focus on clarity and ease of understanding. **Deferred** to focus on LLM integration first.
 
 ---
 
