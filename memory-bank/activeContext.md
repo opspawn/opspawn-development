@@ -54,6 +54,13 @@
     - Ran `PYTHONPATH=agentkit/ /home/sf2/miniforge3/bin/python -m pytest agentkit/agentkit/tests`. **Succeeded (33 tests passed).**
     - Ran `cd ops_core && tox -r`. **Succeeded (104 tests passed).**
     - **Status:** Task Maint.2 is **Completed (2025-04-08)**. Agentkit tests pass and ops-core integration verified.
+- **Completed Task Maint.3 (Verify LLM Clients & Update Google Client/Tests) (Current Session - 2025-04-08 Afternoon):**
+    - Fetched Anthropic SDK README. Verified `AnthropicClient` implementation against it - no changes needed.
+    - Fetched Google GenAI SDK README.
+    - Refactored `agentkit/llm_clients/google_client.py` to use async interface (`client.aio`), handle `messages` list input, and use `GenerationConfig` for system prompts.
+    - Updated `agentkit/tests/llm_clients/test_google_client.py` to mock async methods and verify new input/config structure.
+    - Ran `cd ops_core && tox -r`. **Succeeded (104 tests passed).**
+    - **Status:** Task Maint.3 is **Completed (2025-04-08)**. LLM clients verified/updated, tests updated, integration confirmed.
 
 ## Recent Activities (Previous Session - 2025-04-08 Morning)
 - **Attempted Task Maint.2 Verification:**

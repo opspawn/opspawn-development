@@ -265,6 +265,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
   *Dependencies:* Tasks 2.1-2.12
   *Comments:* Fixed initial `ModuleNotFoundError` by running tests with explicit `PYTHONPATH=agentkit/`. Fixed subsequent `ModuleNotFoundError: No module named 'google'` by identifying Python interpreter mismatch (pip used 3.12, pytest used 3.10) and installing dependencies (`agentkit -e .`, `pytest`, `pytest-asyncio`) into Python 3.12 env. Fixed numerous test failures in LLM clients (`test_google_client.py`, `test_anthropic_client.py`, `test_openai_client.py`, `test_openrouter_client.py`) by refactoring mock patch targets and fixture structure. Verified all 33 tests pass using `/home/sf2/miniforge3/bin/python -m pytest agentkit/agentkit/tests`.
 
+- [x] **Task Maint.3: Verify LLM Clients & Update Google Client/Tests** `(Completed 2025-04-08)`
+    *Description:* Verified `AnthropicClient` and `GoogleClient` against SDK documentation. Refactored `GoogleClient` and its tests (`test_google_client.py`) for `google-genai` async interface and input structure. Verified `ops-core` tests pass via `tox -r`.
+    *Dependencies:* Task Maint.2
+
 - [x] **Task 4.2: End-to-End Integration Testing** `(Completed 2025-04-06)`
   *Description:* Develop comprehensive integration tests to simulate complete workflows from scheduling to agent task execution.
   *Dependencies:* Task 3.5, Task 4.1.1
