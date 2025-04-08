@@ -6,8 +6,8 @@
 - **Task 2.3 (Reimplementation: Agentkit Dynamic Tool Integration):** **Completed (2025-04-08)**. Created tool schemas, registry, safe execution, tests, and integrated into Agent.
 - **Task 2.4 (Reimplementation: Agentkit Internal Interfaces):** **Completed (2025-04-08)**. Interfaces created and verified during Tasks 2.2 & 2.3.
 - **Task 2.11 (Integrate LLM Client & Planner into Agent Core & Update Tests):** **Completed (2025-04-08)**. Updated agent tests for tool call flow.
-- **Task 2.12 (Implement LLM Configuration & Instantiation in `ops-core`):** **Completed (2025-04-08)**. Added dependencies, implemented config/instantiation logic in scheduler. **Switched to `google-genai` SDK (2025-04-08). Verification pending.**
-- **Phase 2: Core Module Reimplementation:** Core MVP components (2.1-2.4) and LLM integration (2.11-2.12) implementation complete. Verification pending for 2.12.
+- **Task 2.12 (Implement LLM Configuration & Instantiation in `ops-core`):** **Completed & Verified (2025-04-08)**. Added dependencies, implemented config/instantiation logic in scheduler. Switched to `google-genai` SDK. Fixed test failures and verified with `tox -r`.
+- **Phase 2: Core Module Reimplementation:** Core MVP components (2.1-2.4) and LLM integration (2.11-2.12) implementation and verification complete.
 - **Phase 2 LLM Tasks (2.5-2.10):** Files created, integrated, moved to correct `agentkit/agentkit/` subdirectories. Google client refactored for `google-genai` SDK (2025-04-08).
 - **Task Maint.2 (Fix Agentkit Imports & Tests):** **Partially Completed (2025-04-08)**. Fixed various issues. **Blocked by persistent `ModuleNotFoundError` for `agentkit.core.interfaces.llm_client` during test collection.** Task paused.
 - **Phase 5 Deferred:** Documentation tasks (5.2-5.5) remain deferred.
@@ -37,7 +37,16 @@
     - Fixed `TypeError` by implementing missing `check_permissions` method in `DefaultSecurityManager` in `ops_core/scheduler/engine.py`.
     - Patched `get_llm_client` in E2E tests (`test_e2e_workflow.py`) to prevent `ValueError` due to missing API keys during testing.
     - Ran `tox -r`. **Failed** with `TypeError: ReActPlanner.__init__() got an unexpected keyword argument 'model_name'` originating from `ops_core/scheduler/engine.py` during planner instantiation.
-    - **Status:** Task 2.12 verification is **Partially Completed - Blocked by ReActPlanner TypeError**.
+    - Fixed `TypeError: ReActPlanner.__init__() got an unexpected keyword argument 'model_name'` by removing the argument in `ops_core/scheduler/engine.py`.
+    - Fixed subsequent E2E test failures (`TypeError: llm_client must be an instance of BaseLlmClient`, `AttributeError: Mock object has no attribute 'is_available'`, `NameError: name 'BaseLlmClient' is not defined`, `TypeError: object dict can't be used in 'await' expression`, `AttributeError: Mock object has no attribute 'memory'`, `AssertionError` on result structure) by correcting mock setup in `ops_core/tests/integration/test_e2e_workflow.py`.
+    - Ran `cd ops_core && tox -r`. **Succeeded (104 tests passed).**
+    - **Status:** Task 2.12 verification is **Completed (2025-04-08)**.
+- **Attempted Task Maint.2 Verification (Current Session):**
+    - Ran `pytest agentkit/agentkit/tests`.
+    - **Failed** with multiple `ModuleNotFoundError` errors during collection, including the persistent `No module named 'agentkit.core.interfaces.llm_client'`.
+    - Verified `agentkit/agentkit/core/interfaces/__init__.py` exists.
+    - Read `agentkit/pyproject.toml` - configuration seems correct (`where = ["agentkit"]`).
+    - **Status:** Task Maint.2 remains **Partially Completed - Blocked by ModuleNotFoundError**. Next step is to try running pytest with explicit PYTHONPATH.
 
 ## Recent Activities (Previous Session - 2025-04-08 Morning)
 - **Attempted Task Maint.2 Verification:**
