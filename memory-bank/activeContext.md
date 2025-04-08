@@ -97,6 +97,7 @@
     - Fixed test assertions related to `McpError` attributes (`data`, `message`, `code`).
     - Verified all 105 `ops-core` tests pass via `tox -r`.
     - Updated `TASK.md`.
+- **Added Maintenance Task Maint.8:** Added task to revisit Dramatiq integration testing challenges (2025-04-08).
 
 ## Recent Activities (Previous Session - 2025-04-08 Morning)
 - **Attempted Task Maint.2 Verification:**

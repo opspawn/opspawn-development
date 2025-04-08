@@ -285,6 +285,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
     *Description:* Investigate and resolve the persistent mocking issue in `agentkit/agentkit/tests/llm_clients/test_google_client.py::test_google_client_generate_success`. Remove the `@pytest.mark.xfail` marker.
     *Dependencies:* Task Maint.3
 
+- [ ] **Task Maint.8: Revisit Dramatiq Integration Testing** `(Added 2025-04-08)`
+    *Description:* Investigate and attempt to improve the integration testing strategy for the `execute_agent_task_actor` in `ops_core/tests/integration/test_async_workflow.py`, aiming to verify internal actor logic more directly than the current `actor.send` patching workaround (Task 4.1.1). Explore solutions for dependency injection challenges with `StubBroker`.
+    *Dependencies:* Task 3.4, Task 4.1.1
+
 - [x] **Task 4.2: End-to-End Integration Testing** `(Completed 2025-04-06)`
   *Description:* Develop comprehensive integration tests to simulate complete workflows from scheduling to agent task execution.
   *Dependencies:* Task 3.5, Task 4.1.1
