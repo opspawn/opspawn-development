@@ -44,11 +44,11 @@
     - Task Maint.1: Test warnings fixed.
     - Task Maint.2: Agentkit import/test fixes attempted, blocked by persistent import error (Partially Completed 2025-04-08).
 
-## What Works (As of 2025-04-08 ~9:45 AM)
+## What Works (As of 2025-04-08 ~11:00 AM)
 - **`ops-core`:**
     - Core functionality (Scheduler, Store, Models, APIs, gRPC, MCP Client/Config, Async Messaging) implemented and tested (as of Tasks 2.1, 3.x, 4.x, MCP.x completion dates).
-    - LLM integration (Task 2.12) implemented, including switch to `google-genai` SDK. **Verification via `tox` is pending (interrupted).**
-    - Import errors related to `BaseMetadataStore` and `broker` fixed (2025-04-08).
+    - LLM integration (Task 2.12) implemented, including switch to `google-genai` SDK.
+    - Test fixes applied for various import errors, attribute errors, and assertion mismatches encountered during `tox` runs (2025-04-08).
 - **`agentkit`:**
     - Core components (Agent, Memory, Planner, Tools, Interfaces) reimplemented (Tasks 2.2-2.4).
     - LLM Clients (OpenAI, Anthropic, Google, OpenRouter) implemented (Tasks 2.6-2.9). Google client refactored for `google-genai` SDK (2025-04-08).
@@ -59,25 +59,27 @@
 - **Testing:** Load testing setup complete (Task 4.3). Security/Error handling tests added (Task 4.4). Testing docs created (Task 4.5). API docs enhanced (Task 5.1).
 
 ## What's Left to Build (Immediate Focus)
-- **Verify `ops-core` Tests:** Complete the interrupted `cd ops_core && tox -r` run to ensure tests pass after switching to `google-genai` and fixing recent import errors.
-- **Diagnose/Fix `agentkit` Import Issue:** Resolve the persistent `ModuleNotFoundError` blocking Task Maint.2 completion. This likely requires deeper investigation into the environment or build process.
+- **Fix `ops-core` Test Failures:** Resolve the remaining `TypeError: ReActPlanner.__init__() got an unexpected keyword argument 'model_name'` blocking Task 2.12 verification.
+- **Verify `ops-core` Tests:** Successfully run `cd ops_core && tox -r`.
+- **Diagnose/Fix `agentkit` Import Issue:** Resolve the persistent `ModuleNotFoundError` blocking Task Maint.2 completion.
 - **Complete Task Maint.2:** Successfully run `pytest agentkit/agentkit/tests`.
 - **Task MCP.5 (Blocked):** Enhance `agentkit` Planner/Agent (Optional).
 
 ## What's Left to Build (High-Level from `TASK.md`)
-- **Phase 2:** Core Module Reimplementation (Tasks 2.1-2.4), LLM Integration (Tasks 2.5-2.12).
+- **Phase 2:** Core Module Reimplementation (Tasks 2.1-2.4), LLM Integration (Tasks 2.5-2.12). (Task 2.12 verification pending).
 - **Phase 3:** Integration & Interface Development (Tasks 3.1-3.5, MCP Tasks). (Currently Blocked/Partially Blocked)
 - **Phase 4:** Testing & Validation (Tasks 4.1-4.5). (Completed based on assumed state, may need re-validation)
 - **Phase 5:** Documentation & Finalization (Tasks 5.1-5.5). (Task 5.1 Done, Rest Deferred)
 
 ## Known Issues / Blockers
+- **Ops-Core Test Status:** Verification run (`tox -r`) failed due to `TypeError: ReActPlanner.__init__() got an unexpected keyword argument 'model_name'` (2025-04-08).
 - **Agentkit Test Status:** Blocked by persistent `ModuleNotFoundError: No module named 'agentkit.core.interfaces.llm_client'` during test collection. Root cause unknown, likely environmental. (Task Maint.2 Paused).
-- **Ops-Core Test Status:** Verification run (`tox -r`) after switching to `google-genai` SDK and fixing import errors was interrupted before completion. Status unknown.
 - `InMemoryMetadataStore` (Reimplemented) is not persistent or thread-safe (MVP limitation).
 - CI workflows currently lack linting/type checking steps (commented out).
 - Integration testing of Dramatiq actor dependencies remains challenging (`memory-bank/integration_test_challenges.md`).
 
 ## Evolution of Project Decisions
+- **Fixed `ops-core` Test Errors (2025-04-08):** Addressed multiple issues found during `tox` runs: missing actor definition, incorrect decorator usage, missing class definition, incorrect `__init__` signature, incorrect attribute access in tests, incorrect mock call assertions, missing abstract method implementation, patched LLM client getter in E2E tests.
 - **Switched Google SDK (2025-04-08):** Changed from deprecated `google-generativeai` to recommended `google-genai` in both `agentkit` and `ops-core` to resolve `protobuf` compatibility errors during `tox` runs. Refactored Google client and tests in `agentkit`.
 - **Fixed `ops-core` Imports (2025-04-08):** Resolved `ImportError` for `BaseMetadataStore` and `broker` in `ops-core` scheduler engine.
 - **Troubleshot `agentkit` Imports (2025-04-08):** Exhausted standard methods (cache clearing, venv recreation, import changes, file renaming, PYTHONPATH) attempting to fix persistent `ModuleNotFoundError` during `agentkit` test collection. Paused Task Maint.2.

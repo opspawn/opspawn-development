@@ -12,7 +12,34 @@
 - **Task Maint.2 (Fix Agentkit Imports & Tests):** **Partially Completed (2025-04-08)**. Fixed various issues. **Blocked by persistent `ModuleNotFoundError` for `agentkit.core.interfaces.llm_client` during test collection.** Task paused.
 - **Phase 5 Deferred:** Documentation tasks (5.2-5.5) remain deferred.
 
-## Recent Activities (Current Session - 2025-04-08)
+## Recent Activities (Current Session - 2025-04-08 Afternoon)
+- **Attempted `ops-core` Verification (Task 2.12):**
+    - Ran `cd ops_core && tox -r` to verify tests after switching to `google-genai` SDK and fixing initial import errors.
+    - Encountered `ImportError: cannot import name 'execute_agent_task_actor'`.
+    - Fixed by adding missing `@broker.actor` definition in `ops_core/scheduler/engine.py`.
+    - Ran `tox -r`. Encountered `AttributeError: 'RabbitmqBroker' object has no attribute 'actor'`.
+    - Fixed by changing decorator to `@dramatiq.actor` in `ops_core/scheduler/engine.py`.
+    - Ran `tox -r`. Encountered `ValueError: The following actor options are undefined: store_results`.
+    - Fixed by removing `store_results=False` from decorator in `ops_core/scheduler/engine.py`.
+    - Ran `tox -r`. Encountered `ImportError: cannot import name 'InMemoryScheduler'`.
+    - Fixed by adding missing `InMemoryScheduler` class definition in `ops_core/scheduler/engine.py`.
+    - Ran `tox -r`. Encountered `TypeError: InMemoryScheduler.__init__() got an unexpected keyword argument 'mcp_client'`.
+    - Fixed by updating `InMemoryScheduler.__init__` to accept optional `mcp_client`.
+    - Ran `tox -r`. Encountered `AttributeError: 'InMemoryScheduler' object has no attribute '_metadata_store'` in gRPC tests (`test_task_servicer.py`).
+    - Fixed by updating `TaskServicer.__init__` to use `scheduler.metadata_store`.
+    - Ran `tox -r`. Encountered `AssertionError` in integration tests (`test_api_scheduler_integration.py`, `test_async_workflow.py`) due to incorrect mock call signature for `execute_agent_task_actor.send`.
+    - Fixed assertions to use keyword arguments.
+    - Ran `tox -r`. Encountered `TypeError: _run_agent_task_logic() takes 3 positional arguments but 4 were given` in E2E tests (`test_e2e_workflow.py`).
+    - Fixed calls to `_run_agent_task_logic` to pass correct arguments.
+    - Ran `tox -r`. Encountered `AttributeError: Mock object has no attribute '_metadata_store'` in gRPC test assertions.
+    - Fixed assertions in `test_task_servicer.py` to use public `metadata_store`.
+    - Ran `tox -r`. Encountered `AssertionError: Expected 'Agent' to have been called once. Called 0 times.` in E2E tests, caused by underlying `TypeError: Can't instantiate abstract class DefaultSecurityManager...`.
+    - Fixed `TypeError` by implementing missing `check_permissions` method in `DefaultSecurityManager` in `ops_core/scheduler/engine.py`.
+    - Patched `get_llm_client` in E2E tests (`test_e2e_workflow.py`) to prevent `ValueError` due to missing API keys during testing.
+    - Ran `tox -r`. **Failed** with `TypeError: ReActPlanner.__init__() got an unexpected keyword argument 'model_name'` originating from `ops_core/scheduler/engine.py` during planner instantiation.
+    - **Status:** Task 2.12 verification is **Partially Completed - Blocked by ReActPlanner TypeError**.
+
+## Recent Activities (Previous Session - 2025-04-08 Morning)
 - **Attempted Task Maint.2 Verification:**
     - Ran `pytest agentkit/agentkit/tests` multiple times.
     - Encountered persistent `ModuleNotFoundError: No module named 'agentkit.core.interfaces.llm_client'` during test collection.
