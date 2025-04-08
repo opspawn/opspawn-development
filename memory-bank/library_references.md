@@ -39,10 +39,16 @@ This file contains links to documentation and version information for key extern
 - **GitHub:** [https://github.com/anthropics/anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python)
 - **PyPI:** [https://pypi.org/project/anthropic/](https://pypi.org/project/anthropic/)
 
-### Google Gemini
-- **Official Documentation:** [https://ai.google.dev/gemini-api/docs/sdks](https://ai.google.dev/gemini-api/docs/sdks)
-- **Python SDK Docs:** [https://googleapis.github.io/python-genai/](https://googleapis.github.io/python-genai/)
+### Google Gemini (New SDK: google-genai)
+- **Official Documentation:** [https://cloud.google.com/vertex-ai/generative-ai/docs/sdks/overview](https://cloud.google.com/vertex-ai/generative-ai/docs/sdks/overview)
+- **GitHub:** [https://github.com/googleapis/python-genai](https://github.com/googleapis/python-genai)
+- **PyPI:** [https://pypi.org/project/google-genai/](https://pypi.org/project/google-genai/)
+- **Note:** Replaces the deprecated `google-generativeai` package.
+
+### Google Gemini (Deprecated SDK: google-generativeai)
+- **Status:** Deprecated as of ~April 2025. Use `google-genai` instead.
 - **PyPI:** [https://pypi.org/project/google-generativeai/](https://pypi.org/project/google-generativeai/)
+- **Known Issues:** Potential import errors related to protobuf versions (e.g., `AttributeError: module 'proto' has no attribute 'module'`).
 
 ### OpenRouter
 - **Official Documentation:** [https://openrouter.ai/docs/quickstart](https://openrouter.ai/docs/quickstart)

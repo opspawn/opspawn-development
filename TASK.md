@@ -185,7 +185,7 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 - [x] **Task 2.12: Implement LLM Configuration & Instantiation in `ops-core`** `(Completed 2025-04-08)`
   *Description:* Update `ops_core/scheduler/engine.py` (`_run_agent_task_logic`) to read environment variables (`AGENTKIT_LLM_PROVIDER`, `AGENTKIT_LLM_MODEL`), instantiate the correct `BaseLlmClient` and `BasePlanner` implementations from `agentkit`, and pass them to the `Agent` constructor.
   *Dependencies:* Task 2.11, Task 2.6-2.10 (Clients/Planner implementations)
-  *Comments:* Added `openai`, `google-generativeai` dependencies to `ops_core/pyproject.toml`. Implemented `get_llm_client` and `get_planner` helper functions in `ops_core/scheduler/engine.py` using env vars. Updated `_run_agent_task_logic` to use these helpers and inject the planner into the `Agent`.
+  *Comments:* Added LLM dependencies to `ops_core/pyproject.toml`. Implemented `get_llm_client` and `get_planner` helper functions in `ops_core/scheduler/engine.py` using env vars. Updated `_run_agent_task_logic` to use these helpers and inject the planner into the `Agent`. **Switched from `google-generativeai` to `google-genai` SDK in both `ops-core` and `agentkit` dependencies (2025-04-08) to resolve `protobuf` compatibility issues.** Fixed subsequent import errors in `ops-core` (`BaseMetadataStore`, `broker`). **Verification run (`tox -r`) interrupted before completion (2025-04-08).**
 
 ### Phase 3: Integration & Interface Development
 
@@ -263,7 +263,7 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 - [ ] **Task Maint.2: Fix Agentkit Imports & Tests** `(Partially Completed 2025-04-08)`
   *Description:* Resolve import errors, file location issues, and dependency problems preventing `agentkit` tests from running correctly after Phase 2 reimplementation and LLM integration.
   *Dependencies:* Tasks 2.1-2.12
-  *Comments:* Fixed circular imports, added missing class definitions (`Plan`, `PlanStep`, `ToolRegistrationError`), moved misplaced source files (`llm_clients`, `interfaces/llm_client.py`, `planning/*`) to `agentkit/agentkit/`, recreated `.venv`, installed dependencies, fixed Pydantic error in `test_react_planner.py`. **Final test run (`pytest tests`) was not performed due to context reset request.**
+  *Comments:* Fixed circular imports, added missing class definitions, moved misplaced source files, recreated `.venv`, installed dependencies, fixed Pydantic error. **Encountered persistent `ModuleNotFoundError: No module named 'agentkit.core.interfaces.llm_client'` during `pytest agentkit/agentkit/tests`. Extensive troubleshooting (cache clearing, venv recreation, import changes, file renaming, PYTHONPATH) failed to resolve. Issue seems environmental, preventing correct reading of `agentkit/core/interfaces/__init__.py`. Task paused.** Switched Google client to `google-genai` SDK (see Task 2.12 comments). Moved `tests/llm_clients` to `agentkit/agentkit/tests/`.
 
 - [x] **Task 4.2: End-to-End Integration Testing** `(Completed 2025-04-06)`
   *Description:* Develop comprehensive integration tests to simulate complete workflows from scheduling to agent task execution.

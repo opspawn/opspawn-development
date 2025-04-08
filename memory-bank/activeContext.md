@@ -6,29 +6,33 @@
 - **Task 2.3 (Reimplementation: Agentkit Dynamic Tool Integration):** **Completed (2025-04-08)**. Created tool schemas, registry, safe execution, tests, and integrated into Agent.
 - **Task 2.4 (Reimplementation: Agentkit Internal Interfaces):** **Completed (2025-04-08)**. Interfaces created and verified during Tasks 2.2 & 2.3.
 - **Task 2.11 (Integrate LLM Client & Planner into Agent Core & Update Tests):** **Completed (2025-04-08)**. Updated agent tests for tool call flow.
-- **Task 2.12 (Implement LLM Configuration & Instantiation in `ops-core`):** **Completed (2025-04-08)**. Added dependencies, implemented config/instantiation logic in scheduler.
-- **Phase 2: Core Module Reimplementation:** Core MVP components (2.1-2.4) and LLM integration (2.11-2.12) complete.
-- **Phase 2 LLM Tasks (2.5-2.10):** Files created. Integration complete. Files moved to correct `agentkit/agentkit/` subdirectories (2025-04-08).
-- **Task Maint.2 (Fix Agentkit Imports & Tests):** **Partially Completed (2025-04-08)**. Fixed circular imports, added missing definitions (`Plan`, `PlanStep`, `ToolRegistrationError`), moved misplaced source files, recreated `.venv`, installed dependencies, fixed Pydantic error. Final test run pending.
+- **Task 2.12 (Implement LLM Configuration & Instantiation in `ops-core`):** **Completed (2025-04-08)**. Added dependencies, implemented config/instantiation logic in scheduler. **Switched to `google-genai` SDK (2025-04-08). Verification pending.**
+- **Phase 2: Core Module Reimplementation:** Core MVP components (2.1-2.4) and LLM integration (2.11-2.12) implementation complete. Verification pending for 2.12.
+- **Phase 2 LLM Tasks (2.5-2.10):** Files created, integrated, moved to correct `agentkit/agentkit/` subdirectories. Google client refactored for `google-genai` SDK (2025-04-08).
+- **Task Maint.2 (Fix Agentkit Imports & Tests):** **Partially Completed (2025-04-08)**. Fixed various issues. **Blocked by persistent `ModuleNotFoundError` for `agentkit.core.interfaces.llm_client` during test collection.** Task paused.
 - **Phase 5 Deferred:** Documentation tasks (5.2-5.5) remain deferred.
 
 ## Recent Activities (Current Session - 2025-04-08)
-- **Partially Completed Task Maint.2 (Fix Agentkit Imports & Tests):**
-    - Identified and fixed circular import between `tool_manager.py` and `registry.py` using `TYPE_CHECKING` and string forward references.
-    - Identified and fixed missing class definitions: Added `Plan`, `PlanStep` to `core/interfaces/planner.py`; added `ToolRegistrationError` to `tools/registry.py`.
-    - Identified and moved misplaced source files:
-        - Moved `agentkit/llm_clients/*` to `agentkit/agentkit/llm_clients/`.
-        - Moved `agentkit/core/interfaces/llm_client.py` to `agentkit/agentkit/core/interfaces/`.
-        - Moved `agentkit/planning/*` to `agentkit/agentkit/planning/`.
-    - Identified and fixed broken virtual environment (`agentkit/.venv`) by deleting and recreating it.
-    - Installed dependencies and `agentkit` (editable) into the new virtual environment using `pip install -e ".[test]"`.
-    - Identified and fixed `pydantic.ValidationError` in `tests/planning/test_react_planner.py` by passing the model class directly to `ToolSpec` instead of `.model_json_schema()`.
-    - Attempted final test run (`pytest tests` within venv), but was denied by user before completion. Status remains partially complete.
-- **Completed Task 2.12 LLM Configuration & Instantiation:**
-    - Added `openai`, `google-generativeai` dependencies to `ops_core/pyproject.toml`.
-    - Implemented `get_llm_client` and `get_planner` helper functions in `ops_core/ops_core/scheduler/engine.py` using environment variables (`AGENTKIT_LLM_PROVIDER`, `AGENTKIT_LLM_MODEL`, `AGENTKIT_PLANNER_TYPE`).
-    - Updated `_run_agent_task_logic` in `ops_core/ops_core/scheduler/engine.py` to use these helpers and inject the configured planner into the `Agent`.
-    - Updated `TASK.md`.
+- **Attempted Task Maint.2 Verification:**
+    - Ran `pytest agentkit/agentkit/tests` multiple times.
+    - Encountered persistent `ModuleNotFoundError: No module named 'agentkit.core.interfaces.llm_client'` during test collection.
+    - Troubleshooting steps included: verifying file existence (`llm_client.py`, `__init__.py` files), checking/correcting imports (relative, absolute), clearing `__pycache__`, clearing `.pytest_cache`, reinstalling `agentkit` editable, recreating `.venv`, setting `PYTHONPATH`, renaming `llm_client.py`, commenting out imports in `interfaces/__init__.py`.
+    - The error consistently pointed to the relative import line in `interfaces/__init__.py`, even when the file content was confirmed changed.
+    - Conclusion: Likely an environmental issue preventing the correct file version from being read. Task Maint.2 paused.
+- **Attempted `ops-core` Verification:**
+    - Ran `cd ops_core && tox`. Encountered `AttributeError: module 'proto' has no attribute 'module'` originating from `google-generativeai` dependency.
+    - Identified `google-generativeai` as deprecated; recommended SDK is `google-genai`.
+    - Updated `library_references.md`.
+    - Updated `agentkit/pyproject.toml` and `ops_core/pyproject.toml` to use `google-genai` and removed `protobuf` pin.
+    - Refactored `agentkit/llm_clients/google_client.py` and `agentkit/tests/llm_clients/test_google_client.py` for the new SDK.
+    - Moved `agentkit/tests/llm_clients` directory to `agentkit/agentkit/tests/`.
+    - Ran `cd ops_core && tox -r`. Encountered `ImportError: cannot import name 'BaseMetadataStore'`.
+    - Fixed `ImportError` by removing `BaseMetadataStore` from import in `ops_core/scheduler/engine.py`.
+    - Ran `cd ops_core && tox -r`. Encountered `ImportError: cannot import name 'broker'`.
+    - Fixed `ImportError` by assigning the broker instance to `broker` variable in `ops_core/tasks/broker.py`.
+    - Attempted final verification `cd ops_core && tox -r`, but command was interrupted before completion. Status unknown.
+- **Documentation Updates:**
+    - Updated `TASK.md` to reflect the status of Task Maint.2 and Task 2.12.
 - **Completed Task 2.11 Integration & Test Update:**
     - Verified `Agent` core already uses injected planner.
     - Updated `agentkit/tests/core/test_agent.py` to include tests for successful and failed tool call scenarios (`test_agent_run_tool_call`, `test_agent_run_tool_call_failure`).

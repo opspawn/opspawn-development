@@ -42,23 +42,27 @@
     - Task 5.1: API documentation sources enhanced.
 - **Maintenance:**
     - Task Maint.1: Test warnings fixed.
-    - Task Maint.2: Agentkit import/test fixes (Partially Completed 2025-04-08).
+    - Task Maint.2: Agentkit import/test fixes attempted, blocked by persistent import error (Partially Completed 2025-04-08).
 
-## What Works (As of 2025-04-08 ~6:34 AM)
-- **`ops-core`:** All 104 tests passed via `tox` after Task 2.1 reimplementation. Subsequent changes (LLM integration in Task 2.12) have not been re-tested with `tox`.
+## What Works (As of 2025-04-08 ~9:45 AM)
+- **`ops-core`:**
+    - Core functionality (Scheduler, Store, Models, APIs, gRPC, MCP Client/Config, Async Messaging) implemented and tested (as of Tasks 2.1, 3.x, 4.x, MCP.x completion dates).
+    - LLM integration (Task 2.12) implemented, including switch to `google-genai` SDK. **Verification via `tox` is pending (interrupted).**
+    - Import errors related to `BaseMetadataStore` and `broker` fixed (2025-04-08).
 - **`agentkit`:**
     - Core components (Agent, Memory, Planner, Tools, Interfaces) reimplemented (Tasks 2.2-2.4).
-    - LLM Clients (OpenAI, Anthropic, Google, OpenRouter) implemented (Tasks 2.6-2.9).
+    - LLM Clients (OpenAI, Anthropic, Google, OpenRouter) implemented (Tasks 2.6-2.9). Google client refactored for `google-genai` SDK (2025-04-08).
     - ReAct Planner implemented (Task 2.10).
-    - LLM integration into Agent/Ops-core completed (Tasks 2.11-2.12).
-    - **Import/Structure Fixes (Task Maint.2):** Circular imports resolved, missing definitions added, source files moved to correct `agentkit/agentkit/` subdirs, venv recreated, dependencies installed, Pydantic error fixed. **Test execution is pending final verification.**
-- **Integration:** Async messaging (Dramatiq/RabbitMQ) implemented and verified via unit/integration tests (Task 3.4). MCP client/config implemented (MCP.1, MCP.2).
-- **Testing:** Load testing setup complete (Task 4.3). Security/Error handling tests added for existing components (Task 4.4). Testing docs created (Task 4.5). API docs enhanced (Task 5.1).
+    - LLM integration into Agent core completed (Task 2.11).
+    - **Test Status:** Blocked. Persistent `ModuleNotFoundError` prevents test collection (Task Maint.2).
+- **Integration:** Async messaging (Dramatiq/RabbitMQ) implemented and verified (Task 3.4). MCP client/config implemented (MCP.1, MCP.2).
+- **Testing:** Load testing setup complete (Task 4.3). Security/Error handling tests added (Task 4.4). Testing docs created (Task 4.5). API docs enhanced (Task 5.1).
 
 ## What's Left to Build (Immediate Focus)
-- **Complete Task Maint.2:** Run `pytest tests` in `agentkit/.venv` to verify all fixes and ensure tests pass.
-- **Verify `ops-core` Tests:** Run `cd ops_core && tox` to ensure no regressions after Task 2.12.
-- **Task MCP.5 (Blocked):** Enhance `agentkit` Planner/Agent (Optional). (Next Task - Optional)
+- **Verify `ops-core` Tests:** Complete the interrupted `cd ops_core && tox -r` run to ensure tests pass after switching to `google-genai` and fixing recent import errors.
+- **Diagnose/Fix `agentkit` Import Issue:** Resolve the persistent `ModuleNotFoundError` blocking Task Maint.2 completion. This likely requires deeper investigation into the environment or build process.
+- **Complete Task Maint.2:** Successfully run `pytest agentkit/agentkit/tests`.
+- **Task MCP.5 (Blocked):** Enhance `agentkit` Planner/Agent (Optional).
 
 ## What's Left to Build (High-Level from `TASK.md`)
 - **Phase 2:** Core Module Reimplementation (Tasks 2.1-2.4), LLM Integration (Tasks 2.5-2.12).
@@ -67,17 +71,18 @@
 - **Phase 5:** Documentation & Finalization (Tasks 5.1-5.5). (Task 5.1 Done, Rest Deferred)
 
 ## Known Issues / Blockers
-- **Agentkit Test Status:** Final verification run of `agentkit` tests was interrupted before completion (Task Maint.2). Status unknown.
-- **Ops-Core Test Status:** `ops-core` tests (`tox`) have not been run since Task 2.12 (LLM integration) was completed. Status unknown.
+- **Agentkit Test Status:** Blocked by persistent `ModuleNotFoundError: No module named 'agentkit.core.interfaces.llm_client'` during test collection. Root cause unknown, likely environmental. (Task Maint.2 Paused).
+- **Ops-Core Test Status:** Verification run (`tox -r`) after switching to `google-genai` SDK and fixing import errors was interrupted before completion. Status unknown.
 - `InMemoryMetadataStore` (Reimplemented) is not persistent or thread-safe (MVP limitation).
 - CI workflows currently lack linting/type checking steps (commented out).
 - Integration testing of Dramatiq actor dependencies remains challenging (`memory-bank/integration_test_challenges.md`).
-- **File Structure Correction (2025-04-08):** Discovered that LLM client, planner, and interface files were created outside the main `agentkit/agentkit/` source directory. Moved files to correct locations during Task Maint.2.
-- **Virtual Environment Recreation (2025-04-08):** Recreated `agentkit/.venv` due to "bad interpreter" error during Task Maint.2.
 
 ## Evolution of Project Decisions
-- **Task Maint.2 Fixes (2025-04-08):** Addressed circular imports, missing definitions, file locations, venv issues, dependencies, and Pydantic errors to allow `agentkit` tests to be collected and potentially pass.
-- **Task 2.12 LLM Config & Instantiation (2025-04-08):** Added dependencies to `ops-core`, implemented LLM/Planner instantiation logic in scheduler based on env vars. Updated `TASK.md`.
+- **Switched Google SDK (2025-04-08):** Changed from deprecated `google-generativeai` to recommended `google-genai` in both `agentkit` and `ops-core` to resolve `protobuf` compatibility errors during `tox` runs. Refactored Google client and tests in `agentkit`.
+- **Fixed `ops-core` Imports (2025-04-08):** Resolved `ImportError` for `BaseMetadataStore` and `broker` in `ops-core` scheduler engine.
+- **Troubleshot `agentkit` Imports (2025-04-08):** Exhausted standard methods (cache clearing, venv recreation, import changes, file renaming, PYTHONPATH) attempting to fix persistent `ModuleNotFoundError` during `agentkit` test collection. Paused Task Maint.2.
+- **Task Maint.2 Fixes (Prior - 2025-04-08):** Addressed circular imports, missing definitions, file locations, venv issues, dependencies, and Pydantic errors. Moved test files (`tests/llm_clients`) to match source structure.
+- **Task 2.12 LLM Config & Instantiation (Prior - 2025-04-08):** Added dependencies to `ops-core`, implemented LLM/Planner instantiation logic in scheduler based on env vars. Updated `TASK.md`.
 - **Task 2.11 Integration & Test Update (2025-04-08):** Updated agent tests for tool call flow. Updated `TASK.md`.
 - **Task 2.3 Reimplementation (2025-04-08):** Reimplemented `agentkit` tool integration (`schemas`, `registry`, `execution`), tests, and integrated into `Agent`. Updated `TASK.md`.
 - **Task 2.4 Reimplementation (2025-04-08):** Interfaces created during Task 2.2, implementation/verification completed during Tasks 2.2 & 2.3. Updated `TASK.md`.
