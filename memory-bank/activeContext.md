@@ -117,6 +117,18 @@
     - Updated `memory-bank/integration_test_challenges.md` with findings.
     - Updated `TASK.md` to reflect blocked status.
     - **Status:** Task Maint.8 remains **Partially Completed & Blocked**. **Decision (2025-04-08 7:11 PM):** Pivoting from direct debugging to a targeted rebuild of the async workflow components (actor logic, scheduler `submit_task`) and associated tests (`test_async_workflow.py`) due to persistent, unexplained errors.
+- **Completed Task Maint.8 Rebuild Phase 1 (Isolation) (Current Session - 2025-04-08 Evening):**
+    - Renamed `ops_core/tests/integration/test_async_workflow.py` to `ops_core/tests/integration/test_async_workflow_old.py`.
+    - Commented out `execute_agent_task_actor.send()` call in `ops_core/ops_core/scheduler/engine.py`.
+    - Commented out `_run_agent_task_logic` function definition in `ops_core/ops_core/scheduler/engine.py`.
+    - Commented out `execute_agent_task_actor` function definition in `ops_core/ops_core/scheduler/engine.py`.
+    - Commented out actor import and `broker.declare_queue` call in `ops_core/tests/conftest.py`.
+    - Commented out actor import, `_run_agent_task_logic` call, actor patch in fixture, and related assertions in `ops_core/tests/integration/test_e2e_workflow.py`. Added `logging` import.
+    - Commented out actor patch and `send` assertions in `ops_core/tests/integration/test_api_scheduler_integration.py`.
+    - Commented out actor import, usage, and removed incorrect patch in `ops_core/tests/integration/test_async_workflow_old.py`. Added `pytest.skip`.
+    - Commented out actor patch and `send` assertions in `ops_core/tests/scheduler/test_engine.py`.
+    - Verified isolation by running `cd ops_core && tox -r`. Result: 102 passed, 3 skipped.
+    - **Status:** Phase 1 (Isolation) complete. Ready for Phase 2 (Rebuild).
 
 ## Recent Activities (Previous Session - 2025-04-08 Morning)
 - **Attempted Task Maint.2 Verification:**
