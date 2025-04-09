@@ -1,11 +1,11 @@
 # Progress: Opspawn Core Foundation (Task 5.2 Started)
 
-## Current Status (Updated 2025-04-09 5:10 AM)
-- **Phase:** Phase 5 (Documentation) partially completed. Moving to Phase 6.
-- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Task 5.1 completed. Maintenance tasks Maint.1-Maint.8 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. New Phases 6 (E2E Enablement) and 7 (Live E2E Testing) added. Task 6.1 (Persistent Store) implementation and unit tests largely complete.
-- **Current Task:** Phase 6, Task 6.1 (Implement Persistent Metadata Store) - Verifying tests and preparing for integration (Task 6.2).
+## Current Status (Updated 2025-04-09 9:44 AM)
+- **Phase:** Phase 6 (E2E Test Enablement).
+- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Task 5.1 completed. Maintenance tasks Maint.1-Maint.9 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Task 6.1 (Persistent Store) implementation, DB setup, and migrations completed.
+- **Current Task:** Phase 6, Task 6.1 (Implement Persistent Metadata Store) - Ready to verify tests (`test_sql_store.py`).
 
-## What Works (As of 2025-04-09 5:46 AM)
+## What Works (As of 2025-04-09 9:44 AM)
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented.
 - **Task 2.2 (Reimplemented):** `agentkit` core agent MVP reimplemented (`ShortTermMemory`, `PlaceholderPlanner`, `Agent`, interfaces, tests).
 - **Task 2.3 (Reimplemented):** `agentkit` dynamic tool integration reimplemented (`schemas`, `registry`, `execution`, tests, agent integration).
@@ -63,12 +63,19 @@
 - **Integration:** Async messaging (Dramatiq/RabbitMQ) implemented (Task 3.4). MCP client/config implemented (MCP.1, MCP.2). MCP Proxy Tool injection logic implemented and tested (MCP.3, MCP.4, MCP.6). Integration between `ops-core` and `agentkit` verified via passing `ops-core` `tox` tests (re-verified after Task Maint.3).
 - **Testing:** Load testing setup complete (Task 4.3). Security/Error handling tests added (Task 4.4). Testing docs created (Task 4.5). API docs enhanced (Task 5.1). `ops-core` tests pass (107 passed, 3 skipped) after restoring actor definition, send call, and adding unit tests for actor logic (Maint.8 Phase 2, Steps 1-4). Integration tests in `test_async_workflow.py` verify API -> Broker flow, but full actor execution testing in this file remains blocked by environment issues.
 - **Documentation (Task 5.2 Partial):** Initial explanation documents (`architecture.md`, `ops_core_overview.md`, `agentkit_overview.md`) created and expanded with current system details (2025-04-09).
-- **Persistent Metadata Store (Task 6.1 Partial):** `SqlMetadataStore` implemented (`ops_core/ops_core/metadata/sql_store.py`). Unit tests implemented (`ops_core/tests/metadata/test_sql_store.py`) and DB fixtures added (`ops_core/tests/conftest.py`).
+- **Persistent Metadata Store (Task 6.1 Partial):**
+    - `SqlMetadataStore` implemented (`ops_core/ops_core/metadata/sql_store.py`).
+    - Unit tests implemented (`ops_core/tests/metadata/test_sql_store.py`) and DB fixtures added (`ops_core/tests/conftest.py`).
+    - Docker Compose V2 plugin installed.
+    - `docker-compose.yml` created.
+    - `.env` updated with `DATABASE_URL`.
+    - PostgreSQL container running via `docker compose`.
+    - Alembic migrations applied successfully.
 
 ## What's Left to Build (Revised Plan - 2025-04-08)
 - **Task 5.2:** Update User & Developer Documentation (Partially Completed - Explanations expanded. Further updates deferred to Phase 8).
 - **Phase 6:** E2E Test Enablement
-    - Task 6.1: Implement Persistent Metadata Store (Implementation & Unit Tests Done).
+    - Task 6.1: Implement Persistent Metadata Store (Verify tests `test_sql_store.py`).
     - Task 6.2: Integrate Persistent Store.
     - Task 6.3: Implement Live LLM Integration Tests.
     - Task 6.4: Implement `agentkit` Long-Term Memory MVP (Optional).

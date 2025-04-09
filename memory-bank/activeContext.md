@@ -20,6 +20,26 @@
     - Expanded content in `ops-docs/explanations/ops_core_overview.md` with more detail on component responsibilities (Scheduler, Store, Actor Logic, Config) and the core agent task workflow.
     - Expanded content in `ops-docs/explanations/agentkit_overview.md` with more detail on component implementations (Planner, Memory, Tool Execution, Security Manager, LLM Clients) and the agent run workflow.
     - Updated `TASK.md` to reflect progress on Task 5.2.
+- **Completed Task Maint.9 (Fix create_engine TypeError in SQL Store Tests):** `(Current Session - 2025-04-09)`
+    - Identified `TypeError: Invalid argument(s) 'statement_cache_size' sent to create_engine()` in `tox` output for `test_sql_store.py`.
+    - Added Task Maint.9 to `TASK.md`.
+    - Removed `statement_cache_size=0` argument from `create_async_engine` call in `db_engine` fixture in `ops_core/tests/conftest.py`.
+    - Updated Task Maint.9 status in `TASK.md`.
+- **Progressed Task 6.1 (Implement Persistent Metadata Store):** `(Current Session - 2025-04-09)`
+    - Identified `ConnectionRefusedError` in `test_sql_store.py` tests after fixing Task Maint.9.
+    - Confirmed database setup was needed.
+    - Created `docker-compose.yml` in project root for PostgreSQL service.
+    - Updated `.env` file with `DATABASE_URL`.
+    - Debugged `docker-compose` execution errors (`http+docker` scheme, missing V2 plugin).
+    - Installed Docker Compose V2 plugin to `~/.docker/cli-plugins/`.
+    - Started PostgreSQL container using `docker compose up -d`.
+    - Debugged Alembic migration errors (`ModuleNotFoundError: sqlmodel`, `InvalidPasswordError`, `NameError: sqlmodel`).
+    - Installed `ops_core` editable dependencies (`pip install -e .`).
+    - Updated `ops_core/alembic/env.py` to load `.env` file.
+    - Updated `ops_core/alembic/versions/b810512236e1_initial_task_model.py` to import `sqlmodel`.
+    - Successfully ran `alembic upgrade head` using the correct Python interpreter.
+    - Updated Task 6.1 status and comments in `TASK.md`.
+    - **Skipped final verification step** (running `test_sql_store.py` tests) as requested before context reset.
 
 ## Recent Activities (Previous Session - 2025-04-08 Evening/Night)
 - **Started Task 5.2 (Update User & Developer Documentation):**
