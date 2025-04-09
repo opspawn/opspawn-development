@@ -1,9 +1,9 @@
 # Progress: Opspawn Core Foundation (Phase 4 Completed)
 
-## Current Status (Updated 2025-04-08 6:15 PM)
+## Current Status (Updated 2025-04-08 6:52 PM)
 - **Phase:** Phase 4 Completed. All core functionality and integrations verified.
 - **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Task 5.1 completed. Maintenance tasks Maint.1, Maint.2, Maint.3, Maint.5, Maint.6, Maint.7 completed. Maint.8 partially completed. Phase 5 documentation tasks (5.2-5.5) deferred.
-- **Current Task:** Maint.8 (Blocked by test hanging).
+- **Current Task:** Maint.8 (Blocked by persistent test errors).
 
 ## What Works (As of 2025-04-08 6:15 PM)
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented. All 104 `ops-core` tests pass via `tox`.
@@ -64,7 +64,7 @@
 - **Testing:** Load testing setup complete (Task 4.3). Security/Error handling tests added (Task 4.4). Testing docs created (Task 4.5). API docs enhanced (Task 5.1). Dramatiq integration tests (`test_async_workflow.py`) partially improved (Task Maint.8), but still hang during execution.
 
 ## What's Left to Build (Immediate Focus)
-- **Task Maint.8:** Resolve hanging issue in Dramatiq integration tests (`test_async_workflow.py`).
+- **Task Maint.8:** Resolve persistent `AttributeError` and `AMQPConnectionError` in Dramatiq integration tests (`test_async_workflow.py`). Investigate test environment/patching interactions.
 - **Review Deferred Tasks:** Re-evaluate Phase 5 documentation tasks (5.2-5.5).
 - **(Optional) Live LLM Testing:** Implement basic tests using real API keys.
 
@@ -76,7 +76,7 @@
 ## Known Issues / Blockers
 - `InMemoryMetadataStore` is not persistent or thread-safe (MVP limitation).
 - CI workflows currently lack linting/type checking steps (commented out).
-- Integration testing of Dramatiq actor dependencies (`test_async_workflow.py`) hangs during execution, blocking completion of Task Maint.8.
+- Integration testing of Dramatiq actor dependencies (`test_async_workflow.py`) is blocked by persistent `AttributeError` (gRPC fixture setup) and `AMQPConnectionError` (REST API calls), preventing verification even with simplified actor logic. This blocks completion of Task Maint.8.
 
 ## Evolution of Project Decisions
 - **LLM Client Verification (2025-04-08):** Verified Anthropic client. Refactored Google client and tests for `google-genai` async interface and input structure (Task Maint.3). Confirmed `ops-core` tests still pass.

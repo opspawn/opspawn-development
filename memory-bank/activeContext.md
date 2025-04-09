@@ -109,6 +109,14 @@
     - Attempted diagnostic step (making actor sync) but was interrupted. Reverted code changes back to async state.
     - **Status:** Blocked by test hanging issue. Needs further investigation.
     - Updated `TASK.md` to reflect partial completion.
+- **Attempted Task Maint.8 Debugging (Current Session - 2025-04-08 Evening):**
+    - Simplified actor logic in `ops_core/scheduler/engine.py` by commenting out `agent.run` and `memory.get_context` calls.
+    - Ran tests (`test_async_workflow.py`). The hanging issue was resolved, but new errors appeared: `AttributeError` in `grpc_server` fixture setup and `AMQPConnectionError` in REST tests.
+    - Attempted multiple fixes in `test_async_workflow.py` (correcting fixture attribute access, patching `actor.send`, patching `dramatiq.get_broker`, patching `actor.broker`) using `replace_in_file` and `write_to_file`.
+    - **Result:** The `AttributeError` and `AMQPConnectionError` persisted despite multiple attempts to correct the test file, suggesting deeper issues with the test environment setup or patching strategy effectiveness.
+    - Updated `memory-bank/integration_test_challenges.md` with findings.
+    - Updated `TASK.md` to reflect blocked status.
+    - **Status:** Task Maint.8 remains **Partially Completed & Blocked**.
 
 ## Recent Activities (Previous Session - 2025-04-08 Morning)
 - **Attempted Task Maint.2 Verification:**
