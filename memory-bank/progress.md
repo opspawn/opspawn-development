@@ -3,9 +3,9 @@
 ## Current Status (Updated 2025-04-09 1:54 PM)
 - **Phase:** Phase 6 (E2E Test Enablement).
 - **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Tasks 5.1, 6.1 completed. Maintenance tasks Maint.1-Maint.9 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8.
-- **Current Task:** Phase 6, Task 6.2 (Integrate Persistent Store).
+- **Current Task:** Phase 6, Task 6.2 (Integrate Persistent Store) - Code changes complete, verification blocked. Next: Task B.1 (Investigate Test Environment Issues).
 
-## What Works (As of 2025-04-09 9:44 AM)
+## What Works (As of 2025-04-09 2:30 PM)
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented.
 - **Task 2.2 (Reimplemented):** `agentkit` core agent MVP reimplemented (`ShortTermMemory`, `PlaceholderPlanner`, `Agent`, interfaces, tests).
 - **Task 2.3 (Reimplemented):** `agentkit` dynamic tool integration reimplemented (`schemas`, `registry`, `execution`, tests, agent integration).
@@ -72,6 +72,11 @@
     - PostgreSQL container running via `docker compose`.
     - Alembic migrations applied successfully.
     - `test_sql_store.py` tests verified passing after fixing session management, variable names, enum handling (`native_enum=False`), and JSON serialization issues (2025-04-09).
+- **Persistent Store Integration (Task 6.2 - Code Complete):**
+    - `ops_core.dependencies` updated to provide `SqlMetadataStore` and manage DB sessions.
+    - Dramatiq actor (`scheduler/engine.py`) refactored for independent session management.
+    - API endpoints and gRPC servicer updated to use `BaseMetadataStore` dependency.
+    - Tests (`test_engine.py`, `test_tasks.py`, `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`) refactored to use `db_session` fixture and `SqlMetadataStore`.
 
 ## What's Left to Build (Revised Plan - 2025-04-08)
 - **Task 5.2:** Update User & Developer Documentation (Partially Completed - Explanations expanded. Further updates deferred to Phase 8).
@@ -85,13 +90,14 @@
 - **Phase 8:** Final Documentation Update
     - Task 8.1: Update & Finalize All Documentation (Revisit deferred 5.2-5.5).
 - **Backlog:**
-    - Task B.1: Investigate Test Environment Issues in `test_async_workflow.py`.
+    - Task B.1: Investigate Test Environment Issues (`tox` import errors, `stub_worker` execution).
     - Enhancements 1-5.
 
 ## Known Issues / Blockers
-- `InMemoryMetadataStore` is not persistent or thread-safe (MVP limitation).
+- **`tox` Environment:** Persistent `ModuleNotFoundError` issues occur during test collection when running `tox`, preventing full test suite verification. This seems related to editable installs of `ops_core` and `agentkit`. Debugging moved to Task B.1.
+- `InMemoryMetadataStore` is not persistent or thread-safe (Replaced by `SqlMetadataStore`, but tests using `InMemoryScheduler` still exist).
 - CI workflows currently lack linting/type checking steps (commented out).
-- **Task Maint.8 Resolution:** Original integration tests (`test_async_workflow_old.py`) are skipped. Integration tests in the new `test_async_workflow.py` are marked with `@pytest.mark.skip` due to persistent test environment issues preventing reliable `stub_worker` execution testing. Debugging these test issues moved to backlog (Task B.1). Verification run failed due to new errors in Task 6.1 tests.
+- **Task Maint.8 Resolution:** Original integration tests (`test_async_workflow_old.py`) are skipped. Integration tests in the new `test_async_workflow.py` are marked with `@pytest.mark.skip` due to persistent test environment issues preventing reliable `stub_worker` execution testing. Debugging these test issues moved to backlog (Task B.1).
 
 ## Evolution of Project Decisions
 - **Revised Phasing (2025-04-08):** Decided to prioritize core documentation (Task 5.2), then implement prerequisites for live E2E testing (New Phase 6), perform live E2E testing (New Phase 7), and finally complete the remaining documentation tasks (New Phase 8). Tasks 5.3-5.5 deferred to Phase 8.

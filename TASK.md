@@ -360,10 +360,19 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
   *Dependencies:* Phase 4 Completion
   *Comments:* Requires DB setup (e.g., Docker), schema definition (Alembic migrations), store implementation, and unit tests. `ops_core/ops_core/metadata/sql_store.py` implemented. Unit tests in `ops_core/tests/metadata/test_sql_store.py` implemented and fixtures added to `ops_core/tests/conftest.py`. DB setup and migrations completed. Test failures (`InternalError`, `NameError`, `AttributeError`, `NotSupportedError`, `TypeError`) resolved by fixing session management, variable names, enum handling (`native_enum=False`), and JSON serialization logic. All `test_sql_store.py` tests pass.
 
-- [ ] **Task 6.2: Integrate Persistent Store**
-  *Description:* Update `ops_core.dependencies` and relevant components (API, gRPC, Actor) to use the new persistent store. Update existing tests to handle DB fixtures/setup.
+- [ ] **Task 6.2: Integrate Persistent Store** `(Started 2025-04-09)`
+  *Description:* Update `ops_core` components to use `SqlMetadataStore` instead of `InMemoryMetadataStore`.
+  *Description:* Update `ops_core` components to use `SqlMetadataStore` instead of `InMemoryMetadataStore`.
   *Dependencies:* Task 6.1
-  *Comments:* May require significant test refactoring.
+  *Sub-Tasks:*
+    - [x] **Task 6.2.1:** Update `ops_core/dependencies.py` to provide `SqlMetadataStore` and manage runtime DB sessions. `(Completed 2025-04-09)`
+    - [x] **Task 6.2.2:** Refactor Dramatiq actor (`ops_core/scheduler/engine.py`) for independent session/store management. `(Completed 2025-04-09)`
+    - [x] **Task 6.2.3:** Update `InMemoryScheduler` instantiation to use `SqlMetadataStore`. `(Completed 2025-04-09)`
+    - [x] **Task 6.2.4:** Verify API (`ops_core/api/v1/endpoints/tasks.py`) integration with `SqlMetadataStore`. `(Completed 2025-04-09)`
+    - [x] **Task 6.2.5:** Verify gRPC (`ops_core/grpc_internal/task_servicer.py`) integration with `SqlMetadataStore`. `(Completed 2025-04-09)`
+    - [x] **Task 6.2.6:** Refactor unit/integration tests (`test_engine.py`, `test_tasks.py` (API), `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`) to use DB fixtures (`db_session`). `(Completed 2025-04-09)`
+    - [Blocked] **Task 6.2.7:** Run `tox` to verify all tests pass. `(Blocked by tox/import errors - See Task B.1)`
+  *Comments:* Code changes complete. Final verification blocked by persistent `tox` environment/import resolution issues. Debugging moved to Task B.1.
 
 - [ ] **Task 6.3: Implement Live LLM Integration Tests**
   *Description:* Create specific, marked tests (`@pytest.mark.live`) to verify integration with real LLM APIs using environment variables for keys.
@@ -402,7 +411,7 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 
 ## 4. Backlog / Future Enhancements
 
-- **Task B.1: Investigate Test Environment Issues:** Debug the persistent `AttributeError` and `AMQPConnectionError` in `test_async_workflow.py` when attempting full actor execution tests via `stub_worker`. (Lower priority).
+- **Task B.1: Investigate Test Environment Issues:** Debug persistent `tox` environment/import resolution errors (`ModuleNotFoundError` for `ops_core` or `agentkit` during test collection) and Dramatiq `stub_worker` execution issues in `test_async_workflow.py`. (Medium priority).
 - **Enhancement 1:** Explore advanced multi-agent planning algorithms and cross-agent coordination.
 - **Enhancement 2:** Implement real-time streaming updates in API responses for long-running tasks.
 - **Enhancement 3:** Develop cross-language support for ops-core and agentkit using language-agnostic protocols.

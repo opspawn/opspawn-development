@@ -40,6 +40,16 @@
     - Successfully ran `alembic upgrade head` using the correct Python interpreter.
     - Updated Task 6.1 status and comments in `TASK.md`.
     - **Completed Task 6.1 (2025-04-09):** Verified `test_sql_store.py` tests pass after fixing session management, variable names, enum handling (`native_enum=False`), and JSON serialization issues.
+- **Progressed Task 6.2 (Integrate Persistent Store):** `(Current Session - 2025-04-09 Afternoon)`
+    - Updated `TASK.md` with sub-tasks for Task 6.2.
+    - **Completed Task 6.2.1:** Updated `ops_core/dependencies.py` to provide `SqlMetadataStore` and manage runtime DB sessions via `async_session_factory` and `get_db_session`. Added `fastapi.Depends` import.
+    - **Completed Task 6.2.2:** Refactored Dramatiq actor (`ops_core/scheduler/engine.py`) to create its own session/store instance using `async_session_factory` and close the session in a `finally` block. Updated `_run_agent_task_logic` to accept store/client instances.
+    - **Completed Task 6.2.3:** Updated `InMemoryScheduler.__init__` type hint to accept `BaseMetadataStore`.
+    - **Completed Task 6.2.4:** Refactored API endpoints (`ops_core/api/v1/endpoints/tasks.py`) to remove local dependency functions and use the central `get_metadata_store` and `get_scheduler` from `ops_core.dependencies`. Updated type hints to `BaseMetadataStore`.
+    - **Completed Task 6.2.5:** Refactored gRPC servicer (`ops_core/grpc_internal/task_servicer.py`) `__init__` to accept `BaseMetadataStore` directly.
+    - **Completed Task 6.2.6:** Refactored tests (`test_engine.py`, `test_tasks.py` (API), `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`) to use `db_session` fixture and `SqlMetadataStore` instead of mocks where appropriate. Updated fixtures and assertions. No changes needed for `test_models.py`.
+    - **Blocked Task 6.2.7:** Attempted `tox -r` verification. Encountered persistent `ModuleNotFoundError` during test collection (`conftest.py` -> `scheduler/engine.py` -> `metadata.base` or `agentkit`). Tried adjusting `PYTHONPATH` and `changedir` in `tox.ini`, and adding `sys.path` hack in `conftest.py`, but errors persisted. Reverted `sys.path` hack and `agentkit` imports. Simplified `tox.ini` back to standard config. Debugging moved to Task B.1.
+    - Updated `TASK.md` to reflect sub-task completion and blocked status.
 
 ## Recent Activities (Previous Session - 2025-04-08 Evening/Night)
 - **Started Task 5.2 (Update User & Developer Documentation):**
