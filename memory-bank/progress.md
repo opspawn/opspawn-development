@@ -84,7 +84,7 @@
 ## Known Issues / Blockers
 - `InMemoryMetadataStore` is not persistent or thread-safe (MVP limitation).
 - CI workflows currently lack linting/type checking steps (commented out).
-- **Task Maint.8 Resolution:** Original integration tests (`test_async_workflow_old.py`) are skipped. Integration tests in the new `test_async_workflow.py` are marked with `@pytest.mark.skip` due to persistent test environment issues preventing reliable `stub_worker` execution testing. Debugging these test issues moved to backlog (Task B.1).
+- **Task Maint.8 Resolution:** Original integration tests (`test_async_workflow_old.py`) are skipped. Integration tests in the new `test_async_workflow.py` are marked with `@pytest.mark.skip` due to persistent test environment issues preventing reliable `stub_worker` execution testing. Debugging these test issues moved to backlog (Task B.1). Verification run failed due to new errors in Task 6.1 tests.
 
 ## Evolution of Project Decisions
 - **Revised Phasing (2025-04-08):** Decided to prioritize core documentation (Task 5.2), then implement prerequisites for live E2E testing (New Phase 6), perform live E2E testing (New Phase 7), and finally complete the remaining documentation tasks (New Phase 8). Tasks 5.3-5.5 deferred to Phase 8.
