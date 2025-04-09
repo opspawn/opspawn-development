@@ -326,10 +326,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
   *Dependencies:* Tasks 3.1 & 3.2
   *Comments:* Enhanced docstrings/comments in FastAPI schemas/endpoints and Protobuf definitions.
 
-- [ ] **Task 5.2: Update User & Developer Documentation** `(Next Task)`
+- [In Progress] **Task 5.2: Update User & Developer Documentation** `(Started 2025-04-08)`
   *Description:* Revise and expand user guides, developer documentation (core components, concepts), and potentially draft ADRs using the Diátaxis framework. Focus on documenting currently implemented features.
   *Dependencies:* Completion of integration and testing phases (Phases 1-4, Maint Tasks)
-  *Comments:* Ensure clarity and consistency across all documents.
+  *Comments:* Ensure clarity and consistency across all documents. Initial explanation drafts created.
 
 - [ ] **Task 5.3: Set Up Documentation Portal** `(Deferred - Moved to Phase 8)`
   *Description:* Deploy a documentation portal (using Sphinx or MkDocs) that aggregates all project documents, tutorials, and API references.
