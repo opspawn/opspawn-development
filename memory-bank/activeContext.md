@@ -39,7 +39,7 @@
     - Updated `ops_core/alembic/versions/b810512236e1_initial_task_model.py` to import `sqlmodel`.
     - Successfully ran `alembic upgrade head` using the correct Python interpreter.
     - Updated Task 6.1 status and comments in `TASK.md`.
-    - **Skipped final verification step** (running `test_sql_store.py` tests) as requested before context reset.
+    - **Completed Task 6.1 (2025-04-09):** Verified `test_sql_store.py` tests pass after fixing session management, variable names, enum handling (`native_enum=False`), and JSON serialization issues.
 
 ## Recent Activities (Previous Session - 2025-04-08 Evening/Night)
 - **Started Task 5.2 (Update User & Developer Documentation):**

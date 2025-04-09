@@ -355,10 +355,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 
 ### Phase 6: E2E Test Enablement (New)
 
-- [ ] **Task 6.1: Implement Persistent Metadata Store** `(Partially Completed 2025-04-09)`
+- [x] **Task 6.1: Implement Persistent Metadata Store** `(Completed 2025-04-09)`
   *Description:* Choose and implement a persistent database backend (e.g., PostgreSQL via SQLAlchemy/SQLModel) for the metadata store, replacing `InMemoryMetadataStore`.
   *Dependencies:* Phase 4 Completion
-  *Comments:* Requires DB setup (e.g., Docker), schema definition (Alembic migrations), store implementation, and unit tests. `ops_core/ops_core/metadata/sql_store.py` implemented. Unit tests in `ops_core/tests/metadata/test_sql_store.py` implemented and fixtures added to `ops_core/tests/conftest.py`. **Blocked:** Tests fail with `ConnectionRefusedError` because the database is not set up or running. Need to create `docker-compose.yml`, configure `.env`, start the DB, and run migrations.
+  *Comments:* Requires DB setup (e.g., Docker), schema definition (Alembic migrations), store implementation, and unit tests. `ops_core/ops_core/metadata/sql_store.py` implemented. Unit tests in `ops_core/tests/metadata/test_sql_store.py` implemented and fixtures added to `ops_core/tests/conftest.py`. DB setup and migrations completed. Test failures (`InternalError`, `NameError`, `AttributeError`, `NotSupportedError`, `TypeError`) resolved by fixing session management, variable names, enum handling (`native_enum=False`), and JSON serialization logic. All `test_sql_store.py` tests pass.
 
 - [ ] **Task 6.2: Integrate Persistent Store**
   *Description:* Update `ops_core.dependencies` and relevant components (API, gRPC, Actor) to use the new persistent store. Update existing tests to handle DB fixtures/setup.

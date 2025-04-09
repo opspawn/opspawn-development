@@ -1,9 +1,9 @@
 # Progress: Opspawn Core Foundation (Task 5.2 Started)
 
-## Current Status (Updated 2025-04-09 9:44 AM)
+## Current Status (Updated 2025-04-09 1:54 PM)
 - **Phase:** Phase 6 (E2E Test Enablement).
-- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Task 5.1 completed. Maintenance tasks Maint.1-Maint.9 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Task 6.1 (Persistent Store) implementation, DB setup, and migrations completed.
-- **Current Task:** Phase 6, Task 6.1 (Implement Persistent Metadata Store) - Ready to verify tests (`test_sql_store.py`).
+- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Tasks 5.1, 6.1 completed. Maintenance tasks Maint.1-Maint.9 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8.
+- **Current Task:** Phase 6, Task 6.2 (Integrate Persistent Store).
 
 ## What Works (As of 2025-04-09 9:44 AM)
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented.
@@ -71,11 +71,11 @@
     - `.env` updated with `DATABASE_URL`.
     - PostgreSQL container running via `docker compose`.
     - Alembic migrations applied successfully.
+    - `test_sql_store.py` tests verified passing after fixing session management, variable names, enum handling (`native_enum=False`), and JSON serialization issues (2025-04-09).
 
 ## What's Left to Build (Revised Plan - 2025-04-08)
 - **Task 5.2:** Update User & Developer Documentation (Partially Completed - Explanations expanded. Further updates deferred to Phase 8).
 - **Phase 6:** E2E Test Enablement
-    - Task 6.1: Implement Persistent Metadata Store (Verify tests `test_sql_store.py`).
     - Task 6.2: Integrate Persistent Store.
     - Task 6.3: Implement Live LLM Integration Tests.
     - Task 6.4: Implement `agentkit` Long-Term Memory MVP (Optional).
