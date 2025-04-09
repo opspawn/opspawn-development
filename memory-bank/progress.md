@@ -99,6 +99,8 @@
     - Batch 1: DB Connection - Completed (2025-04-09).
     - Batch 2: Dependency Injection - Completed (2025-04-09). Fixed tests not awaiting `async def get_metadata_store` and incorrect type/singleton assertions.
     - Batch 3: Agentkit Tools - Completed (2025-04-09). All tests passed; previously noted issues likely resolved earlier.
+    - Batch 4: Async Workflow - Skipped for now (2025-04-09).
+    - Batch 5: E2E & Remaining - Next.
 - **Revised Phasing (2025-04-08):** Decided to prioritize core documentation (Task 5.2), then implement prerequisites for live E2E testing (New Phase 6), perform live E2E testing (New Phase 7), and finally complete the remaining documentation tasks (New Phase 8). Tasks 5.3-5.5 deferred to Phase 8.
 - **Task Maint.8 Simplified Testing Strategy (2025-04-08):** Due to persistent test environment/patching issues (`AMQPConnectionError`, `AttributeError`) preventing reliable testing of full actor execution via `stub_worker` in `test_async_workflow.py`, adopted a simplified strategy. Tests in this file now verify only the API -> Broker flow. Full actor logic is covered by unit tests (`test_engine.py`).
 - **Task Maint.8 Rebuild Iteration (2025-04-08):** Adopted an iterative approach for Phase 2 rebuild: Reset to isolation state, created new test file, restored actor definition, restored send call (fixing test fixtures), restored actor logic, added unit tests for logic, added simplified integration tests (API -> Broker).

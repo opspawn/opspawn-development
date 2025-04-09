@@ -428,12 +428,12 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
       - Issues: Previously listed `TypeError`, `ValidationError`, `ToolNotFoundError` in `agentkit/tests/tools/` were not present. All tests passed.
       - Status: Completed.
       - Test Command: `tox -e py312 -- src/agentkit/tests/tools/`
-    - **Batch 4: Async Workflow / RabbitMQ**
+    - **Batch 4: Async Workflow / RabbitMQ (Skipped for now - 2025-04-09)**
       - Issues: `AMQPConnectionError`, `AssertionError: 500 == 201` in `src/ops_core/tests/integration/test_async_workflow.py`. Requires RabbitMQ running.
-      - Test Command: `tox -e py312 -- -k test_async_workflow.py`
-    - **Batch 5: E2E & Remaining**
+      - Test Command: `tox -e py312 -- src/ops_core/tests/integration/test_async_workflow.py`
+    - **Batch 5: E2E & Remaining (Next)**
       - Issues: Any remaining errors, potentially `NameError` in `ops_core/tests/integration/test_e2e_workflow.py`.
-      - Test Command: `tox -e py312 -- -k test_e2e_workflow.py` (and others as needed).
+      - Test Command: `tox -e py312 -- src/ops_core/tests/integration/test_e2e_workflow.py` (and others as needed).
     - **Final Step:** Run `tox -r` after all batches pass.
 
 ---

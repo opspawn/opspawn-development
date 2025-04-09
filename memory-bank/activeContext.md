@@ -93,8 +93,8 @@
         - Batch 1: DB Connection (`test_sql_store.py`) - **Completed (2025-04-09)**
         - Batch 2: Dependency Injection (`test_dependencies.py`) - **Completed (2025-04-09)** Fixed tests not awaiting `async def get_metadata_store` and incorrect type/singleton assertions.
         - Batch 3: Agentkit Tools (`agentkit/tests/tools/`) - **Completed (2025-04-09)** All tests passed; previously noted issues likely resolved earlier.
-        - Batch 4: Async Workflow (`test_async_workflow.py`)
-        - Batch 5: E2E & Remaining (`test_e2e_workflow.py`, etc.)
+        - Batch 4: Async Workflow (`test_async_workflow.py`) - **Skipped for now (2025-04-09)**
+        - Batch 5: E2E & Remaining (`test_e2e_workflow.py`, etc.) - **Next**
 
 ## Recent Activities (Previous Session - 2025-04-08 Evening/Night)
 - **Started Task 5.2 (Update User & Developer Documentation):**
