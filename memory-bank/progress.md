@@ -1,11 +1,11 @@
-# Progress: Opspawn Core Foundation (Phase 4 Completed)
+# Progress: Opspawn Core Foundation (Task 5.2 Started)
 
-## Current Status (Updated 2025-04-08 9:33 PM)
-- **Phase:** Phase 4 Completed. Task Maint.8 completed. Plan revised.
-- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Task 5.1 completed. Maintenance tasks Maint.1-Maint.8 completed. Task 5.2 is next. Tasks 5.3-5.5 deferred to new Phase 8. New Phases 6 (E2E Enablement) and 7 (Live E2E Testing) added.
-- **Current Task:** None. Ready for Task 5.2.
+## Current Status (Updated 2025-04-09 4:58 AM)
+- **Phase:** Phase 5 (Documentation) started.
+- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Task 5.1 completed. Maintenance tasks Maint.1-Maint.8 completed. Task 5.2 is in progress. Tasks 5.3-5.5 deferred to new Phase 8. New Phases 6 (E2E Enablement) and 7 (Live E2E Testing) added.
+- **Current Task:** Task 5.2 (Update User & Developer Documentation) - In Progress.
 
-## What Works (As of 2025-04-08 9:33 PM)
+## What Works (As of 2025-04-09 4:58 AM)
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented.
 - **Task 2.2 (Reimplemented):** `agentkit` core agent MVP reimplemented (`ShortTermMemory`, `PlaceholderPlanner`, `Agent`, interfaces, tests).
 - **Task 2.3 (Reimplemented):** `agentkit` dynamic tool integration reimplemented (`schemas`, `registry`, `execution`, tests, agent integration).
@@ -64,7 +64,7 @@
 - **Testing:** Load testing setup complete (Task 4.3). Security/Error handling tests added (Task 4.4). Testing docs created (Task 4.5). API docs enhanced (Task 5.1). `ops-core` tests pass (107 passed, 3 skipped) after restoring actor definition, send call, and adding unit tests for actor logic (Maint.8 Phase 2, Steps 1-4). Integration tests in `test_async_workflow.py` verify API -> Broker flow, but full actor execution testing in this file remains blocked by environment issues.
 
 ## What's Left to Build (Revised Plan - 2025-04-08)
-- **Task 5.2:** Update User & Developer Documentation.
+- **Task 5.2:** Update User & Developer Documentation (In Progress - Initial explanation drafts created).
 - **Phase 6:** E2E Test Enablement
     - Task 6.1: Implement Persistent Metadata Store.
     - Task 6.2: Integrate Persistent Store.
