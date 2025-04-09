@@ -35,7 +35,7 @@ Given the challenges, the integration tests (`test_async_workflow.py`) were modi
 
 ---
 
-## Task Maint.8 Debugging (2025-04-08)
+## Task Maint.8 Debugging (2025-04-08 Evening)
 
 **Goal:** Resolve the original hanging issue observed when using `StubBroker.join()` with the async actor and mocked internal async calls (`Agent.run`, `ShortTermMemory.get_context`).
 
@@ -45,13 +45,16 @@ Given the challenges, the integration tests (`test_async_workflow.py`) were modi
 2.  **Run Tests:** Executed `tox -e py312 -- pytest ops_core/tests/integration/test_async_workflow.py`.
 3.  **Result:** The tests **did not hang**, confirming the original hang was related to the interaction between `StubBroker.join` and the mocked async calls (`AsyncMock`) within the actor. However, new errors emerged:
     *   **`AttributeError: 'InMemoryScheduler' object has no attribute '_metadata_store'`:** This error occurred during the setup of the `grpc_server` fixture (`test_grpc_api_async_agent_workflow_success`). Multiple attempts to fix this by correcting attribute access in the fixture code (`test_scheduler.metadata_store` vs `test_scheduler._metadata_store`) and adjusting how the `TaskServicer` was initialized within the fixture were unsuccessful, even when using `write_to_file`. The error trace consistently points to line 119, suggesting a persistent issue with the fixture setup or the state of the `test_scheduler` object being passed. Debug prints added to the fixture confirmed the `test_scheduler` object *should* have the `metadata_store` attribute.
-    *   **`pika.exceptions.AMQPConnectionError` / `assert 500 == 201`:** These errors occurred in the REST API tests (`test_rest_api_async_agent_workflow_success`, `test_rest_api_async_agent_workflow_failure`). They indicate that when the API endpoint calls `scheduler.submit_task`, the subsequent call to `execute_agent_task_actor.send()` attempts to connect to a real RabbitMQ broker instead of using the `StubBroker`. Various patching strategies were attempted:
-        *   Patching `actor.send` within the test function body (failed, patch applied too late).
-        *   Patching `dramatiq.get_broker` globally within the test function (failed).
-        *   Patching `actor.broker` directly using `mocker.patch.object` (failed).
-        *   Patching `actor.send` within the `ops_core.scheduler.engine` namespace using `mocker.patch` (failed).
+    *   **`pika.exceptions.AMQPConnectionError` / `assert 500 == 201`:** These errors occurred in the REST API tests (`test_rest_api_async_agent_workflow_success`, `test_rest_api_async_agent_workflow_failure`). They indicate that when the API endpoint calls `scheduler.submit_task`, the subsequent call to `execute_agent_task_actor.send()` attempts to connect to a real RabbitMQ broker instead of using the `StubBroker`.
+        *   **Attempt 1 (Remove `actor.send` patch):** Removed the patch for `actor.send` to allow messages onto the `stub_broker`. Result: `AMQPConnectionError` persisted, confirming the broker used by `send` wasn't the `stub_broker`.
+        *   **Attempt 2 (Patch `actor.broker`):** Added `mocker.patch.object(execute_agent_task_actor, 'broker', stub_broker)` to directly patch the actor instance's broker. Result: `AMQPConnectionError` persisted, indicating this patch was also ineffective in the context of the API call triggering `send`.
+        *   **Attempt 3 (Fix `grpc_server` fixture):** Corrected the `TaskServicer` initialization in the `grpc_server` fixture using `replace_in_file` and `write_to_file`. Result: Test runs still showed the *exact same* `AttributeError` traceback pointing to the fixture definition line and mentioning `_metadata_store`, even though the file content was verified as correct.
+        *   **Attempt 4 (Force `tox` recreation):** Ran `tox -r` to rebuild the environment. Result: Errors persisted identically, confirming the issue is likely not simple file caching but potentially deeper environment/patching interaction problems.
 
-**Current Status (Maint.8):** Blocked. The original hanging issue is resolved by simplifying the actor, but replaced by persistent `AttributeError` in gRPC fixture setup and `AMQPConnectionError` in REST tests, indicating fundamental problems with patching/mocking the broker interaction and fixture setup within the `tox`/`pytest` environment.
+**Current Status (Maint.8 - 2025-04-08 7:07 PM):** Blocked.
+- The original hanging issue is resolved by simplifying the actor logic.
+- The `AttributeError` in the gRPC fixture setup persists despite correct code in the file and forced `tox` environment recreation. This points to a stubborn environment or test runner issue.
+- The `AMQPConnectionError` in REST tests persists. Patching `dramatiq.get_broker` and `actor.broker` is insufficient. The next attempt will involve patching the `InMemoryScheduler.submit_task` method itself within the test context.
 
 ## Next Steps (Potential - If Full Actor Execution is Required)
 

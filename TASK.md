@@ -285,8 +285,8 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
     *Description:* Investigate and resolve the persistent mocking issue in `agentkit/agentkit/tests/llm_clients/test_google_client.py::test_google_client_generate_success`. Remove the `@pytest.mark.xfail` marker.
     *Dependencies:* Task Maint.3
 
-- [ ] **Task Maint.8: Revisit Dramatiq Integration Testing** `(Partially Completed & Blocked 2025-04-08)`
-    *Description:* Investigated and attempted to improve the integration testing strategy for the `execute_agent_task_actor` in `ops_core/tests/integration/test_async_workflow.py`. Diagnosed original hanging issue (related to `StubBroker.join` and mocked async calls). Simplified actor logic to bypass hang, but encountered persistent `AttributeError` in gRPC fixture setup and `AMQPConnectionError` in REST tests, indicating issues with test setup/patching. **Blocked** pending further investigation into test environment interactions.
+- [ ] **Task Maint.8: Revisit Dramatiq Integration Testing** `(Partially Completed & Blocked 2025-04-08 - Pivoting to Targeted Rebuild)`
+    *Description:* Investigated integration testing strategy for `execute_agent_task_actor`. Diagnosed original hanging issue. Encountered persistent `AttributeError` (gRPC fixture) and `AMQPConnectionError` (REST tests) despite multiple patching attempts and `tox -r`. **Decision:** Pausing direct debugging and pivoting to a targeted rebuild of the async workflow components and tests (actor logic, scheduler `submit_task`, `test_async_workflow.py`) for robustness.
     *Dependencies:* Task 3.4, Task 4.1.1
 
 - [x] **Task 4.2: End-to-End Integration Testing** `(Completed 2025-04-06)`

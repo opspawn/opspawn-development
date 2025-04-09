@@ -76,7 +76,7 @@
 ## Known Issues / Blockers
 - `InMemoryMetadataStore` is not persistent or thread-safe (MVP limitation).
 - CI workflows currently lack linting/type checking steps (commented out).
-- Integration testing of Dramatiq actor dependencies (`test_async_workflow.py`) is blocked by persistent `AttributeError` (gRPC fixture setup) and `AMQPConnectionError` (REST API calls), preventing verification even with simplified actor logic. This blocks completion of Task Maint.8.
+- Integration testing of Dramatiq actor dependencies (`test_async_workflow.py`) is blocked by persistent `AttributeError` (gRPC fixture setup) and `AMQPConnectionError` (REST API calls), preventing verification even with simplified actor logic and multiple patching attempts. This blocks completion of Task Maint.8 via direct debugging. **Decision:** Pivoting to targeted rebuild of async workflow components.
 
 ## Evolution of Project Decisions
 - **LLM Client Verification (2025-04-08):** Verified Anthropic client. Refactored Google client and tests for `google-genai` async interface and input structure (Task Maint.3). Confirmed `ops-core` tests still pass.

@@ -116,7 +116,7 @@
     - **Result:** The `AttributeError` and `AMQPConnectionError` persisted despite multiple attempts to correct the test file, suggesting deeper issues with the test environment setup or patching strategy effectiveness.
     - Updated `memory-bank/integration_test_challenges.md` with findings.
     - Updated `TASK.md` to reflect blocked status.
-    - **Status:** Task Maint.8 remains **Partially Completed & Blocked**.
+    - **Status:** Task Maint.8 remains **Partially Completed & Blocked**. **Decision (2025-04-08 7:11 PM):** Pivoting from direct debugging to a targeted rebuild of the async workflow components (actor logic, scheduler `submit_task`) and associated tests (`test_async_workflow.py`) due to persistent, unexplained errors.
 
 ## Recent Activities (Previous Session - 2025-04-08 Morning)
 - **Attempted Task Maint.2 Verification:**
