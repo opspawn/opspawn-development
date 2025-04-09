@@ -78,10 +78,11 @@
     - API endpoints and gRPC servicer updated to use `BaseMetadataStore` dependency.
     - Tests (`test_engine.py`, `test_tasks.py`, `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`) refactored to use `db_session` fixture and `SqlMetadataStore`.
 
-## What's Left to Build (Revised Plan - 2025-04-08)
-- **Task 5.2:** Update User & Developer Documentation (Partially Completed - Explanations expanded. Further updates deferred to Phase 8).
+## What's Left to Build (Revised Plan - 2025-04-09)
+- **Phase 9:** Repository Restructure
+    - Task 9.1: Restructure Repository to Src Layout.
 - **Phase 6:** E2E Test Enablement
-    - Task 6.2: Integrate Persistent Store.
+    - Task 6.2: Integrate Persistent Store (Blocked on Task B.1/9.1 for `tox` verification).
     - Task 6.3: Implement Live LLM Integration Tests.
     - Task 6.4: Implement `agentkit` Long-Term Memory MVP (Optional).
 - **Phase 7:** Full Live E2E Testing
@@ -90,11 +91,11 @@
 - **Phase 8:** Final Documentation Update
     - Task 8.1: Update & Finalize All Documentation (Revisit deferred 5.2-5.5).
 - **Backlog:**
-    - Task B.1: Investigate Test Environment Issues (`tox` import errors, `stub_worker` execution).
+    - Task B.1: Investigate Test Environment Issues (`tox` import errors) - Blocked pending Task 9.1.
     - Enhancements 1-5.
 
 ## Known Issues / Blockers
-- **`tox` Environment:** Persistent `ModuleNotFoundError` issues occur during test collection when running `tox`, preventing full test suite verification. This seems related to editable installs of `ops_core` and `agentkit`. Debugging moved to Task B.1.
+- **`tox` Environment (Task B.1 - Blocked):** Persistent `ModuleNotFoundError` issues occur during test collection when running `tox -r` in `ops_core`, preventing full test suite verification (Task 6.2.7). Extensive troubleshooting involving `tox.ini` and `pyproject.toml` configurations (optional deps, PYTHONPATH, explicit pip installs, editable-legacy, cache clearing) failed to resolve the issue. The errors inconsistently point to `agentkit`, `agentkit.core`, or `agentkit.core.interfaces.llm_client`. The root cause appears related to `tox`'s handling of sibling editable installs. **Decision:** Task B.1 is blocked pending repository restructure (Task 9.1).
 - `InMemoryMetadataStore` is not persistent or thread-safe (Replaced by `SqlMetadataStore`, but tests using `InMemoryScheduler` still exist).
 - CI workflows currently lack linting/type checking steps (commented out).
 - **Task Maint.8 Resolution:** Original integration tests (`test_async_workflow_old.py`) are skipped. Integration tests in the new `test_async_workflow.py` are marked with `@pytest.mark.skip` due to persistent test environment issues preventing reliable `stub_worker` execution testing. Debugging these test issues moved to backlog (Task B.1).

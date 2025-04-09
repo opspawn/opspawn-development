@@ -409,9 +409,18 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 
 ---
 
+### Phase 9: Repository Restructure (New)
+
+- [ ] **Task 9.1: Restructure Repository to Src Layout** `(Added 2025-04-09)`
+  *Description:* Restructure the project from sibling directories (`ops_core/`, `agentkit/`) to a standard "src layout" (`src/ops_core/`, `src/agentkit/`) to potentially resolve persistent `tox` import issues.
+  *Dependencies:* Task B.1 (Decision)
+  *Comments:* Requires moving files, updating `pyproject.toml` (package finding), `tox.ini` (paths), and potentially other configurations/scripts.
+
+---
+
 ## 4. Backlog / Future Enhancements
 
-- **Task B.1: Investigate Test Environment Issues:** Debug persistent `tox` environment/import resolution errors (`ModuleNotFoundError` for `ops_core` or `agentkit` during test collection) and Dramatiq `stub_worker` execution issues in `test_async_workflow.py`. (Medium priority).
+- [Partially Completed & Blocked] **Task B.1: Investigate Test Environment Issues:** `(Updated 2025-04-09)` Debug persistent `tox` environment/import resolution errors (`ModuleNotFoundError` for `ops_core` or `agentkit` during test collection). Attempted various `tox.ini`/`pyproject.toml` configurations (optional deps, PYTHONPATH, explicit pip installs, editable-legacy) without success. **Decision:** Blocked pending repository restructure (Task 9.1).
 - **Enhancement 1:** Explore advanced multi-agent planning algorithms and cross-agent coordination.
 - **Enhancement 2:** Implement real-time streaming updates in API responses for long-running tasks.
 - **Enhancement 3:** Develop cross-language support for ops-core and agentkit using language-agnostic protocols.

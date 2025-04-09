@@ -1,6 +1,6 @@
-# Active Context: Opspawn Core Foundation (Phase 3 Started)
+# Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus
+## Current Focus (Updated 2025-04-09)
 - **Task 2.1 (Reimplementation: Ops-core Scheduler & Metadata Store MVP):** **Completed (2025-04-08)**. All 104 `ops-core` tests pass via `tox`.
 - **Task 2.2 (Reimplementation: Agentkit Core-Agent MVP):** **Completed (2025-04-08)**. Created interfaces (Task 2.4), memory, planner, agent, and tests.
 - **Task 2.3 (Reimplementation: Agentkit Dynamic Tool Integration):** **Completed (2025-04-08)**. Created tool schemas, registry, safe execution, tests, and integrated into Agent.
@@ -50,6 +50,18 @@
     - **Completed Task 6.2.6:** Refactored tests (`test_engine.py`, `test_tasks.py` (API), `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`) to use `db_session` fixture and `SqlMetadataStore` instead of mocks where appropriate. Updated fixtures and assertions. No changes needed for `test_models.py`.
     - **Blocked Task 6.2.7:** Attempted `tox -r` verification. Encountered persistent `ModuleNotFoundError` during test collection (`conftest.py` -> `scheduler/engine.py` -> `metadata.base` or `agentkit`). Tried adjusting `PYTHONPATH` and `changedir` in `tox.ini`, and adding `sys.path` hack in `conftest.py`, but errors persisted. Reverted `sys.path` hack and `agentkit` imports. Simplified `tox.ini` back to standard config. Debugging moved to Task B.1.
     - Updated `TASK.md` to reflect sub-task completion and blocked status.
+- **Partially Completed Task B.1 (Investigate Test Environment Issues):** `(Current Session - 2025-04-09 Afternoon)`
+    - Investigated persistent `ModuleNotFoundError` when running `tox -r` in `ops_core`.
+    - Attempted various configurations in `ops_core/tox.ini` and `ops_core/pyproject.toml`:
+        - Declaring `agentkit` as optional test dependency.
+        - Explicitly setting `PYTHONPATH` in `tox.ini`.
+        - Using explicit `pip install -e ../agentkit` and `-e .` commands in `tox.ini`.
+        - Changing relative import to absolute in `agentkit/agentkit/core/interfaces/__init__.py` (and reverting).
+        - Clearing `__pycache__` via `tox` command.
+        - Using `package = editable-legacy` in `tox.ini`.
+    - Errors shifted between `No module named 'agentkit'`, `No module named 'agentkit.core'`, and `No module named 'agentkit.core.interfaces.llm_client'`, indicating complex issues with `tox` handling sibling editable installs.
+    - **Decision:** Paused direct debugging. The next step is to restructure the repository into a "src layout" (Task 9.1) as a more robust potential solution.
+    - Updated `TASK.md` to reflect partial completion, blocked status, and added Task 9.1.
 
 ## Recent Activities (Previous Session - 2025-04-08 Evening/Night)
 - **Started Task 5.2 (Update User & Developer Documentation):**
