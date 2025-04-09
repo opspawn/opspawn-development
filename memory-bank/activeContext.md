@@ -99,6 +99,16 @@
     - Updated `TASK.md`.
 - **Restored Documentation:** Restored `memory-bank/integration_test_challenges.md` from Git history (commit `a7ff7bc...^`) (2025-04-08).
 - **Added Maintenance Task Maint.8:** Added task to revisit Dramatiq integration testing challenges based on restored documentation (2025-04-08).
+- **Partially Completed Task Maint.8 (Revisit Dramatiq Integration Testing):** `(Current Session - 2025-04-08)`
+    - Refactored `ops_core` project structure: Identified and removed redundant top-level `metadata/`, `models/`, `scheduler/` directories, confirming the correct code resides within `ops_core/ops_core/`. Verified with `tox`.
+    - Investigated integration test failures in `ops_core/tests/integration/test_async_workflow.py`.
+    - Fixed `AttributeError` by correcting the patch target for `ShortTermMemory.get_context` (was incorrectly `get_history`). Also updated the call in `ops_core/ops_core/scheduler/engine.py`.
+    - Fixed `dramatiq.errors.QueueNotFound` by explicitly declaring the actor's queue on the `stub_broker` within each test.
+    - Fixed `dramatiq.errors.ActorNotFound` by patching `stub_broker.get_actor` within each test to return the correct actor instance.
+    - **Issue:** Tests in `test_async_workflow.py` still hang during execution (`stub_broker.join()`). Tried removing `stub_worker.join()` and delaying `stub_worker.start()`, but the hang persists.
+    - Attempted diagnostic step (making actor sync) but was interrupted. Reverted code changes back to async state.
+    - **Status:** Blocked by test hanging issue. Needs further investigation.
+    - Updated `TASK.md` to reflect partial completion.
 
 ## Recent Activities (Previous Session - 2025-04-08 Morning)
 - **Attempted Task Maint.2 Verification:**

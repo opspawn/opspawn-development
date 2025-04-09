@@ -1,11 +1,11 @@
 # Progress: Opspawn Core Foundation (Phase 4 Completed)
 
-## Current Status (Updated 2025-04-08 3:18 PM)
+## Current Status (Updated 2025-04-08 6:15 PM)
 - **Phase:** Phase 4 Completed. All core functionality and integrations verified.
-- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Task 5.1 completed. Maintenance tasks Maint.1, Maint.2, Maint.3, Maint.5, Maint.6, Maint.7 completed. Phase 5 documentation tasks (5.2-5.5) deferred. Task Maint.8 added.
-- **Current Task:** None. Ready for next steps (e.g., Maint.8, Phase 5).
+- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Task 5.1 completed. Maintenance tasks Maint.1, Maint.2, Maint.3, Maint.5, Maint.6, Maint.7 completed. Maint.8 partially completed. Phase 5 documentation tasks (5.2-5.5) deferred.
+- **Current Task:** Maint.8 (Blocked by test hanging).
 
-## What Works (As of 2025-04-08 4:38 PM)
+## What Works (As of 2025-04-08 6:15 PM)
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented. All 104 `ops-core` tests pass via `tox`.
 - **Task 2.2 (Reimplemented):** `agentkit` core agent MVP reimplemented (`ShortTermMemory`, `PlaceholderPlanner`, `Agent`, interfaces, tests).
 - **Task 2.3 (Reimplemented):** `agentkit` dynamic tool integration reimplemented (`schemas`, `registry`, `execution`, tests, agent integration).
@@ -61,25 +61,22 @@
     - LLM integration into Agent core completed (Task 2.11).
     - **Test Status:** All 57 tests pass via `pytest` using Python 3.12 interpreter and explicit PYTHONPATH (Tasks Maint.2, Maint.6, Maint.7, MCP.5, and test fixes completed 2025-04-08).
 - **Integration:** Async messaging (Dramatiq/RabbitMQ) implemented and verified (Task 3.4). MCP client/config implemented (MCP.1, MCP.2). MCP Proxy Tool injection logic implemented and tested (MCP.3, MCP.4, MCP.6). Integration between `ops-core` and `agentkit` verified via passing `ops-core` `tox` tests (re-verified after Task Maint.3).
-- **Testing:** Load testing setup complete (Task 4.3). Security/Error handling tests added (Task 4.4). Testing docs created (Task 4.5). API docs enhanced (Task 5.1).
+- **Testing:** Load testing setup complete (Task 4.3). Security/Error handling tests added (Task 4.4). Testing docs created (Task 4.5). API docs enhanced (Task 5.1). Dramatiq integration tests (`test_async_workflow.py`) partially improved (Task Maint.8), but still hang during execution.
 
 ## What's Left to Build (Immediate Focus)
-- **Fix Google Client Test:** Investigate and resolve the persistent mocking issue in `agentkit/agentkit/tests/llm_clients/test_google_client.py::test_google_client_generate_success`.
-- **Task Maint.4:** Refactor `OpsMcpClient` server management to use `AsyncExitStack`. (Verified already complete).
-- **Task Maint.8:** Revisit Dramatiq Integration Testing (Next Task).
+- **Task Maint.8:** Resolve hanging issue in Dramatiq integration tests (`test_async_workflow.py`).
 - **Review Deferred Tasks:** Re-evaluate Phase 5 documentation tasks (5.2-5.5).
 - **(Optional) Live LLM Testing:** Implement basic tests using real API keys.
 
 ## What's Left to Build (High-Level from `TASK.md`)
 - **Phase 3.5:** All MCP tasks complete.
-- **Maintenance:** Task Maint.4 (Verified complete), Task Maint.8 (Added).
+- **Maintenance:** Task Maint.8 (Partially Completed).
 - **Phase 5:** Tasks 5.2-5.5 (Deferred).
 
 ## Known Issues / Blockers
 - `InMemoryMetadataStore` is not persistent or thread-safe (MVP limitation).
 - CI workflows currently lack linting/type checking steps (commented out).
-- Integration testing of Dramatiq actor dependencies remains challenging (workaround applied in Task 4.1.1, to be revisited in Maint.8).
-- Restored `memory-bank/integration_test_challenges.md` from Git history (2025-04-08).
+- Integration testing of Dramatiq actor dependencies (`test_async_workflow.py`) hangs during execution, blocking completion of Task Maint.8.
 
 ## Evolution of Project Decisions
 - **LLM Client Verification (2025-04-08):** Verified Anthropic client. Refactored Google client and tests for `google-genai` async interface and input structure (Task Maint.3). Confirmed `ops-core` tests still pass.
@@ -124,6 +121,10 @@
 4.  `agentkit` internal interfaces defined and implemented (**Requires Reimplementation** - Phase 2).
 5.  `ops-core` MCP proxy tool injection implemented (**Blocked** - Phase 3.5).
 6.  `agentkit` MCP proxy tool spec defined (**Blocked** - Phase 3.5).
+7.  MCP integration test verifying end-to-end proxy flow (**Blocked** - Phase 3.5).
+8.  Test consolidation and deprecation warnings fixed (**Completed** - Maintenance).
+9.  `ops-core` MCP Client implemented and tested (**Completed** - Phase 3.5).
+10. `ops-core` MCP Configuration implemented and verified (**Completed** - Phase 3.5).
 7.  MCP integration test verifying end-to-end proxy flow (**Blocked** - Phase 3.5).
 8.  Test consolidation and deprecation warnings fixed (**Completed** - Maintenance).
 9.  `ops-core` MCP Client implemented and tested (**Completed** - Phase 3.5).
