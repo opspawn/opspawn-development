@@ -415,6 +415,24 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
   *Description:* Restructure the project from sibling directories (`ops_core/`, `agentkit/`) to a standard "src layout" (`src/ops_core/`, `src/agentkit/`) to potentially resolve persistent `tox` import issues.
   *Dependencies:* Task B.1 (Decision)
   *Comments:* Code moved to `src/`. `pyproject.toml` files updated. Root `tox.ini` created and configured. Paths fixed in `tox.ini` commands and `fix_grpc_imports.sh`. Missing `metadata/base.py` created. `TypeError` in `SqlMetadataStore` instantiation fixed in `dependencies.py` and tests (`test_engine.py`, `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`). Resolved `asyncpg.exceptions.InvalidPasswordError` in `test_sql_store.py` by modifying `tox.ini` to use `dotenv run -- python -m pytest` (2025-04-09). **Blocked by remaining test failures (full `tox -r` run interrupted).**
+  *Debugging Strategy (Batches):*
+    - **Batch 1: Database Connection (Completed)**
+      - Issue: `InvalidPasswordError` in `ops_core/tests/metadata/test_sql_store.py`.
+      - Status: Fixed (2025-04-09).
+      - Test Command: `tox -e py312 -- -k test_sql_store.py`
+    - **Batch 2: Dependency Injection**
+      - Issue: `AssertionErrors` in `ops_core/tests/test_dependencies.py`.
+      - Test Command: `tox -e py312 -- -k test_dependencies.py`
+    - **Batch 3: Agentkit Core (Tools)**
+      - Issues: `TypeError`, `ValidationError`, `ToolNotFoundError` in `agentkit/tests/tools/`.
+      - Test Command: `tox -e py312 -- -k agentkit/tests/tools/`
+    - **Batch 4: Async Workflow / RabbitMQ**
+      - Issues: `AMQPConnectionError`, `AssertionError: 500 == 201` in `src/ops_core/tests/integration/test_async_workflow.py`. Requires RabbitMQ running.
+      - Test Command: `tox -e py312 -- -k test_async_workflow.py`
+    - **Batch 5: E2E & Remaining**
+      - Issues: Any remaining errors, potentially `NameError` in `ops_core/tests/integration/test_e2e_workflow.py`.
+      - Test Command: `tox -e py312 -- -k test_e2e_workflow.py` (and others as needed).
+    - **Final Step:** Run `tox -r` after all batches pass.
 
 ---
 

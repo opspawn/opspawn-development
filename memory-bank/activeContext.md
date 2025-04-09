@@ -89,6 +89,12 @@
     - Re-ran isolated test command; all 12 tests in `test_sql_store.py` passed.
     - Attempted full `tox -r` run, but it was interrupted during dependency installation.
     - **Status:** Task 9.1 DB connection error resolved. Task remains **Partially Completed & Blocked** pending full `tox -r` verification for other potential errors.
+    - **Debugging Strategy (Batches):** Will proceed by testing failures in batches:
+        - Batch 1: DB Connection (`test_sql_store.py`) - **Completed**
+        - Batch 2: Dependency Injection (`test_dependencies.py`)
+        - Batch 3: Agentkit Tools (`agentkit/tests/tools/`)
+        - Batch 4: Async Workflow (`test_async_workflow.py`)
+        - Batch 5: E2E & Remaining (`test_e2e_workflow.py`, etc.)
 
 ## Recent Activities (Previous Session - 2025-04-08 Evening/Night)
 - **Started Task 5.2 (Update User & Developer Documentation):**
