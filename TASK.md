@@ -420,12 +420,14 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
       - Issue: `InvalidPasswordError` in `ops_core/tests/metadata/test_sql_store.py`.
       - Status: Fixed (2025-04-09).
       - Test Command: `tox -e py312 -- -k test_sql_store.py`
-    - **Batch 2: Dependency Injection**
-      - Issue: `AssertionErrors` in `ops_core/tests/test_dependencies.py`.
+    - **Batch 2: Dependency Injection (Completed 2025-04-09)**
+      - Issue: `AssertionErrors` in `ops_core/tests/test_dependencies.py` due to tests not awaiting `async def get_metadata_store` and incorrect type/singleton assertions.
+      - Status: Fixed by updating tests to use `async def`, `await`, and correct assertions.
       - Test Command: `tox -e py312 -- -k test_dependencies.py`
-    - **Batch 3: Agentkit Core (Tools)**
-      - Issues: `TypeError`, `ValidationError`, `ToolNotFoundError` in `agentkit/tests/tools/`.
-      - Test Command: `tox -e py312 -- -k agentkit/tests/tools/`
+    - **Batch 3: Agentkit Core (Tools) (Completed 2025-04-09)**
+      - Issues: Previously listed `TypeError`, `ValidationError`, `ToolNotFoundError` in `agentkit/tests/tools/` were not present. All tests passed.
+      - Status: Completed.
+      - Test Command: `tox -e py312 -- src/agentkit/tests/tools/`
     - **Batch 4: Async Workflow / RabbitMQ**
       - Issues: `AMQPConnectionError`, `AssertionError: 500 == 201` in `src/ops_core/tests/integration/test_async_workflow.py`. Requires RabbitMQ running.
       - Test Command: `tox -e py312 -- -k test_async_workflow.py`
