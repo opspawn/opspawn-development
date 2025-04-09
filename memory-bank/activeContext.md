@@ -13,7 +13,14 @@
 - **Task 5.2 (Update User & Developer Documentation):** **In Progress (Started 2025-04-08)**. Initial explanation drafts created.
 - **Phase 5 Deferred:** Tasks 5.3-5.5 remain deferred.
 
-## Recent Activities (Current Session - 2025-04-08 Evening/Night)
+## Recent Activities (Current Session - 2025-04-09 Morning)
+- **Continued Task 5.2 (Update User & Developer Documentation):**
+    - Expanded content in `ops-docs/explanations/architecture.md` with more detail on interaction model, communication patterns, MCP Dynamic Proxy, and added a Mermaid diagram.
+    - Expanded content in `ops-docs/explanations/ops_core_overview.md` with more detail on component responsibilities (Scheduler, Store, Actor Logic, Config) and the core agent task workflow.
+    - Expanded content in `ops-docs/explanations/agentkit_overview.md` with more detail on component implementations (Planner, Memory, Tool Execution, Security Manager, LLM Clients) and the agent run workflow.
+    - Updated `TASK.md` to reflect progress on Task 5.2.
+
+## Recent Activities (Previous Session - 2025-04-08 Evening/Night)
 - **Started Task 5.2 (Update User & Developer Documentation):**
     - Updated `ops-docs/README.md` to reflect new `explanations/` directory structure. Committed and pushed change to `ops-docs` repo.
     - Created `ops-docs/explanations/` directory.
