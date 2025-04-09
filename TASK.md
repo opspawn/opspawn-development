@@ -326,30 +326,78 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
   *Dependencies:* Tasks 3.1 & 3.2
   *Comments:* Enhanced docstrings/comments in FastAPI schemas/endpoints and Protobuf definitions.
 
-- [ ] **Task 5.2: Update User & Developer Documentation** `(Deferred 2025-04-07)`
-  *Description:* Revise and expand all user guides, developer documentation, and ADRs using the Diátaxis framework.
-  *Dependencies:* Completion of integration and testing phases
-  *Comments:* Ensure clarity and consistency across all documents. **Deferred** to focus on LLM integration first.
+- [ ] **Task 5.2: Update User & Developer Documentation** `(Next Task)`
+  *Description:* Revise and expand user guides, developer documentation (core components, concepts), and potentially draft ADRs using the Diátaxis framework. Focus on documenting currently implemented features.
+  *Dependencies:* Completion of integration and testing phases (Phases 1-4, Maint Tasks)
+  *Comments:* Ensure clarity and consistency across all documents.
 
-- [ ] **Task 5.3: Set Up Documentation Portal** `(Deferred 2025-04-07)`
+- [ ] **Task 5.3: Set Up Documentation Portal** `(Deferred - Moved to Phase 8)`
   *Description:* Deploy a documentation portal (using Sphinx or MkDocs) that aggregates all project documents, tutorials, and API references.
-  *Dependencies:* Tasks 5.1 & 5.2
-  *Comments:* Include search functionality and intuitive navigation. **Deferred** to focus on LLM integration first.
+  *Dependencies:* Task 8.1
+  *Comments:* Include search functionality and intuitive navigation.
 
-- [ ] **Task 5.4: Internal Documentation Review** `(Deferred 2025-04-07)`
+- [ ] **Task 5.4: Internal Documentation Review** `(Deferred - Moved to Phase 8)`
   *Description:* Conduct team walkthroughs of the documentation to gather feedback and refine content.
-  *Dependencies:* Task 5.3
-  *Comments:* Incorporate changes based on internal feedback. **Deferred** to focus on LLM integration first.
+  *Dependencies:* Task 8.1
+  *Comments:* Incorporate changes based on internal feedback.
 
-- [ ] **Task 5.5: Create Onboarding Tutorials & Samples** `(Deferred 2025-04-07)`
+- [ ] **Task 5.5: Create Onboarding Tutorials & Samples** `(Deferred - Moved to Phase 8)`
   *Description:* Develop tutorial videos, sample projects, or code snippets to help new users and developers onboard quickly.
-  *Dependencies:* Task 5.4
-  *Comments:* Focus on clarity and ease of understanding. **Deferred** to focus on LLM integration first.
+  *Dependencies:* Task 8.1
+  *Comments:* Focus on clarity and ease of understanding.
+
+---
+
+### Phase 6: E2E Test Enablement (New)
+
+- [ ] **Task 6.1: Implement Persistent Metadata Store**
+  *Description:* Choose and implement a persistent database backend (e.g., PostgreSQL via SQLAlchemy/SQLModel) for the metadata store, replacing `InMemoryMetadataStore`.
+  *Dependencies:* Phase 4 Completion
+  *Comments:* Requires DB setup, schema definition, store implementation, and unit tests.
+
+- [ ] **Task 6.2: Integrate Persistent Store**
+  *Description:* Update `ops_core.dependencies` and relevant components (API, gRPC, Actor) to use the new persistent store. Update existing tests to handle DB fixtures/setup.
+  *Dependencies:* Task 6.1
+  *Comments:* May require significant test refactoring.
+
+- [ ] **Task 6.3: Implement Live LLM Integration Tests**
+  *Description:* Create specific, marked tests (`@pytest.mark.live`) to verify integration with real LLM APIs using environment variables for keys.
+  *Dependencies:* Task 2.12 (LLM Config)
+  *Comments:* Exclude from default test runs. Focus on basic API call success and response structure.
+
+- [ ] **Task 6.4: Implement `agentkit` Long-Term Memory MVP (Optional)**
+  *Description:* If needed for realistic E2E tests, implement a basic vector store integration (e.g., ChromaDB) for `agentkit` long-term memory.
+  *Dependencies:* Task 2.2 (Agentkit Core)
+  *Comments:* Assess necessity based on E2E test requirements.
+
+---
+
+### Phase 7: Full Live E2E Testing (New)
+
+- [ ] **Task 7.1: Implement Full Live E2E Test Suite**
+  *Description:* Create tests (marked `@pytest.mark.e2e_live`) that manage the lifecycle of required services (API, Worker, RabbitMQ, DB) and verify full, unmocked agent execution workflows via API calls and DB state checks.
+  *Dependencies:* Phase 6 Completion
+  *Comments:* Requires careful environment setup and management.
+
+- [ ] **Task 7.2: Execute & Debug Live E2E Tests**
+  *Description:* Run the live E2E tests in a properly configured environment. Identify and fix bugs related to component interactions in a live setting.
+  *Dependencies:* Task 7.1
+  *Comments:* Focus on stability and correctness of the integrated system.
+
+---
+
+### Phase 8: Final Documentation Update (New)
+
+- [ ] **Task 8.1: Update & Finalize All Documentation**
+  *Description:* Revisit and complete Tasks 5.2, 5.3, 5.4, and 5.5 based on the fully tested system state after Phase 7. Update user/dev docs, set up portal, perform reviews, create tutorials.
+  *Dependencies:* Phase 7 Completion
+  *Comments:* Ensure documentation accurately reflects the final, tested system.
 
 ---
 
 ## 4. Backlog / Future Enhancements
 
+- **Task B.1: Investigate Test Environment Issues:** Debug the persistent `AttributeError` and `AMQPConnectionError` in `test_async_workflow.py` when using `stub_worker`. (Lower priority).
 - **Enhancement 1:** Explore advanced multi-agent planning algorithms and cross-agent coordination.
 - **Enhancement 2:** Implement real-time streaming updates in API responses for long-running tasks.
 - **Enhancement 3:** Develop cross-language support for ops-core and agentkit using language-agnostic protocols.
