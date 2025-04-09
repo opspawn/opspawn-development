@@ -1,11 +1,11 @@
 # Progress: Opspawn Core Foundation (Task 9.1 Started)
 
-## Current Status (Updated 2025-04-09 3:40 PM)
-- **Phase:** Phase 9 (Repository Restructure) / Phase 6 (E2E Test Enablement).
+## Current Status (Updated 2025-04-09 4:35 PM)
+- **Phase:** Phase 9 (Repository Restructure).
 - **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Tasks 5.1, 6.1 completed. Maintenance tasks Maint.1-Maint.9 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Task 9.1 partially completed.
-- **Current Task:** Task 9.1 (Restructure Repository to Src Layout) - Partially complete, blocked by test failures. Next: Continue debugging test failures (starting with DB connection).
+- **Current Task:** Task 9.1 (Restructure Repository to Src Layout) - Partially complete, blocked by test failures. Next: Continue debugging test failures (full `tox -r` run interrupted).
 
-## What Works (As of 2025-04-09 3:40 PM)
+## What Works (As of 2025-04-09 4:35 PM)
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented.
 - **Task 2.2 (Reimplemented):** `agentkit` core agent MVP reimplemented (`ShortTermMemory`, `PlaceholderPlanner`, `Agent`, interfaces, tests).
 - **Task 2.3 (Reimplemented):** `agentkit` dynamic tool integration reimplemented (`schemas`, `registry`, `execution`, tests, agent integration).
@@ -55,6 +55,7 @@
     - Missing `src/ops_core/metadata/base.py` created.
     - Import errors (`get_scheduler`, circular deps, `get_mcp_client`) fixed in `dependencies.py`.
     - `TypeError: SqlMetadataStore() takes no arguments` fixed in `dependencies.py` and multiple test files.
+    - `tox.ini` updated to use `dotenv run -- python -m pytest` to resolve DB connection issues in tests.
 - **Documentation (Task 5.2 Partial):** Initial explanation documents (`architecture.md`, `ops_core_overview.md`, `agentkit_overview.md`) created and expanded with current system details (2025-04-09).
 - **Persistent Metadata Store (Task 6.1 Completed):**
     - `SqlMetadataStore` implemented (`src/ops_core/metadata/sql_store.py`).
@@ -88,13 +89,13 @@
     - Enhancements 1-5.
 
 ## Known Issues / Blockers
-- **Test Failures (Task 9.1):** `tox -r` run is currently failing due to various errors (DB connection, TypeErrors, ValidationErrors, AssertionErrors) revealed after the src layout restructure and initial fixes. Needs systematic debugging (starting with DB connection).
+- **Test Failures (Task 9.1):** Full `tox -r` run was interrupted during dependency installation after fixing the initial DB connection error. The full test suite status after the restructure is unknown. Needs a complete `tox -r` run and systematic debugging of any remaining failures.
 - `InMemoryMetadataStore` is not persistent or thread-safe (Replaced by `SqlMetadataStore`, but tests using `InMemoryScheduler` still exist - check if `InMemoryScheduler` fixture needs update).
 - CI workflows currently lack linting/type checking steps (commented out).
 - **Task Maint.8 Resolution:** Original integration tests (`test_async_workflow_old.py`) are skipped. Integration tests in the new `test_async_workflow.py` are marked with `@pytest.mark.skip` due to persistent test environment issues preventing reliable `stub_worker` execution testing. Debugging these test issues moved to backlog (Task B.1).
 
 ## Evolution of Project Decisions
-- **Repository Restructure (Task 9.1) (2025-04-09):** Initiated restructuring to `src` layout to address persistent `tox` import issues (Task B.1). Moved code, updated build configs (`pyproject.toml`), created root `tox.ini`, fixed script paths, created missing `metadata/base.py`, fixed circular imports and `TypeError`s related to `SqlMetadataStore` instantiation. Task is ongoing, blocked by remaining test failures.
+- **Repository Restructure (Task 9.1) (2025-04-09):** Initiated restructuring to `src` layout to address persistent `tox` import issues (Task B.1). Moved code, updated build configs (`pyproject.toml`), created root `tox.ini`, fixed script paths, created missing `metadata/base.py`, fixed circular imports and `TypeError`s related to `SqlMetadataStore` instantiation. Resolved DB connection errors in `test_sql_store.py` by updating `tox.ini` to use `dotenv run --`. Task is ongoing, blocked by remaining test failures (full `tox -r` run interrupted).
 - **Revised Phasing (2025-04-08):** Decided to prioritize core documentation (Task 5.2), then implement prerequisites for live E2E testing (New Phase 6), perform live E2E testing (New Phase 7), and finally complete the remaining documentation tasks (New Phase 8). Tasks 5.3-5.5 deferred to Phase 8.
 - **Task Maint.8 Simplified Testing Strategy (2025-04-08):** Due to persistent test environment/patching issues (`AMQPConnectionError`, `AttributeError`) preventing reliable testing of full actor execution via `stub_worker` in `test_async_workflow.py`, adopted a simplified strategy. Tests in this file now verify only the API -> Broker flow. Full actor logic is covered by unit tests (`test_engine.py`).
 - **Task Maint.8 Rebuild Iteration (2025-04-08):** Adopted an iterative approach for Phase 2 rebuild: Reset to isolation state, created new test file, restored actor definition, restored send call (fixing test fixtures), restored actor logic, added unit tests for logic, added simplified integration tests (API -> Broker).

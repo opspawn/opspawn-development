@@ -414,7 +414,7 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 - [Partially Completed & Blocked] **Task 9.1: Restructure Repository to Src Layout** `(Started 2025-04-09)`
   *Description:* Restructure the project from sibling directories (`ops_core/`, `agentkit/`) to a standard "src layout" (`src/ops_core/`, `src/agentkit/`) to potentially resolve persistent `tox` import issues.
   *Dependencies:* Task B.1 (Decision)
-  *Comments:* Code moved to `src/`. `pyproject.toml` files updated. Root `tox.ini` created and configured. Paths fixed in `tox.ini` commands and `fix_grpc_imports.sh`. Missing `metadata/base.py` created. `TypeError` in `SqlMetadataStore` instantiation fixed in `dependencies.py` and tests (`test_engine.py`, `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`). **Blocked by remaining test failures (starting with DB connection/password error in `test_sql_store.py`).**
+  *Comments:* Code moved to `src/`. `pyproject.toml` files updated. Root `tox.ini` created and configured. Paths fixed in `tox.ini` commands and `fix_grpc_imports.sh`. Missing `metadata/base.py` created. `TypeError` in `SqlMetadataStore` instantiation fixed in `dependencies.py` and tests (`test_engine.py`, `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`). Resolved `asyncpg.exceptions.InvalidPasswordError` in `test_sql_store.py` by modifying `tox.ini` to use `dotenv run -- python -m pytest` (2025-04-09). **Blocked by remaining test failures (full `tox -r` run interrupted).**
 
 ---
 

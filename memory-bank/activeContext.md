@@ -80,6 +80,15 @@
         - `ops_core/tests/integration/test_api_scheduler_integration.py`
         - `ops_core/tests/integration/test_e2e_workflow.py`
     - **Status:** Task partially complete. `tox -r` run was interrupted before completion, but previous run showed remaining test failures (starting with DB connection/password error). Task is blocked pending resolution of these test failures.
+- **Continued Task 9.1 Debugging:** `(Current Session - 2025-04-09 Afternoon)`
+    - Verified PostgreSQL Docker container was running.
+    - Verified credentials matched between `.env` and `docker-compose.yml`.
+    - Verified `ops_core/tests/conftest.py` correctly loaded `DATABASE_URL` from environment.
+    - Isolated test run (`tox -e py312 -- ops_core/tests/metadata/test_sql_store.py`) revealed `DATABASE_URL` was `None` within the `tox` environment, causing `asyncpg.exceptions.InvalidPasswordError`.
+    - Modified root `tox.ini` to add `python-dotenv` dependency and prefix the `pytest` command with `dotenv run --` to ensure `.env` is loaded before tests. Removed `passenv = DATABASE_URL`.
+    - Re-ran isolated test command; all 12 tests in `test_sql_store.py` passed.
+    - Attempted full `tox -r` run, but it was interrupted during dependency installation.
+    - **Status:** Task 9.1 DB connection error resolved. Task remains **Partially Completed & Blocked** pending full `tox -r` verification for other potential errors.
 
 ## Recent Activities (Previous Session - 2025-04-08 Evening/Night)
 - **Started Task 5.2 (Update User & Developer Documentation):**
