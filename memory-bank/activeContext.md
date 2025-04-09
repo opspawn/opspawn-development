@@ -62,6 +62,24 @@
     - Errors shifted between `No module named 'agentkit'`, `No module named 'agentkit.core'`, and `No module named 'agentkit.core.interfaces.llm_client'`, indicating complex issues with `tox` handling sibling editable installs.
     - **Decision:** Paused direct debugging. The next step is to restructure the repository into a "src layout" (Task 9.1) as a more robust potential solution.
     - Updated `TASK.md` to reflect partial completion, blocked status, and added Task 9.1.
+- **Partially Completed Task 9.1 (Restructure Repository to Src Layout):** `(Current Session - 2025-04-09 Afternoon)`
+    - Created `src/` directory at project root.
+    - Moved `ops_core/ops_core/` to `src/ops_core/`.
+    - Moved `agentkit/agentkit/` to `src/agentkit/`.
+    - Updated `ops_core/pyproject.toml` and `agentkit/pyproject.toml` to use `where = ["../src"]`.
+    - Created root `tox.ini` configured for `src` layout, installing both packages editable.
+    - Updated `tox.ini` commands for gRPC generation and import fixing script to use correct paths relative to root and `src/`.
+    - Updated `ops_core/scripts/fix_grpc_imports.sh` to accept target directory as an argument.
+    - Created missing `src/ops_core/metadata/base.py` file with `BaseMetadataStore` ABC definition.
+    - Fixed circular import between `dependencies.py` and `engine.py` by using string type hint and local import in `get_scheduler`.
+    - Fixed `NameError: name 'get_mcp_client' is not defined` in `dependencies.py` by reordering definitions.
+    - Fixed `TypeError: SqlMetadataStore() takes no arguments` by removing session argument during instantiation in:
+        - `src/ops_core/dependencies.py` (`get_metadata_store`)
+        - `ops_core/tests/scheduler/test_engine.py`
+        - `ops_core/tests/grpc/test_task_servicer.py`
+        - `ops_core/tests/integration/test_api_scheduler_integration.py`
+        - `ops_core/tests/integration/test_e2e_workflow.py`
+    - **Status:** Task partially complete. `tox -r` run was interrupted before completion, but previous run showed remaining test failures (starting with DB connection/password error). Task is blocked pending resolution of these test failures.
 
 ## Recent Activities (Previous Session - 2025-04-08 Evening/Night)
 - **Started Task 5.2 (Update User & Developer Documentation):**

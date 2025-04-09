@@ -1,11 +1,11 @@
-# Progress: Opspawn Core Foundation (Task 5.2 Started)
+# Progress: Opspawn Core Foundation (Task 9.1 Started)
 
-## Current Status (Updated 2025-04-09 1:54 PM)
-- **Phase:** Phase 6 (E2E Test Enablement).
-- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Tasks 5.1, 6.1 completed. Maintenance tasks Maint.1-Maint.9 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8.
-- **Current Task:** Phase 6, Task 6.2 (Integrate Persistent Store) - Code changes complete, verification blocked. Next: Task B.1 (Investigate Test Environment Issues).
+## Current Status (Updated 2025-04-09 3:40 PM)
+- **Phase:** Phase 9 (Repository Restructure) / Phase 6 (E2E Test Enablement).
+- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Tasks 5.1, 6.1 completed. Maintenance tasks Maint.1-Maint.9 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Task 9.1 partially completed.
+- **Current Task:** Task 9.1 (Restructure Repository to Src Layout) - Partially complete, blocked by test failures. Next: Continue debugging test failures (starting with DB connection).
 
-## What Works (As of 2025-04-09 2:30 PM)
+## What Works (As of 2025-04-09 3:40 PM)
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented.
 - **Task 2.2 (Reimplemented):** `agentkit` core agent MVP reimplemented (`ShortTermMemory`, `PlaceholderPlanner`, `Agent`, interfaces, tests).
 - **Task 2.3 (Reimplemented):** `agentkit` dynamic tool integration reimplemented (`schemas`, `registry`, `execution`, tests, agent integration).
@@ -47,24 +47,17 @@
     - Task Maint.6: Fixed `agentkit` test structure. (Completed 2025-04-08).
     - Task Maint.7: Fixed failing Google client test (`test_google_client_generate_success`) by correcting mock setup. (Completed 2025-04-08).
     - Task Maint.5: Added configurable timeouts to `OpsMcpClient.call_tool` and verified with tests. (Completed 2025-04-08).
-
-## What Works (As of 2025-04-08 4:20 PM)
-- **`ops-core`:**
-    - Core functionality (Scheduler, Store, Models, APIs, gRPC, MCP Client/Config, Async Messaging) implemented and tested (as of Tasks 2.1, 3.x, 4.x, MCP.x completion dates).
-    - LLM integration (Task 2.12) implemented, including switch to `google-genai` SDK.
-    - Test fixes applied for various import errors, attribute errors, and assertion mismatches encountered during `tox` runs (2025-04-08).
-    - All 104 `ops-core` tests pass via `tox -r` after `agentkit` fixes.
-- **`agentkit`:**
-    - Core components (Agent, Memory, Planner, Tools, Interfaces) reimplemented (Tasks 2.2-2.4).
-    - LLM Clients (OpenAI, Anthropic, Google, OpenRouter) implemented (Tasks 2.6-2.9). Google client refactored for `google-genai` SDK (2025-04-08).
-    - ReAct Planner implemented (Task 2.10).
-    - LLM integration into Agent core completed (Task 2.11).
-    - **Test Status:** All 57 tests pass via `pytest` using Python 3.12 interpreter and explicit PYTHONPATH (Tasks Maint.2, Maint.6, Maint.7, MCP.5, and test fixes completed 2025-04-08).
-- **Integration:** Async messaging (Dramatiq/RabbitMQ) implemented (Task 3.4). MCP client/config implemented (MCP.1, MCP.2). MCP Proxy Tool injection logic implemented and tested (MCP.3, MCP.4, MCP.6). Integration between `ops-core` and `agentkit` verified via passing `ops-core` `tox` tests (re-verified after Task Maint.3).
-- **Testing:** Load testing setup complete (Task 4.3). Security/Error handling tests added (Task 4.4). Testing docs created (Task 4.5). API docs enhanced (Task 5.1). `ops-core` tests pass (107 passed, 3 skipped) after restoring actor definition, send call, and adding unit tests for actor logic (Maint.8 Phase 2, Steps 1-4). Integration tests in `test_async_workflow.py` verify API -> Broker flow, but full actor execution testing in this file remains blocked by environment issues.
+- **Repository Structure (Task 9.1 Partial):**
+    - Code moved to `src/ops_core/` and `src/agentkit/`.
+    - `pyproject.toml` files updated for `src` layout.
+    - Root `tox.ini` created and configured for `src` layout.
+    - `fix_grpc_imports.sh` script updated for new paths.
+    - Missing `src/ops_core/metadata/base.py` created.
+    - Import errors (`get_scheduler`, circular deps, `get_mcp_client`) fixed in `dependencies.py`.
+    - `TypeError: SqlMetadataStore() takes no arguments` fixed in `dependencies.py` and multiple test files.
 - **Documentation (Task 5.2 Partial):** Initial explanation documents (`architecture.md`, `ops_core_overview.md`, `agentkit_overview.md`) created and expanded with current system details (2025-04-09).
-- **Persistent Metadata Store (Task 6.1 Partial):**
-    - `SqlMetadataStore` implemented (`ops_core/ops_core/metadata/sql_store.py`).
+- **Persistent Metadata Store (Task 6.1 Completed):**
+    - `SqlMetadataStore` implemented (`src/ops_core/metadata/sql_store.py`).
     - Unit tests implemented (`ops_core/tests/metadata/test_sql_store.py`) and DB fixtures added (`ops_core/tests/conftest.py`).
     - Docker Compose V2 plugin installed.
     - `docker-compose.yml` created.
@@ -76,13 +69,13 @@
     - `ops_core.dependencies` updated to provide `SqlMetadataStore` and manage DB sessions.
     - Dramatiq actor (`scheduler/engine.py`) refactored for independent session management.
     - API endpoints and gRPC servicer updated to use `BaseMetadataStore` dependency.
-    - Tests (`test_engine.py`, `test_tasks.py`, `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`) refactored to use `db_session` fixture and `SqlMetadataStore`.
+    - Tests (`test_engine.py`, `test_tasks.py` (API), `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`) refactored to use `db_session` fixture and `SqlMetadataStore`.
 
 ## What's Left to Build (Revised Plan - 2025-04-09)
 - **Phase 9:** Repository Restructure
-    - Task 9.1: Restructure Repository to Src Layout.
+    - Task 9.1: Complete repository restructure by fixing remaining test failures.
 - **Phase 6:** E2E Test Enablement
-    - Task 6.2: Integrate Persistent Store (Blocked on Task B.1/9.1 for `tox` verification).
+    - Task 6.2: Integrate Persistent Store (Blocked on Task 9.1 test fixes).
     - Task 6.3: Implement Live LLM Integration Tests.
     - Task 6.4: Implement `agentkit` Long-Term Memory MVP (Optional).
 - **Phase 7:** Full Live E2E Testing
@@ -91,16 +84,17 @@
 - **Phase 8:** Final Documentation Update
     - Task 8.1: Update & Finalize All Documentation (Revisit deferred 5.2-5.5).
 - **Backlog:**
-    - Task B.1: Investigate Test Environment Issues (`tox` import errors) - Blocked pending Task 9.1.
+    - Task B.1: Investigate Test Environment Issues (`tox` import errors) - Likely resolved by Task 9.1 fixes, but monitor.
     - Enhancements 1-5.
 
 ## Known Issues / Blockers
-- **`tox` Environment (Task B.1 - Blocked):** Persistent `ModuleNotFoundError` issues occur during test collection when running `tox -r` in `ops_core`, preventing full test suite verification (Task 6.2.7). Extensive troubleshooting involving `tox.ini` and `pyproject.toml` configurations (optional deps, PYTHONPATH, explicit pip installs, editable-legacy, cache clearing) failed to resolve the issue. The errors inconsistently point to `agentkit`, `agentkit.core`, or `agentkit.core.interfaces.llm_client`. The root cause appears related to `tox`'s handling of sibling editable installs. **Decision:** Task B.1 is blocked pending repository restructure (Task 9.1).
-- `InMemoryMetadataStore` is not persistent or thread-safe (Replaced by `SqlMetadataStore`, but tests using `InMemoryScheduler` still exist).
+- **Test Failures (Task 9.1):** `tox -r` run is currently failing due to various errors (DB connection, TypeErrors, ValidationErrors, AssertionErrors) revealed after the src layout restructure and initial fixes. Needs systematic debugging (starting with DB connection).
+- `InMemoryMetadataStore` is not persistent or thread-safe (Replaced by `SqlMetadataStore`, but tests using `InMemoryScheduler` still exist - check if `InMemoryScheduler` fixture needs update).
 - CI workflows currently lack linting/type checking steps (commented out).
 - **Task Maint.8 Resolution:** Original integration tests (`test_async_workflow_old.py`) are skipped. Integration tests in the new `test_async_workflow.py` are marked with `@pytest.mark.skip` due to persistent test environment issues preventing reliable `stub_worker` execution testing. Debugging these test issues moved to backlog (Task B.1).
 
 ## Evolution of Project Decisions
+- **Repository Restructure (Task 9.1) (2025-04-09):** Initiated restructuring to `src` layout to address persistent `tox` import issues (Task B.1). Moved code, updated build configs (`pyproject.toml`), created root `tox.ini`, fixed script paths, created missing `metadata/base.py`, fixed circular imports and `TypeError`s related to `SqlMetadataStore` instantiation. Task is ongoing, blocked by remaining test failures.
 - **Revised Phasing (2025-04-08):** Decided to prioritize core documentation (Task 5.2), then implement prerequisites for live E2E testing (New Phase 6), perform live E2E testing (New Phase 7), and finally complete the remaining documentation tasks (New Phase 8). Tasks 5.3-5.5 deferred to Phase 8.
 - **Task Maint.8 Simplified Testing Strategy (2025-04-08):** Due to persistent test environment/patching issues (`AMQPConnectionError`, `AttributeError`) preventing reliable testing of full actor execution via `stub_worker` in `test_async_workflow.py`, adopted a simplified strategy. Tests in this file now verify only the API -> Broker flow. Full actor logic is covered by unit tests (`test_engine.py`).
 - **Task Maint.8 Rebuild Iteration (2025-04-08):** Adopted an iterative approach for Phase 2 rebuild: Reset to isolation state, created new test file, restored actor definition, restored send call (fixing test fixtures), restored actor logic, added unit tests for logic, added simplified integration tests (API -> Broker).
