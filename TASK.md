@@ -417,9 +417,9 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
   *Comments:* Code moved to `src/`. `pyproject.toml` files updated. Root `tox.ini` created and configured. Paths fixed in `tox.ini` commands and `fix_grpc_imports.sh`. Missing `metadata/base.py` created. `TypeError` in `SqlMetadataStore` instantiation fixed in `dependencies.py` and tests (`test_engine.py`, `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`). Resolved `asyncpg.exceptions.InvalidPasswordError` in `test_sql_store.py` by modifying `tox.ini` to use `dotenv run -- python -m pytest` (2025-04-09). Standardized imports to use `src.` prefix. Fixed `ImportError` in `test_broker.py`. **Blocked by persistent `sqlalchemy.exc.InvalidRequestError: Table 'task' is already defined` during test collection via `tox`. See `memory-bank/task_9.1_collection_error_summary.md`.**
   *Debugging Strategy (Batches):*
     - **Batch 1: Database Connection (Completed)**
-      - Issue: `InvalidPasswordError` in `ops_core/tests/metadata/test_sql_store.py`.
-      - Status: Fixed (2025-04-09).
-      - Test Command: `tox -e py312 -- -k test_sql_store.py`
+      - Issue: `InvalidPasswordError` in `ops_core/tests/metadata/test_sql_store.py`. Also previously blocked by `sqlalchemy.exc.InvalidRequestError` during collection.
+      - Status: Fixed (2025-04-10). Tests pass via `tox -e py312 -- ops_core/tests/metadata/test_sql_store.py -v` after changing `db_engine` fixture scope to `function` and removing `is not` assertion. Collection error appears resolved for this file.
+      - Test Command: `tox -e py312 -- ops_core/tests/metadata/test_sql_store.py -v`
     - **Batch 2: Dependency Injection (Completed 2025-04-09)**
       - Issue: `AssertionErrors` in `ops_core/tests/test_dependencies.py` due to tests not awaiting `async def get_metadata_store` and incorrect type/singleton assertions.
       - Status: Fixed by updating tests to use `async def`, `await`, and correct assertions.
@@ -453,6 +453,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
       - Status: **Completed (2025-04-09 Evening)**. Resolved Pika error by implementing conditional broker loading in `src/ops_core/tasks/broker.py` based on `DRAMATIQ_TESTING` env var set in `tox.ini`. Also fixed subsequent test collection errors (`ValueError: actor already registered`) and test execution errors (`AttributeError` on assertion, `TypeError` on await, `TypeError` on `update_task_output` args). Tests in `test_e2e_workflow.py` now pass.
       - Test Command: `tox -e py312 -- ops_core/tests/integration/test_e2e_workflow.py`
     - **Final Step:** Run `tox -r` after all batches pass. (Next Step)
+
+- [x] **Task Maint.10: Enhance Testing Strategy** `(Completed 2025-04-10)`
+    *Description:* Refined the testing strategy in `memory-bank/testing_strategy.md` to include more granular batching options (keyword, node ID, marker) and a structured debugging log process. Updated `tox.ini` default command to include both `ops_core` and `agentkit` tests.
+    *Dependencies:* Task 9.1 (Context)
 
 ---
 

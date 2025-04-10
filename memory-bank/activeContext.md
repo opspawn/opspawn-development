@@ -19,6 +19,10 @@
     - Debugged persistent `AMQPConnectionError` and other issues in `src/ops_core/tests/integration/test_async_workflow.py`.
     - Simplified tests to only verify API -> Scheduler -> `actor.send()` dispatch, removing actor execution simulation.
     - Confirmed all 3 tests in the file now pass. Updated `TASK.md`.
+- **Continued Task 9.1 Debugging (SQLAlchemy Collection Error):** `(Current Session - 2025-04-10)`
+    - Reverted `ops_core/tests/conftest.py` database fixtures back to module-scoped engine/tables and function-scoped transactional sessions.
+    - Ran `tox -e py312 -- -k test_sql_store.py` (Batch 1). All 12 tests passed, resolving the previous `RuntimeError` and `InterfaceError`.
+- **Completed Task Maint.10 (Enhance Testing Strategy):** Refined `memory-bank/testing_strategy.md` with granular batching and structured logging. Updated `tox.ini` default command to include both `ops_core` and `agentkit` tests.
 
 ## Recent Activities (Previous Session - 2025-04-09 Morning)
 - **Continued Task 5.2 (Update User & Developer Documentation):**
@@ -80,9 +84,6 @@
     - Fixed circular import between `dependencies.py` and `engine.py` by using string type hint and local import in `get_scheduler`.
     - Fixed `NameError: name 'get_mcp_client' is not defined` in `dependencies.py` by reordering definitions.
     - Fixed `TypeError: SqlMetadataStore() takes no arguments` by removing session argument during instantiation in:
-        - `src/ops_core/dependencies.py` (`get_metadata_store`)
-        - `ops_core/tests/scheduler/test_engine.py`
-        - `ops_core/tests/grpc/test_task_servicer.py`
         - `ops_core/tests/integration/test_api_scheduler_integration.py`
         - `ops_core/tests/integration/test_e2e_workflow.py`
     - **Status:** Task partially complete. `tox -r` run was interrupted before completion, but previous run showed remaining test failures (starting with DB connection/password error). Task is blocked pending resolution of these test failures.

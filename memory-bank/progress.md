@@ -101,6 +101,7 @@
     - Batch 3: Agentkit Tools - Completed (2025-04-09).
     - Batch 4: Async Workflow - **Completed (2025-04-10)**. Tests simplified to verify API -> Scheduler -> `actor.send()` dispatch. All 3 tests pass.
     - Batch 5: E2E & Remaining - Completed (2025-04-09).
+- **Enhanced Testing Strategy (Task Maint.10) (2025-04-10):** Updated `memory-bank/testing_strategy.md` with granular batching and structured logging. Updated `tox.ini` default command to include both `ops_core` and `agentkit` tests.
 - **Revised Phasing (2025-04-08):** Decided to prioritize core documentation (Task 5.2), then implement prerequisites for live E2E testing (New Phase 6), perform live E2E testing (New Phase 7), and finally complete the remaining documentation tasks (New Phase 8). Tasks 5.3-5.5 deferred to Phase 8.
 - **Task Maint.8 Simplified Testing Strategy (2025-04-08):** Due to persistent test environment/patching issues (`AMQPConnectionError`, `AttributeError`) preventing reliable testing of full actor execution via `stub_worker` in `test_async_workflow.py`, adopted a simplified strategy. Tests in this file now verify only the API -> Broker flow. Full actor logic is covered by unit tests (`test_engine.py`).
 - **Task Maint.8 Rebuild Iteration (2025-04-08):** Adopted an iterative approach for Phase 2 rebuild: Reset to isolation state, created new test file, restored actor definition, restored send call (fixing test fixtures), restored actor logic, added unit tests for logic, added simplified integration tests (API -> Broker).
