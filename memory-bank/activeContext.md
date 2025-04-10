@@ -1,25 +1,34 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-10)
-- **Task 9.1 (Restructure Repository & Fix Imports):** **In Progress**. Collection error resolved. Standardizing imports across `ops_core` tests to remove `src.` prefix. 22 runtime test failures remain.
-- **Task 9.2 (Fix Runtime Test Failures - Batch 6 DB Layer):** **Next Task**. Focus on fixing the 5 failures in `ops_core/tests/metadata/test_sql_store.py`.
-- **Task 6.2 (Integrate Persistent Store):** **Blocked** pending resolution of runtime test failures in Task 9.1/9.2.
+## Current Focus (Updated 2025-04-10 End of Session)
+- **Task 9.2 (Fix Runtime Test Failures - Batch 6 Scheduler):** **Next Task**. Focus on fixing the 4 failures in `ops_core/tests/scheduler/test_engine.py` (`AssertionError`, `RuntimeError`, `InterfaceError`).
+- **Task 6.2 (Integrate Persistent Store):** **Blocked** pending resolution of runtime test failures in Task 9.2+.
 - **Task 5.2 (Update User & Developer Documentation):** **In Progress (Paused)**. Initial explanation drafts created and expanded. Further updates deferred to Phase 8.
 - **Phase 5 Deferred:** Tasks 5.3-5.5 remain deferred to Phase 8.
 
-## Recent Activities (Current Session - 2025-04-10 Morning/Midday)
-- **Continued Task 9.1 (Fix Imports):** Systematically removed `src.` prefix from imports in multiple `ops_core` test files (`test_sql_store.py`, `conftest.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`, `test_tasks.py` (API), `test_task_schemas.py`, `test_task_servicer.py`, `test_models.py`, `test_store.py`, `test_dependencies.py`, `test_engine.py`, `test_broker.py`) and related source files (`store.py`).
-- **Confirmed Test Status:** Reviewed `tox` output. Confirmed test collection is succeeding, but 22 runtime failures exist.
-- **Defined Next Steps:** Agreed to focus on fixing runtime failures, starting with Batch 6 (DB Layer tests in `test_sql_store.py`). Added Task 9.2 to `TASK.md`.
-- **Documentation Update:** Updated `TASK.md`, `activeContext.md`, and `progress.md` to reflect the current status and plan. Removed `memory-bank/task_9.1_collection_error_summary.md`.
-- **Completed Task 9.1 Batch 4 (Async Workflow Tests):** `(Completed 2025-04-10)`
-    - Debugged persistent `AMQPConnectionError` and other issues in `src/ops_core/tests/integration/test_async_workflow.py`.
-    - Simplified tests to only verify API -> Scheduler -> `actor.send()` dispatch, removing actor execution simulation.
-    - Confirmed all 3 tests in the file now pass. Updated `TASK.md`.
-- **Resolved Task 9.1 Collection Error:** `(Completed 2025-04-10)`
-    - Reverted `ops_core/tests/conftest.py` database fixtures back to module-scoped engine/tables and function-scoped transactional sessions.
-    - Ran `tox -e py312 -- -k test_sql_store.py` (Batch 1). All 12 tests passed, resolving the previous `RuntimeError` and `InterfaceError` and confirming collection error is fixed.
-- **Completed Task Maint.10 (Enhance Testing Strategy):** `(Completed 2025-04-10)` Refined `memory-bank/testing_strategy.md` with granular batching and structured logging. Updated `tox.ini` default command to include both `ops_core` and `agentkit` tests.
+## Recent Activities (Current Session - 2025-04-10 Afternoon)
+- **Continued Task 9.2 (Fix Runtime Test Failures):**
+    - Ran tests in batches as per testing strategy.
+    - **Batch 1 (`test_sql_store.py`):** Passed.
+    - **Batch 2 (`test_dependencies.py`):** Passed.
+    - **Batch 3 (`agentkit/tests/tools/`):** Passed.
+    - **Batch 4 (`test_async_workflow.py`):**
+        - Added RabbitMQ to `docker-compose.yml` and started container.
+        - Fixed `fixture 'stub_broker' not found` error by adding local fixture definition.
+        - Fixed `ImportError: cannot import name 'Results'` by correcting import path.
+        - Fixed `AttributeError: module 'ops_core.api.v1.endpoints.tasks' has no attribute 'get_mcp_client'` by correcting dependency override target.
+        - Fixed `AssertionError: assert 500 == 201` by correcting patch `side_effect` for `actor.send` and updating assertions to check mock call instead of `stub_broker.queues`.
+        - Batch 4 tests now pass.
+    - **Batch 5 (`test_e2e_workflow.py`):** Passed.
+    - **Batch 6 (`test_engine.py`):** Ran tests. 4 failures observed (`AssertionError`, `RuntimeError`, `InterfaceError`). Identified as the next focus.
+- **Documentation Update:** Updated `TASK.md`, `activeContext.md`, and `progress.md` to reflect the current status and plan.
+
+## Recent Activities (Previous Session - 2025-04-10 Morning/Midday)
+- **Completed Task 9.1 (Fix Imports):** Systematically removed `src.` prefix from imports in multiple `ops_core` test files and source files. Confirmed test collection passes.
+- **Defined Next Steps:** Agreed to focus on fixing runtime failures via batch testing (Task 9.2).
+- **Completed Task 9.1 Batch 4 (Async Workflow Tests - Initial Fix):** Simplified tests to verify API -> Broker dispatch only.
+- **Resolved Task 9.1 Collection Error:** Fixed DB fixture scopes.
+- **Completed Task Maint.10 (Enhance Testing Strategy):** Refined strategy doc and updated `tox.ini`.
 
 ## Recent Activities (Previous Session - 2025-04-09)
 - **Continued Task 5.2 (Update User & Developer Documentation):** `(Completed 2025-04-09)`

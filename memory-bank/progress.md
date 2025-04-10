@@ -1,14 +1,15 @@
 # Progress: Opspawn Core Foundation (Task 9.1 In Progress)
 
-## Current Status (Updated 2025-04-10)
+## Current Status (Updated 2025-04-10 End of Session)
 - **Phase:** Phase 9 (Repository Restructure & Test Fixing).
-- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Tasks 5.1, 6.1 completed. Maintenance tasks Maint.1-Maint.10 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Task 9.1 (restructure & collection error fix) completed.
-- **Current Task:** Task 9.1 (Fix Imports). Systematically removing `src.` prefix from imports in `ops_core` tests and source files.
-- **Next Task:** Task 9.2 (Fix Runtime Test Failures - Batch 6 DB Layer). Focus on the 5 failures in `ops_core/tests/metadata/test_sql_store.py`.
-- **Blockers:** Task 6.2 (Integrate Persistent Store) is blocked pending resolution of runtime test failures.
+- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Tasks 5.1, 6.1 completed. Maintenance tasks Maint.1-Maint.10 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Task 9.1 (restructure & collection error fix) completed. Task 9.2 (Fix Runtime Tests) is in progress (Batches 1-5 passed, Batch 6 pending).
+- **Current Task:** Task 9.2 (Fix Runtime Test Failures). Currently focused on Batch 6 (`ops_core/tests/scheduler/test_engine.py`).
+- **Next Task:** Continue debugging Batch 6 failures within Task 9.2.
+- **Blockers:** Task 6.2 (Integrate Persistent Store) is blocked pending resolution of runtime test failures (Task 9.2).
 
-## What Works (As of 2025-04-10 12:12 PM)
+## What Works (As of 2025-04-10 5:07 PM)
 - **Repository Structure:** Project restructured to `src` layout. Test collection via `tox` is working.
+- **Test Batches 1-5:** Tests for DB Layer (`test_sql_store.py`), Dependency Injection (`test_dependencies.py`), Agentkit Tools (`agentkit/tests/tools/`), Async Workflow (`test_async_workflow.py`), and E2E Workflow (`test_e2e_workflow.py`) are passing via `tox`.
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented.
 - **Task 2.2 (Reimplemented):** `agentkit` core agent MVP reimplemented (`ShortTermMemory`, `PlaceholderPlanner`, `Agent`, interfaces, tests).
 - **Task 2.3 (Reimplemented):** `agentkit` dynamic tool integration reimplemented (`schemas`, `registry`, `execution`, tests, agent integration).
