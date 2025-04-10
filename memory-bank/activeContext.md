@@ -20,8 +20,10 @@
         - Fixed `AssertionError: assert 500 == 201` by correcting patch `side_effect` for `actor.send` and updating assertions to check mock call instead of `stub_broker.queues`.
         - Batch 4 tests now pass.
     - **Batch 5 (`test_e2e_workflow.py`):** Passed.
-    - **Batch 6 (`test_engine.py`):** Ran tests. 4 failures observed (`AssertionError`, `RuntimeError`, `InterfaceError`). Identified as the next focus.
-- **Documentation Update:** Updated `TASK.md`, `activeContext.md`, and `progress.md` to reflect the current status and plan.
+    - **Batch 6 (`test_engine.py`):** Debugged and fixed 4 failures related to mocking strategy for `_run_agent_task_logic` (internal session handling) and assertion logic. All tests in Batch 6 now pass.
+    - **Full `tox` Run:** Executed `tox -e py312`. Identified 12 failures in API (`test_tasks.py`), gRPC (`test_task_servicer.py`), and integration (`test_api_scheduler_integration.py`) tests, primarily `sqlalchemy.exc.InterfaceError`.
+    - **Added New Batches:** Defined Batches 7 (API), 8 (gRPC), and 9 (Integration) in `TASK.md` to cover the remaining failing tests.
+- **Documentation Update:** Updated `TASK.md`, `activeContext.md`, and `progress.md` to reflect the full `tox` run results and the plan to address new batches.
 
 ## Recent Activities (Previous Session - 2025-04-10 Morning/Midday)
 - **Completed Task 9.1 (Fix Imports):** Systematically removed `src.` prefix from imports in multiple `ops_core` test files and source files. Confirmed test collection passes.

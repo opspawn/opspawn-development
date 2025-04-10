@@ -3,9 +3,9 @@
 ## Current Status (Updated 2025-04-10 End of Session)
 - **Phase:** Phase 9 (Repository Restructure & Test Fixing).
 - **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Tasks 5.1, 6.1 completed. Maintenance tasks Maint.1-Maint.10 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Task 9.1 (restructure & collection error fix) completed. Task 9.2 (Fix Runtime Tests) is in progress (Batches 1-5 passed, Batch 6 pending).
-- **Current Task:** Task 9.2 (Fix Runtime Test Failures). Currently focused on Batch 6 (`ops_core/tests/scheduler/test_engine.py`).
-- **Next Task:** Continue debugging Batch 6 failures within Task 9.2.
-- **Blockers:** Task 6.2 (Integrate Persistent Store) is blocked pending resolution of runtime test failures (Task 9.2).
+- **Current Task:** Task 9.2 (Fix Runtime Test Failures). Completed Batches 1-6. Full `tox` run revealed 12 failures in API, gRPC, and integration tests.
+- **Next Task:** Continue Task 9.2 by debugging Batch 7 (REST API - `ops_core/tests/api/`).
+- **Blockers:** Task 6.2 (Integrate Persistent Store) is blocked pending resolution of remaining runtime test failures (Task 9.2).
 
 ## What Works (As of 2025-04-10 5:07 PM)
 - **Repository Structure:** Project restructured to `src` layout. Test collection via `tox` is working.
@@ -81,8 +81,10 @@
 
 ## What's Left to Build (Revised Plan - 2025-04-10)
 - **Phase 9:** Test Fixing
-    - Task 9.2: Fix Runtime Test Failures (Batch 6 - DB Layer).
-    - Task 9.x: Fix Runtime Test Failures (Subsequent Batches - API, gRPC, Integration, Scheduler).
+    - Task 9.2: Fix Runtime Test Failures (Batches 1-6 Completed).
+    - Task 9.2 (Batch 7): Fix REST API tests (`ops_core/tests/api/`).
+    - Task 9.2 (Batch 8): Fix gRPC API tests (`ops_core/tests/grpc/`).
+    - Task 9.2 (Batch 9): Fix Integration tests (`test_api_scheduler_integration.py`).
 - **Phase 6:** E2E Test Enablement
     - Task 6.2: Integrate Persistent Store (Blocked on Task 9.2+).
     - Task 6.3: Implement Live LLM Integration Tests.
@@ -97,7 +99,7 @@
     - Enhancements 1-5.
 
 ## Known Issues / Blockers
-- **Runtime Test Failures:** 22 tests failing in `tox` run (as of 2025-04-10 output) primarily related to database interactions (`IntegrityError`, `InterfaceError`, `AssertionError`). Currently being addressed starting with Task 9.2.
+- **Runtime Test Failures:** 12 tests failing in `tox` run (as of 2025-04-10 5:27 PM) primarily related to `sqlalchemy.exc.InterfaceError: cannot perform operation: another operation is in progress` in API, gRPC, and integration tests. Currently being addressed starting with Task 9.2, Batch 7.
 - `InMemoryMetadataStore` is not persistent or thread-safe (Replaced by `SqlMetadataStore`, but some older tests might still reference it indirectly via fixtures - verify during debugging).
 - CI workflows currently lack linting/type checking steps (commented out).
 - **Task Maint.8 Resolution:** Original integration tests (`test_async_workflow_old.py`) are skipped. Integration tests in the new `test_async_workflow.py` were simplified to verify dispatch only.

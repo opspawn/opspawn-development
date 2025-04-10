@@ -453,8 +453,8 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
     - **Batch 6: Scheduler (Next)**
       - Issues: `AssertionError`, `RuntimeError`, `InterfaceError` in `ops_core/tests/scheduler/test_engine.py`.
       - Test Command: `tox -e py312 -- ops_core/tests/scheduler/test_engine.py -v`
-      - Status: **Pending**.
-    - **Final Step:** Run `tox -e py312` after all batches pass. (Blocked by Batch 6 failures)
+      - Status: **Completed (2025-04-10).**
+    - **Final Step:** Run `tox -e py312` after all batches pass. (Ready to run)
 
 - [x] **Task Maint.10: Enhance Testing Strategy** `(Completed 2025-04-10)`
     *Description:* Refined the testing strategy in `memory-bank/testing_strategy.md` to include more granular batching options (keyword, node ID, marker) and a structured debugging log process. Updated `tox.ini` default command to include both `ops_core` and `agentkit` tests.
@@ -469,7 +469,11 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
         - **Batch 3 (Agentkit Tools - `src/agentkit/tests/tools/`): Completed (2025-04-10).** Passed.
         - **Batch 4 (Async Workflow - `test_async_workflow.py`): Completed (2025-04-10).** Passed after fixing fixture/patching issues.
         - **Batch 5 (E2E Workflow - `test_e2e_workflow.py`): Completed (2025-04-10).** Passed.
-        - **Batch 6 (Scheduler - `test_engine.py`): Pending.** This is the next batch to run and debug.
+        - **Batch 6 (Scheduler - `test_engine.py`): Completed (2025-04-10).** Passed after fixing mocking/assertion issues.
+        - **Batch 7 (REST API - `ops_core/tests/api/`): Pending.** (Identified 3 failures in `test_tasks.py`)
+        - **Batch 8 (gRPC API - `ops_core/tests/grpc/`): Pending.** (Identified 5 failures in `test_task_servicer.py`)
+        - **Batch 9 (Integration - `test_api_scheduler_integration.py`): Pending.** (Identified 4 failures)
+        - **Next Step:** Debug Batch 7 failures.
 
 ---
 
