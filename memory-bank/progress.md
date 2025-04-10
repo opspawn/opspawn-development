@@ -1,11 +1,14 @@
-# Progress: Opspawn Core Foundation (Task 9.1 Started)
+# Progress: Opspawn Core Foundation (Task 9.1 In Progress)
 
 ## Current Status (Updated 2025-04-10)
-- **Phase:** Phase 9 (Repository Restructure).
-- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Tasks 5.1, 6.1 completed. Maintenance tasks Maint.1-Maint.9 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Task 9.1 partially completed.
-- **Current Task:** Task 9.1 (Restructure Repository to Src Layout) - Partially complete & Blocked. Batches 1, 2, 3, 4, 5 completed. **Blocked by persistent `sqlalchemy.exc.InvalidRequestError: Table 'task' is already defined` during test collection via `tox`. See `memory-bank/task_9.1_collection_error_summary.md`.** Next: Investigate collection error further.
+- **Phase:** Phase 9 (Repository Restructure & Test Fixing).
+- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Tasks 5.1, 6.1 completed. Maintenance tasks Maint.1-Maint.10 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Task 9.1 (restructure & collection error fix) completed.
+- **Current Task:** Task 9.1 (Fix Imports). Systematically removing `src.` prefix from imports in `ops_core` tests and source files.
+- **Next Task:** Task 9.2 (Fix Runtime Test Failures - Batch 6 DB Layer). Focus on the 5 failures in `ops_core/tests/metadata/test_sql_store.py`.
+- **Blockers:** Task 6.2 (Integrate Persistent Store) is blocked pending resolution of runtime test failures.
 
-## What Works (As of 2025-04-10 9:17 AM)
+## What Works (As of 2025-04-10 12:12 PM)
+- **Repository Structure:** Project restructured to `src` layout. Test collection via `tox` is working.
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented.
 - **Task 2.2 (Reimplemented):** `agentkit` core agent MVP reimplemented (`ShortTermMemory`, `PlaceholderPlanner`, `Agent`, interfaces, tests).
 - **Task 2.3 (Reimplemented):** `agentkit` dynamic tool integration reimplemented (`schemas`, `registry`, `execution`, tests, agent integration).
@@ -47,7 +50,7 @@
     - Task Maint.6: Fixed `agentkit` test structure. (Completed 2025-04-08).
     - Task Maint.7: Fixed failing Google client test (`test_google_client_generate_success`) by correcting mock setup. (Completed 2025-04-08).
     - Task Maint.5: Added configurable timeouts to `OpsMcpClient.call_tool` and verified with tests. (Completed 2025-04-08).
-- **Repository Structure (Task 9.1 Partial):**
+- **Repository Structure (Task 9.1 - In Progress):**
     - Code moved to `src/ops_core/` and `src/agentkit/`.
     - `pyproject.toml` files updated for `src` layout.
     - Root `tox.ini` created and configured for `src` layout.
@@ -56,6 +59,8 @@
     - Import errors (`get_scheduler`, circular deps, `get_mcp_client`) fixed in `dependencies.py`.
     - `TypeError: SqlMetadataStore() takes no arguments` fixed in `dependencies.py` and multiple test files.
     - `tox.ini` updated to use `dotenv run -- python -m pytest` to resolve DB connection issues in tests.
+    - Test collection error (`Table 'task' is already defined`) resolved.
+    - Imports standardized (removing `src.` prefix) in progress across `ops_core` tests and source.
 - **Documentation (Task 5.2 Partial):** Initial explanation documents (`architecture.md`, `ops_core_overview.md`, `agentkit_overview.md`) created and expanded with current system details (2025-04-09).
 - **Persistent Metadata Store (Task 6.1 Completed):**
     - `SqlMetadataStore` implemented (`src/ops_core/metadata/sql_store.py`).
@@ -66,17 +71,19 @@
     - PostgreSQL container running via `docker compose`.
     - Alembic migrations applied successfully.
     - `test_sql_store.py` tests verified passing after fixing session management, variable names, enum handling (`native_enum=False`), and JSON serialization issues (2025-04-09).
-- **Persistent Store Integration (Task 6.2 - Code Complete):**
+- **Persistent Store Integration (Task 6.2 - Code Complete, Blocked):**
     - `ops_core.dependencies` updated to provide `SqlMetadataStore` and manage DB sessions.
     - Dramatiq actor (`scheduler/engine.py`) refactored for independent session management.
     - API endpoints and gRPC servicer updated to use `BaseMetadataStore` dependency.
     - Tests (`test_engine.py`, `test_tasks.py` (API), `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`) refactored to use `db_session` fixture and `SqlMetadataStore`.
+    - **Blocked** pending resolution of runtime test failures (Task 9.2+).
 
-## What's Left to Build (Revised Plan - 2025-04-09)
-- **Phase 9:** Repository Restructure
-    - Task 9.1: Complete repository restructure by fixing remaining test failures.
+## What's Left to Build (Revised Plan - 2025-04-10)
+- **Phase 9:** Test Fixing
+    - Task 9.2: Fix Runtime Test Failures (Batch 6 - DB Layer).
+    - Task 9.x: Fix Runtime Test Failures (Subsequent Batches - API, gRPC, Integration, Scheduler).
 - **Phase 6:** E2E Test Enablement
-    - Task 6.2: Integrate Persistent Store (Blocked on Task 9.1 test fixes).
+    - Task 6.2: Integrate Persistent Store (Blocked on Task 9.2+).
     - Task 6.3: Implement Live LLM Integration Tests.
     - Task 6.4: Implement `agentkit` Long-Term Memory MVP (Optional).
 - **Phase 7:** Full Live E2E Testing
@@ -85,22 +92,18 @@
 - **Phase 8:** Final Documentation Update
     - Task 8.1: Update & Finalize All Documentation (Revisit deferred 5.2-5.5).
 - **Backlog:**
-    - Task B.1: Investigate Test Environment Issues (`tox` import errors) - Likely resolved by Task 9.1 fixes, but monitor.
+    - Task B.1: Investigate Test Environment Issues (`tox` import errors) - Believed resolved by Task 9.1, but monitor.
     - Enhancements 1-5.
 
 ## Known Issues / Blockers
-- **Test Collection Error (Task 9.1):** **Persistent Blocker (2025-04-09)**. `sqlalchemy.exc.InvalidRequestError: Table 'task' is already defined` occurs during `tox` test collection despite numerous fixes (centralized metadata, standardized imports, Alembic alignment, dependency isolation, fixture isolation). Root cause likely related to `tox`/`pytest`/`src` layout interaction. See `memory-bank/task_9.1_collection_error_summary.md`.
-- `InMemoryMetadataStore` is not persistent or thread-safe (Replaced by `SqlMetadataStore`, but tests using `InMemoryScheduler` still exist - check if `InMemoryScheduler` fixture needs update).
+- **Runtime Test Failures:** 22 tests failing in `tox` run (as of 2025-04-10 output) primarily related to database interactions (`IntegrityError`, `InterfaceError`, `AssertionError`). Currently being addressed starting with Task 9.2.
+- `InMemoryMetadataStore` is not persistent or thread-safe (Replaced by `SqlMetadataStore`, but some older tests might still reference it indirectly via fixtures - verify during debugging).
 - CI workflows currently lack linting/type checking steps (commented out).
-- **Task Maint.8 Resolution:** Original integration tests (`test_async_workflow_old.py`) are skipped. Integration tests in the new `test_async_workflow.py` were simplified to verify dispatch only, due to persistent test environment issues preventing reliable actor execution simulation. Debugging these test issues moved to backlog (Task B.1).
+- **Task Maint.8 Resolution:** Original integration tests (`test_async_workflow_old.py`) are skipped. Integration tests in the new `test_async_workflow.py` were simplified to verify dispatch only.
 
 ## Evolution of Project Decisions
-- **Repository Restructure (Task 9.1) (2025-04-09):** Initiated restructuring to `src` layout. Moved code, updated build configs, created root `tox.ini`, fixed script paths, created `metadata/base.py`, fixed various import errors and `TypeError`s. Resolved DB connection errors (`InvalidPasswordError`) and Pika connection errors (`AMQPConnectionError`). Standardized imports to use `src.` prefix. Fixed `ImportError` in `test_broker.py`. **Currently blocked by persistent `sqlalchemy.exc.InvalidRequestError: Table 'task' is already defined` during test collection via `tox`.** See `memory-bank/task_9.1_collection_error_summary.md`.
-    - Batch 1: DB Connection - Completed (2025-04-09).
-    - Batch 2: Dependency Injection - Completed (2025-04-09).
-    - Batch 3: Agentkit Tools - Completed (2025-04-09).
-    - Batch 4: Async Workflow - **Completed (2025-04-10)**. Tests simplified to verify API -> Scheduler -> `actor.send()` dispatch. All 3 tests pass.
-    - Batch 5: E2E & Remaining - Completed (2025-04-09).
+- **Test Fixing Strategy (2025-04-10):** Confirmed test collection is working. Prioritizing fixing the 22 runtime failures, starting with Batch 6 (DB Layer - Task 9.2). Standardizing imports (removing `src.` prefix) as part of Task 9.1.
+- **Repository Restructure & Collection Fix (Task 9.1) (2025-04-09/10):** Initiated restructuring to `src` layout. Moved code, updated build configs, created root `tox.ini`, fixed script paths, created `metadata/base.py`, fixed various import errors and `TypeError`s. Resolved DB connection errors (`InvalidPasswordError`) and Pika connection errors (`AMQPConnectionError`). Standardized imports to use `src.` prefix (in progress). Fixed `ImportError` in `test_broker.py`. Resolved `sqlalchemy.exc.InvalidRequestError: Table 'task' is already defined` during test collection via fixture scope adjustments. Completed Batches 1-5.
 - **Enhanced Testing Strategy (Task Maint.10) (2025-04-10):** Updated `memory-bank/testing_strategy.md` with granular batching and structured logging. Updated `tox.ini` default command to include both `ops_core` and `agentkit` tests.
 - **Revised Phasing (2025-04-08):** Decided to prioritize core documentation (Task 5.2), then implement prerequisites for live E2E testing (New Phase 6), perform live E2E testing (New Phase 7), and finally complete the remaining documentation tasks (New Phase 8). Tasks 5.3-5.5 deferred to Phase 8.
 - **Task Maint.8 Simplified Testing Strategy (2025-04-08):** Due to persistent test environment/patching issues (`AMQPConnectionError`, `AttributeError`) preventing reliable testing of full actor execution via `stub_worker` in `test_async_workflow.py`, adopted a simplified strategy. Tests in this file now verify only the API -> Broker flow. Full actor logic is covered by unit tests (`test_engine.py`).

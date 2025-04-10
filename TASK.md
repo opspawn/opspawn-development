@@ -409,12 +409,12 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 
 ---
 
-### Phase 9: Repository Restructure (New)
+### Phase 9: Repository Restructure & Test Fixing
 
-- [Partially Completed & Blocked] **Task 9.1: Restructure Repository to Src Layout** `(Updated 2025-04-09)`
+- [In Progress] **Task 9.1: Restructure Repository to Src Layout** `(Updated 2025-04-10)`
   *Description:* Restructure the project from sibling directories (`ops_core/`, `agentkit/`) to a standard "src layout" (`src/ops_core/`, `src/agentkit/`) to potentially resolve persistent `tox` import issues.
   *Dependencies:* Task B.1 (Decision)
-  *Comments:* Code moved to `src/`. `pyproject.toml` files updated. Root `tox.ini` created and configured. Paths fixed in `tox.ini` commands and `fix_grpc_imports.sh`. Missing `metadata/base.py` created. `TypeError` in `SqlMetadataStore` instantiation fixed in `dependencies.py` and tests (`test_engine.py`, `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`). Resolved `asyncpg.exceptions.InvalidPasswordError` in `test_sql_store.py` by modifying `tox.ini` to use `dotenv run -- python -m pytest` (2025-04-09). Standardized imports to use `src.` prefix. Fixed `ImportError` in `test_broker.py`. **Blocked by persistent `sqlalchemy.exc.InvalidRequestError: Table 'task' is already defined` during test collection via `tox`. See `memory-bank/task_9.1_collection_error_summary.md`.**
+  *Comments:* Code moved to `src/`. `pyproject.toml` files updated. Root `tox.ini` created and configured. Paths fixed in `tox.ini` commands and `fix_grpc_imports.sh`. Missing `metadata/base.py` created. `TypeError` in `SqlMetadataStore` instantiation fixed in `dependencies.py` and tests (`test_engine.py`, `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`). Resolved `asyncpg.exceptions.InvalidPasswordError` in `test_sql_store.py` by modifying `tox.ini` to use `dotenv run -- python -m pytest` (2025-04-09). Standardized imports to use `src.` prefix. Fixed `ImportError` in `test_broker.py`. **Collection error resolved (2025-04-10). Import prefix fixing in progress. 22 runtime test failures remain.**
   *Debugging Strategy (Batches):*
     - **Batch 1: Database Connection (Completed)**
       - Issue: `InvalidPasswordError` in `ops_core/tests/metadata/test_sql_store.py`. Also previously blocked by `sqlalchemy.exc.InvalidRequestError` during collection.
@@ -452,11 +452,16 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
       - Issues: Persistent `pika.exceptions.AMQPConnectionError: Connection refused` in `ops_core/tests/integration/test_e2e_workflow.py` when `actor.send()` is called.
       - Status: **Completed (2025-04-09 Evening)**. Resolved Pika error by implementing conditional broker loading in `src/ops_core/tasks/broker.py` based on `DRAMATIQ_TESTING` env var set in `tox.ini`. Also fixed subsequent test collection errors (`ValueError: actor already registered`) and test execution errors (`AttributeError` on assertion, `TypeError` on await, `TypeError` on `update_task_output` args). Tests in `test_e2e_workflow.py` now pass.
       - Test Command: `tox -e py312 -- ops_core/tests/integration/test_e2e_workflow.py`
-    - **Final Step:** Run `tox -r` after all batches pass. (Next Step)
+    - **Final Step:** Run `tox -r` after all batches pass. (Blocked by runtime failures)
 
 - [x] **Task Maint.10: Enhance Testing Strategy** `(Completed 2025-04-10)`
     *Description:* Refined the testing strategy in `memory-bank/testing_strategy.md` to include more granular batching options (keyword, node ID, marker) and a structured debugging log process. Updated `tox.ini` default command to include both `ops_core` and `agentkit` tests.
     *Dependencies:* Task 9.1 (Context)
+
+- [ ] **Task 9.2: Fix Runtime Test Failures (Batch 6 - DB Layer)** `(Added 2025-04-10)`
+    *Description:* Address the 5 runtime test failures in `ops_core/tests/metadata/test_sql_store.py` identified in the `tox` output from 2025-04-10.
+    *Dependencies:* Task 9.1 (Collection error resolution)
+    *Comments:* Focus on resolving `IntegrityError`, `InterfaceError`, `AssertionError` likely related to DB fixtures and test isolation. Target tests: `test_store_initialization`, `test_list_tasks`, `test_list_tasks_with_limit_offset`, `test_list_tasks_by_status`, `test_add_task_duplicate_id_fails_implicitly`.
 
 ---
 
