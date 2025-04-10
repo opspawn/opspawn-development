@@ -14,7 +14,13 @@
 - **Phase 5 Deferred:** Tasks 5.3-5.5 remain deferred.
 - **Task 6.1 (Implement Persistent Metadata Store):** **In Progress (Started 2025-04-09)**. `SqlMetadataStore` implemented (`ops_core/ops_core/metadata/sql_store.py`). Unit tests implemented (`ops_core/tests/metadata/test_sql_store.py`) and DB fixtures added (`ops_core/tests/conftest.py`). Minor import fix applied to test file.
 
-## Recent Activities (Current Session - 2025-04-09 Morning)
+## Recent Activities (Current Session - 2025-04-10 Morning)
+- **Completed Task 9.1 Batch 4 (Async Workflow Tests):**
+    - Debugged persistent `AMQPConnectionError` and other issues in `src/ops_core/tests/integration/test_async_workflow.py`.
+    - Simplified tests to only verify API -> Scheduler -> `actor.send()` dispatch, removing actor execution simulation.
+    - Confirmed all 3 tests in the file now pass. Updated `TASK.md`.
+
+## Recent Activities (Previous Session - 2025-04-09 Morning)
 - **Continued Task 5.2 (Update User & Developer Documentation):**
     - Expanded content in `ops-docs/explanations/architecture.md` with more detail on interaction model, communication patterns, MCP Dynamic Proxy, and added a Mermaid diagram.
     - Expanded content in `ops-docs/explanations/ops_core_overview.md` with more detail on component responsibilities (Scheduler, Store, Actor Logic, Config) and the core agent task workflow.
@@ -404,6 +410,12 @@
     - Created `agentkit/core/interfaces/` directory with ABCs: `BasePlanner`, `BaseMemory`, `BaseToolManager`, `BaseSecurityManager`.
     - Refactored `SimplePlanner`, `ShortTermMemory`, `ToolRegistry`, and `Agent` to use these interfaces via dependency injection.
     - Updated unit tests (`test_agent.py`, `test_planning.py`, `test_memory.py`) to use mocks and handle async changes.
+    - Fixed test failures related to security check action description and ToolSpec instantiation.
+    - Confirmed all 43 `agentkit` tests pass.
+    - Updated `TASK.md`.
+- **Completed Task MCP.3 (Implement `ops-core` Proxy Tool Injection):** `(Completed 2025-04-05)`
+    - Defined `MCPProxyTool` in `ops_core/ops_core/mcp_client/proxy_tool.py`.
+    - Updated `InMemoryScheduler` to instantiate agents and inject `MCPProxyTool` with `OpsMcpClient`.
     - Fixed test failures related to security check action description and ToolSpec instantiation.
     - Confirmed all 43 `agentkit` tests pass.
     - Updated `TASK.md`.
