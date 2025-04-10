@@ -108,13 +108,15 @@
                 - Refined Dramatiq broker patching in `conftest.py` (using autouse fixture).
                 - Re-applied lost changes after `git reset --hard`.
             - Current Error: `pika.exceptions.AMQPConnectionError: Connection refused` when `execute_agent_task_actor.send()` is called.
-            - **Pika Error Debugging (2025-04-09 Evening):** Attempted multiple strategies to resolve the connection error by ensuring `StubBroker` is used:
-                - Relying solely on global `StubBroker` fixture (removed `actor.send` patch).
-                - Patching the entire actor object (`src.ops_core.scheduler.engine.execute_agent_task_actor`).
-                - Patching `StubBroker.enqueue` alongside `actor.send`.
-                - Explicitly setting `StubBroker` at the module level in `test_e2e_workflow.py`.
-                - Using `pytest_configure` hook in `conftest.py` to set `StubBroker` globally.
-            - **Result:** All attempts failed; the connection error persists. See `memory-bank/task_9.1_pika_error_summary.md` for details. Task 9.1 remains blocked.
+            - **Pika Error Debugging (2025-04-09 Evening):** Resolved persistent `pika.exceptions.AMQPConnectionError: Connection refused` in `test_e2e_workflow.py`.
+                - **Root Cause:** `RabbitmqBroker` was likely being initialized at import time before test fixtures could set `StubBroker`.
+                - **Solution:**
+                    - Modified `src/ops_core/tasks/broker.py` to conditionally instantiate `StubBroker` if `DRAMATIQ_TESTING=1` env var is set.
+                    - Added `setenv = DRAMATIQ_TESTING = 1` to `tox.ini` under `[testenv]`.
+                    - Removed conflicting global broker setup (`pytest_configure` hook) from `ops_core/tests/conftest.py`.
+                    - Fixed subsequent test collection error (`ValueError: actor already registered`) by adding a check in `src/ops_core/scheduler/engine.py` before defining the actor.
+                    - Fixed subsequent test execution errors (`AttributeError` on assertion typo, `TypeError` on awaiting `MagicMock`, `TypeError` on `update_task_output` args) in `test_e2e_workflow.py` and `engine.py`.
+            - **Result:** Tests in `test_e2e_workflow.py` now pass. Task 9.1 Batch 5 is complete. Task 9.1 remains partially completed, pending full `tox -r` verification.
 
 ## Recent Activities (Previous Session - 2025-04-08 Evening/Night)
 - **Started Task 5.2 (Update User & Developer Documentation):**

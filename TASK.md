@@ -448,9 +448,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
           - Re-applied lost changes after `git reset --hard`.
       - Test Command: `tox -e py312 -- ops_core/tests/integration/test_e2e_workflow.py`
     - **Batch 5: E2E & Remaining (Blocked - 2025-04-09 Evening)**
-      - Issues: Persistent `pika.exceptions.AMQPConnectionError: Connection refused` in `ops_core/tests/integration/test_e2e_workflow.py` when `actor.send()` is called. Multiple patching strategies (global `StubBroker` via fixture/hook, module-level `set_broker`, patching `actor.send`, patching actor object, patching `StubBroker.enqueue`) failed to resolve the issue in the `tox` environment. See `memory-bank/task_9.1_pika_error_summary.md` for details.
+      - Issues: Persistent `pika.exceptions.AMQPConnectionError: Connection refused` in `ops_core/tests/integration/test_e2e_workflow.py` when `actor.send()` is called.
+      - Status: **Completed (2025-04-09 Evening)**. Resolved Pika error by implementing conditional broker loading in `src/ops_core/tasks/broker.py` based on `DRAMATIQ_TESTING` env var set in `tox.ini`. Also fixed subsequent test collection errors (`ValueError: actor already registered`) and test execution errors (`AttributeError` on assertion, `TypeError` on await, `TypeError` on `update_task_output` args). Tests in `test_e2e_workflow.py` now pass.
       - Test Command: `tox -e py312 -- ops_core/tests/integration/test_e2e_workflow.py`
-    - **Final Step:** Run `tox -r` after all batches pass.
+    - **Final Step:** Run `tox -r` after all batches pass. (Next Step)
 
 ---
 

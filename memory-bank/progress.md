@@ -3,7 +3,7 @@
 ## Current Status (Updated 2025-04-09 4:35 PM)
 - **Phase:** Phase 9 (Repository Restructure).
 - **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, and Tasks 5.1, 6.1 completed. Maintenance tasks Maint.1-Maint.9 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Task 9.1 partially completed.
-- **Current Task:** Task 9.1 (Restructure Repository to Src Layout) - Partially complete, **blocked** by persistent `pika.exceptions.AMQPConnectionError` in `ops_core/tests/integration/test_e2e_workflow.py`. See `memory-bank/task_9.1_pika_error_summary.md` for details. Next: Re-evaluate Dramatiq/Pika testing strategy.
+- **Current Task:** Task 9.1 (Restructure Repository to Src Layout) - Partially complete. Batch 5 E2E tests (`test_e2e_workflow.py`) are now passing after resolving the Pika connection error and subsequent test failures (2025-04-09). Next: Run full `tox -r` to verify overall test suite.
 
 ## What Works (As of 2025-04-09 6:49 PM)
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented.
@@ -89,7 +89,7 @@
     - Enhancements 1-5.
 
 ## Known Issues / Blockers
-- **Test Failures (Task 9.1 / Batch 5):** Persistent `pika.exceptions.AMQPConnectionError: Connection refused` in `ops_core/tests/integration/test_e2e_workflow.py`. Multiple patching strategies for `StubBroker` have failed. See `memory-bank/task_9.1_pika_error_summary.md`.
+- **Test Failures (Task 9.1 / Batch 5):** **Resolved (2025-04-09)**. The `pika.exceptions.AMQPConnectionError` in `test_e2e_workflow.py` was fixed by implementing conditional broker loading in `broker.py` based on the `DRAMATIQ_TESTING` env var set in `tox.ini`. Subsequent test collection and execution errors were also fixed.
 - `InMemoryMetadataStore` is not persistent or thread-safe (Replaced by `SqlMetadataStore`, but tests using `InMemoryScheduler` still exist - check if `InMemoryScheduler` fixture needs update).
 - CI workflows currently lack linting/type checking steps (commented out).
 - **Task Maint.8 Resolution:** Original integration tests (`test_async_workflow_old.py`) are skipped. Integration tests in the new `test_async_workflow.py` are marked with `@pytest.mark.skip` due to persistent test environment issues preventing reliable `stub_worker` execution testing. Debugging these test issues moved to backlog (Task B.1).
@@ -100,7 +100,7 @@
     - Batch 2: Dependency Injection - Completed (2025-04-09). Fixed tests not awaiting `async def get_metadata_store` and incorrect type/singleton assertions.
     - Batch 3: Agentkit Tools - Completed (2025-04-09). All tests passed; previously noted issues likely resolved earlier.
     - Batch 4: Async Workflow - Skipped for now (2025-04-09).
-    - Batch 5: E2E & Remaining - **Blocked** (2025-04-09). Persistent `pika.exceptions.AMQPConnectionError`. See `memory-bank/task_9.1_pika_error_summary.md`.
+    - Batch 5: E2E & Remaining - **Completed** (2025-04-09). Resolved Pika error and subsequent test failures. `test_e2e_workflow.py` tests pass.
 - **Revised Phasing (2025-04-08):** Decided to prioritize core documentation (Task 5.2), then implement prerequisites for live E2E testing (New Phase 6), perform live E2E testing (New Phase 7), and finally complete the remaining documentation tasks (New Phase 8). Tasks 5.3-5.5 deferred to Phase 8.
 - **Task Maint.8 Simplified Testing Strategy (2025-04-08):** Due to persistent test environment/patching issues (`AMQPConnectionError`, `AttributeError`) preventing reliable testing of full actor execution via `stub_worker` in `test_async_workflow.py`, adopted a simplified strategy. Tests in this file now verify only the API -> Broker flow. Full actor logic is covered by unit tests (`test_engine.py`).
 - **Task Maint.8 Rebuild Iteration (2025-04-08):** Adopted an iterative approach for Phase 2 rebuild: Reset to isolation state, created new test file, restored actor definition, restored send call (fixing test fixtures), restored actor logic, added unit tests for logic, added simplified integration tests (API -> Broker).
