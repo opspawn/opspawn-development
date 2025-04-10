@@ -88,13 +88,13 @@
     - Modified root `tox.ini` to add `python-dotenv` dependency and prefix the `pytest` command with `dotenv run --` to ensure `.env` is loaded before tests. Removed `passenv = DATABASE_URL`.
     - Re-ran isolated test command; all 12 tests in `test_sql_store.py` passed.
     - Attempted full `tox -r` run, but it was interrupted during dependency installation.
-    - **Status:** Task 9.1 remains **Partially Completed & Blocked** by `pika.exceptions.AMQPConnectionError: Connection refused` in E2E tests (`ops_core/tests/integration/test_e2e_workflow.py`).
+    - **Status:** Task 9.1 remains **Partially Completed & Blocked** by persistent `sqlalchemy.exc.InvalidRequestError: Table 'task' is already defined` during test collection via `tox`. See `memory-bank/task_9.1_collection_error_summary.md`.
     - **Debugging Strategy (Batches):**
         - Batch 1: DB Connection (`test_sql_store.py`) - **Completed (2025-04-09)**
         - Batch 2: Dependency Injection (`test_dependencies.py`) - **Completed (2025-04-09)**
         - Batch 3: Agentkit Tools (`agentkit/tests/tools/`) - **Completed (2025-04-09)**
-        - Batch 4: Async Workflow (`test_async_workflow.py`) - **Skipped for now (2025-04-09)**
-        - Batch 5: E2E & Remaining (`test_e2e_workflow.py`, etc.) - **In Progress & Blocked (2025-04-09 Evening)**
+        - Batch 4: Async Workflow (`test_async_workflow.py`) - **Skipped for now (2025-04-09)** (Blocked by collection error)
+        - Batch 5: E2E & Remaining (`test_e2e_workflow.py`, etc.) - **Completed (2025-04-09 Evening)**
             - Debugged `test_e2e_workflow.py` failures:
                 - Fixed test path (`ops_core/` not `src/ops_core/`).
                 - Fixed `NameError` for `SqlMetadataStore` and `get_db_session` (missing imports).
@@ -107,7 +107,6 @@
                 - Added `@pytest_asyncio.fixture` decorator to `test_app_components`.
                 - Refined Dramatiq broker patching in `conftest.py` (using autouse fixture).
                 - Re-applied lost changes after `git reset --hard`.
-            - Current Error: `pika.exceptions.AMQPConnectionError: Connection refused` when `execute_agent_task_actor.send()` is called.
             - **Pika Error Debugging (2025-04-09 Evening):** Resolved persistent `pika.exceptions.AMQPConnectionError: Connection refused` in `test_e2e_workflow.py`.
                 - **Root Cause:** `RabbitmqBroker` was likely being initialized at import time before test fixtures could set `StubBroker`.
                 - **Solution:**
@@ -116,7 +115,19 @@
                     - Removed conflicting global broker setup (`pytest_configure` hook) from `ops_core/tests/conftest.py`.
                     - Fixed subsequent test collection error (`ValueError: actor already registered`) by adding a check in `src/ops_core/scheduler/engine.py` before defining the actor.
                     - Fixed subsequent test execution errors (`AttributeError` on assertion typo, `TypeError` on awaiting `MagicMock`, `TypeError` on `update_task_output` args) in `test_e2e_workflow.py` and `engine.py`.
-            - **Result:** Tests in `test_e2e_workflow.py` now pass. Task 9.1 Batch 5 is complete. Task 9.1 remains partially completed, pending full `tox -r` verification.
+            - **Result:** Tests in `test_e2e_workflow.py` now pass. Task 9.1 Batch 5 is complete.
+- **Continued Task 9.1 Debugging (SQLAlchemy Collection Error):** `(Current Session - 2025-04-09 Evening)`
+    - Attempted to run Batch 4 tests (`test_async_workflow.py`) after fixing Batch 5.
+    - Encountered persistent `sqlalchemy.exc.InvalidRequestError: Table 'task' is already defined` during test collection via `tox`.
+    - **Debugging Steps:**
+        - Centralized `MetaData` object in `src/ops_core/models/base.py`.
+        - Updated `tasks.py`, `conftest.py`, `alembic/env.py` to use the shared `metadata`. (Error persisted)
+        - Standardized imports across `ops_core` source and tests to use `src.` prefix. (Error persisted)
+        - Temporarily removed `agentkit` editable install from `tox.ini`. (Error persisted)
+        - Temporarily commented out `db_session` fixture in `conftest.py`. (Error persisted)
+        - Ran `pytest --collect-only -vv` via `tox`. Revealed `ImportError` in `test_broker.py`.
+        - Fixed `ImportError` in `test_broker.py` by adding `@pytest.mark.skipif` based on `DRAMATIQ_TESTING` env var.
+    - **Current Status:** The `InvalidRequestError` persists, blocking test collection and further progress on Task 9.1. See `memory-bank/task_9.1_collection_error_summary.md`.
 
 ## Recent Activities (Previous Session - 2025-04-08 Evening/Night)
 - **Started Task 5.2 (Update User & Developer Documentation):**
