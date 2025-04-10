@@ -431,9 +431,25 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
     - **Batch 4: Async Workflow / RabbitMQ (Skipped for now - 2025-04-09)**
       - Issues: `AMQPConnectionError`, `AssertionError: 500 == 201` in `src/ops_core/tests/integration/test_async_workflow.py`. Requires RabbitMQ running.
       - Test Command: `tox -e py312 -- src/ops_core/tests/integration/test_async_workflow.py`
-    - **Batch 5: E2E & Remaining (Next)**
-      - Issues: Any remaining errors, potentially `NameError` in `ops_core/tests/integration/test_e2e_workflow.py`.
-      - Test Command: `tox -e py312 -- src/ops_core/tests/integration/test_e2e_workflow.py` (and others as needed).
+    - **Batch 5: E2E & Remaining (In Progress & Blocked - 2025-04-09 Evening)**
+      - Issues: `pika.exceptions.AMQPConnectionError: Connection refused` in all 3 tests (`test_e2e_successful_agent_task`, `test_e2e_failed_agent_task`, `test_e2e_mcp_proxy_agent_task`) when `execute_agent_task_actor.send()` is called in `InMemoryScheduler.submit_task`. This occurs despite various attempts to patch/set `StubBroker`.
+      - Debug Steps Taken (2025-04-09 Evening):
+          - Corrected test path from `src/ops_core/...` to `ops_core/...`.
+          - Fixed `NameError: name 'SqlMetadataStore' is not defined` in test file (missing import).
+          - Fixed `NameError: name 'get_db_session' is not defined` in test file (missing import).
+          - Corrected multiple `src.` prefix import paths in `engine.py`, `dependencies.py`, `base.py`, `sql_store.py`, `endpoints/tasks.py`, `schemas/tasks.py`, `conftest.py`.
+          - Added `extend_existing=True` to `Task` model.
+          - Refactored `db_session` fixture in `conftest.py` to be function-scoped.
+          - Configured `pytest-asyncio` loop scope to `function` in `pyproject.toml`.
+          - Refactored `SqlMetadataStore.add_task` return value and session handling.
+          - Switched test client from `TestClient` to `httpx.AsyncClient`.
+          - Added `@pytest_asyncio.fixture` decorator to `test_app_components`.
+          - Refined Dramatiq broker patching in `conftest.py` (using autouse fixture).
+          - Re-applied lost changes after `git reset --hard`.
+      - Test Command: `tox -e py312 -- ops_core/tests/integration/test_e2e_workflow.py`
+    - **Batch 5: E2E & Remaining (Blocked - 2025-04-09 Evening)**
+      - Issues: Persistent `pika.exceptions.AMQPConnectionError: Connection refused` in `ops_core/tests/integration/test_e2e_workflow.py` when `actor.send()` is called. Multiple patching strategies (global `StubBroker` via fixture/hook, module-level `set_broker`, patching `actor.send`, patching actor object, patching `StubBroker.enqueue`) failed to resolve the issue in the `tox` environment. See `memory-bank/task_9.1_pika_error_summary.md` for details.
+      - Test Command: `tox -e py312 -- ops_core/tests/integration/test_e2e_workflow.py`
     - **Final Step:** Run `tox -r` after all batches pass.
 
 ---

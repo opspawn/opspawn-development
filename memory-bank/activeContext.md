@@ -88,13 +88,33 @@
     - Modified root `tox.ini` to add `python-dotenv` dependency and prefix the `pytest` command with `dotenv run --` to ensure `.env` is loaded before tests. Removed `passenv = DATABASE_URL`.
     - Re-ran isolated test command; all 12 tests in `test_sql_store.py` passed.
     - Attempted full `tox -r` run, but it was interrupted during dependency installation.
-    - **Status:** Task 9.1 DB connection error resolved. Task remains **Partially Completed & Blocked** pending full `tox -r` verification for other potential errors.
-    - **Debugging Strategy (Batches):** Will proceed by testing failures in batches:
+    - **Status:** Task 9.1 remains **Partially Completed & Blocked** by `pika.exceptions.AMQPConnectionError: Connection refused` in E2E tests (`ops_core/tests/integration/test_e2e_workflow.py`).
+    - **Debugging Strategy (Batches):**
         - Batch 1: DB Connection (`test_sql_store.py`) - **Completed (2025-04-09)**
-        - Batch 2: Dependency Injection (`test_dependencies.py`) - **Completed (2025-04-09)** Fixed tests not awaiting `async def get_metadata_store` and incorrect type/singleton assertions.
-        - Batch 3: Agentkit Tools (`agentkit/tests/tools/`) - **Completed (2025-04-09)** All tests passed; previously noted issues likely resolved earlier.
+        - Batch 2: Dependency Injection (`test_dependencies.py`) - **Completed (2025-04-09)**
+        - Batch 3: Agentkit Tools (`agentkit/tests/tools/`) - **Completed (2025-04-09)**
         - Batch 4: Async Workflow (`test_async_workflow.py`) - **Skipped for now (2025-04-09)**
-        - Batch 5: E2E & Remaining (`test_e2e_workflow.py`, etc.) - **Next**
+        - Batch 5: E2E & Remaining (`test_e2e_workflow.py`, etc.) - **In Progress & Blocked (2025-04-09 Evening)**
+            - Debugged `test_e2e_workflow.py` failures:
+                - Fixed test path (`ops_core/` not `src/ops_core/`).
+                - Fixed `NameError` for `SqlMetadataStore` and `get_db_session` (missing imports).
+                - Corrected multiple `src.` import paths in `engine.py`, `dependencies.py`, `base.py`, `sql_store.py`, `endpoints/tasks.py`, `schemas/tasks.py`, `conftest.py`.
+                - Added `extend_existing=True` to `Task` model.
+                - Refactored `db_session` fixture in `conftest.py` to be function-scoped.
+                - Configured `pytest-asyncio` loop scope to `function` in `pyproject.toml`.
+                - Refactored `SqlMetadataStore.add_task` return value and session handling.
+                - Switched test client from `TestClient` to `httpx.AsyncClient`.
+                - Added `@pytest_asyncio.fixture` decorator to `test_app_components`.
+                - Refined Dramatiq broker patching in `conftest.py` (using autouse fixture).
+                - Re-applied lost changes after `git reset --hard`.
+            - Current Error: `pika.exceptions.AMQPConnectionError: Connection refused` when `execute_agent_task_actor.send()` is called.
+            - **Pika Error Debugging (2025-04-09 Evening):** Attempted multiple strategies to resolve the connection error by ensuring `StubBroker` is used:
+                - Relying solely on global `StubBroker` fixture (removed `actor.send` patch).
+                - Patching the entire actor object (`src.ops_core.scheduler.engine.execute_agent_task_actor`).
+                - Patching `StubBroker.enqueue` alongside `actor.send`.
+                - Explicitly setting `StubBroker` at the module level in `test_e2e_workflow.py`.
+                - Using `pytest_configure` hook in `conftest.py` to set `StubBroker` globally.
+            - **Result:** All attempts failed; the connection error persists. See `memory-bank/task_9.1_pika_error_summary.md` for details. Task 9.1 remains blocked.
 
 ## Recent Activities (Previous Session - 2025-04-08 Evening/Night)
 - **Started Task 5.2 (Update User & Developer Documentation):**
