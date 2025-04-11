@@ -1,16 +1,16 @@
 # Progress: Opspawn Core Foundation (Phase 6 In Progress)
 
-## Current Status (Updated 2025-04-10 8:58 PM)
-- **Phase:** Maintenance (Post-Restructure).
-- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 9 and Tasks 5.1, 6.1, 6.2 completed. Maintenance tasks Maint.1-Maint.10 completed. Task Maint.11 (Multi-Repo Restructure) partially completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8.
-- **Current Task:** Task Maint.12 (Fix `1-t/tox.ini` Dependency Paths).
-- **Next Task:** Task Maint.12.
-- **Blockers:** `tox -e py312` in `1-t` fails during dependency installation due to incorrect paths in `tox.ini`.
+## Current Status (Updated 2025-04-10 9:16 PM)
+- **Phase:** Phase 6 (E2E Test Enablement).
+- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 9 completed. Tasks 5.1, 6.1, 6.2 completed. Maintenance tasks Maint.1-Maint.12 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8.
+- **Current Task:** None (Session ending).
+- **Next Task:** Task 6.3 (Implement Live LLM Integration Tests).
+- **Blockers:** None.
 
-## What Works (As of 2025-04-10 8:58 PM)
-- **Multi-Repo Structure (Isolated Test):** The multi-repository structure (`1-t`, `ops-core`, `agentkit`) with `src` layout in components was successfully validated in an isolated test environment (`restructure-test/`). All tests (140 passed, 1 skipped) passed using the modified `tox.ini` pointing to sibling directories.
-- **Component Repositories:** The `ops-core` and `agentkit` repositories have been updated with the validated code structure and pushed to GitHub.
-- **Management Repository (`1-t`):** Old component directories (`src/ops_core`, `src/agentkit`, `ops_core`, `agentkit`) have been removed. The `tox.ini` file has been updated (but contains incorrect paths causing the current blocker).
+## What Works (As of 2025-04-10 9:16 PM)
+- **Multi-Repo Structure (Local Subdirectories):** The multi-repository structure with `ops-core` and `agentkit` as subdirectories within `1-t` is now working. The `1-t/tox.ini` file correctly installs these as editable dependencies using absolute paths and runs tests from their respective `tests` directories. All tests (140 passed, 1 skipped) pass using this configuration.
+- **Component Repositories:** The `ops-core` and `agentkit` repositories (as subdirectories) contain the validated code structure.
+- **Management Repository (`1-t`):** The `tox.ini` file is correctly configured for the local subdirectory structure. The `src/` directory (containing build artifacts) has been removed.
 - **Previous Functionality:** All functionality verified by tests up to Task 9.2 completion (before restructuring) is assumed to be working within the individual component repositories.
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented.
 - **Task 2.2 (Reimplemented):** `agentkit` core agent MVP reimplemented (`ShortTermMemory`, `PlaceholderPlanner`, `Agent`, interfaces, tests).
@@ -82,8 +82,6 @@
     - Final verification via `tox -e py312` passed (176 passed, 1 skipped) after fixing gRPC `TaskNotFoundError` import (2025-04-10).
 
 ## What's Left to Build (Revised Plan - 2025-04-10)
-- **Maintenance:**
-    - Task Maint.12: Fix `1-t/tox.ini` Dependency Paths.
 - **Phase 6:** E2E Test Enablement
     - Task 6.3: Implement Live LLM Integration Tests.
     - Task 6.4: Implement `agentkit` Long-Term Memory MVP (Optional).
@@ -97,7 +95,6 @@
     - Enhancements 1-5.
 
 ## Known Issues / Blockers
-- **`tox -e py312` in `1-t` fails during dependency installation** due to incorrect paths in `tox.ini` (Task Maint.12).
 - `InMemoryMetadataStore` is not persistent or thread-safe (Replaced by `SqlMetadataStore`).
 - CI workflows currently lack linting/type checking steps (commented out).
 - **Task Maint.8 Resolution:** Original integration tests (`test_async_workflow_old.py`) are skipped. Integration tests in the new `test_async_workflow.py` were simplified to verify dispatch only.

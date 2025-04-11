@@ -158,5 +158,4 @@ Research/
 # Sub-repositories (managed separately)
 agentkit/
 ops-core/ # Ignore the root-level directory only
-# ops_core # Remove this potentially problematic line
 ops-docs/
