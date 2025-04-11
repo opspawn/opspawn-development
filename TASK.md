@@ -470,10 +470,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
         - **Batch 4 (Async Workflow - `test_async_workflow.py`): Completed (2025-04-10).** Passed after fixing fixture/patching issues.
         - **Batch 5 (E2E Workflow - `test_e2e_workflow.py`): Completed (2025-04-10).** Passed.
         - **Batch 6 (Scheduler - `test_engine.py`): Completed (2025-04-10).** Passed after fixing mocking/assertion issues.
-        - **Batch 7 (REST API - `ops_core/tests/api/`): Pending.** (Identified 3 failures in `test_tasks.py`)
+        - **Batch 7 (REST API - `ops_core/tests/api/`): In Progress (2025-04-10).** Debugging `test_tasks.py`. Multiple attempts to fix session handling failed. 4 failures remain (GET requests). Root cause likely session conflict between test setup and app request lifecycle.
         - **Batch 8 (gRPC API - `ops_core/tests/grpc/`): Pending.** (Identified 5 failures in `test_task_servicer.py`)
         - **Batch 9 (Integration - `test_api_scheduler_integration.py`): Pending.** (Identified 4 failures)
-        - **Next Step:** Debug Batch 7 failures.
+        - **Next Step:** Continue debugging Batch 7 failures.
 
 ---
 

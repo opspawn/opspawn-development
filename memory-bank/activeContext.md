@@ -23,7 +23,8 @@
     - **Batch 6 (`test_engine.py`):** Debugged and fixed 4 failures related to mocking strategy for `_run_agent_task_logic` (internal session handling) and assertion logic. All tests in Batch 6 now pass.
     - **Full `tox` Run:** Executed `tox -e py312`. Identified 12 failures in API (`test_tasks.py`), gRPC (`test_task_servicer.py`), and integration (`test_api_scheduler_integration.py`) tests, primarily `sqlalchemy.exc.InterfaceError`.
     - **Added New Batches:** Defined Batches 7 (API), 8 (gRPC), and 9 (Integration) in `TASK.md` to cover the remaining failing tests.
-- **Documentation Update:** Updated `TASK.md`, `activeContext.md`, and `progress.md` to reflect the full `tox` run results and the plan to address new batches.
+    - **Batch 7 (API - `test_tasks.py`):** Attempted multiple fixes for session handling (dependency overrides, fixture modifications, explicit commits/closes). Still encountering 4 failures (500 errors on GET requests). Root cause likely persistent session conflict between test setup and app request lifecycle. Debugging paused.
+- **Documentation Update:** Updated `TASK.md`, `activeContext.md`, `progress.md`, and debugging logs to reflect current status.
 
 ## Recent Activities (Previous Session - 2025-04-10 Morning/Midday)
 - **Completed Task 9.1 (Fix Imports):** Systematically removed `src.` prefix from imports in multiple `ops_core` test files and source files. Confirmed test collection passes.
@@ -146,7 +147,7 @@
 - Completed Maintenance Tasks Maint.1.
 
 ## Active Decisions & Considerations
-- **Testing Focus:** Current priority is fixing the 22 runtime test failures identified in the `tox` output from 2025-04-10, starting with Batch 6 (DB Layer). (Decision Date: 2025-04-10).
+- **Testing Focus:** Current priority is fixing the remaining runtime test failures identified in the `tox` output from 2025-04-10. Batch 7 (API) is currently blocked by session handling issues. Next focus will be Batch 8 (gRPC). (Decision Date: 2025-04-10).
 - **Repository Structure:** `src` layout restructure (Task 9.1) is complete. Test collection error resolved. (Decision Date: 2025-04-09/10).
 - **Revised Phasing:** Phase 6 (E2E Enablement), Phase 7 (Live E2E), Phase 8 (Final Docs) added. Tasks 5.3-5.5 deferred to Phase 8. (Decision Date: 2025-04-08).
 - **Async Workflow Testing:** Integration tests (`test_async_workflow.py`) simplified to verify API -> Broker dispatch only due to `StubBroker` limitations. (Decision Date: 2025-04-08).
