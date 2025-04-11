@@ -470,10 +470,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
         - **Batch 4 (Async Workflow - `test_async_workflow.py`): Completed (2025-04-10).** Passed after fixing fixture/patching issues.
         - **Batch 5 (E2E Workflow - `test_e2e_workflow.py`): Completed (2025-04-10).** Passed.
         - **Batch 6 (Scheduler - `test_engine.py`): Completed (2025-04-10).** Passed after fixing mocking/assertion issues.
-        - **Batch 7 (REST API - `ops_core/tests/api/`): In Progress (2025-04-10).** Debugging `test_tasks.py`. Multiple attempts to fix session handling failed. 4 failures remain (GET requests). Root cause likely session conflict between test setup and app request lifecycle.
-        - **Batch 8 (gRPC API - `ops_core/tests/grpc/`): Pending.** (Identified 5 failures in `test_task_servicer.py`)
-        - **Batch 9 (Integration - `test_api_scheduler_integration.py`): Pending.** (Identified 4 failures)
-        - **Next Step:** Continue debugging Batch 7 failures.
+        - **Batch 7 (REST API - `ops_core/tests/api/`): Paused (2025-04-10).** Debugging `test_tasks.py`. Multiple attempts to fix session handling failed. 4 failures remain (GET requests). Root cause likely session conflict between test setup and app request lifecycle. (Learnings from Batch 8/9 likely applicable).
+        - **Batch 8 (gRPC API - `ops_core/tests/grpc/`): Completed (2025-04-10).** Fixed 4 failures in `test_task_servicer.py` related to exception handling, session mismatch, and incorrect patching.
+        - **Batch 9 (Integration - `test_api_scheduler_integration.py`): Completed (2025-04-10).** Fixed 4 failures by ensuring consistent session injection in fixtures (`mock_scheduler`, `grpc_server`, `test_client`) and switching REST tests to use `httpx.AsyncClient`.
+        - **Next Step:** Revisit Batch 7 (REST API) failures using insights from Batch 8/9 fixes.
 
 ---
 

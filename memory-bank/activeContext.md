@@ -1,30 +1,42 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-10 End of Session)
-- **Task 9.2 (Fix Runtime Test Failures - Batch 6 Scheduler):** **Next Task**. Focus on fixing the 4 failures in `ops_core/tests/scheduler/test_engine.py` (`AssertionError`, `RuntimeError`, `InterfaceError`).
-- **Task 6.2 (Integrate Persistent Store):** **Blocked** pending resolution of runtime test failures in Task 9.2+.
+## Current Focus (Updated 2025-04-10 6:50 PM)
+- **Task 9.2 (Fix Runtime Test Failures):** **In Progress**.
+    - Batch 7 (REST API - `test_tasks.py`): **Paused**. 4 failures remain due to session conflicts. Will revisit next.
+    - Batch 8 (gRPC API - `test_task_servicer.py`): **Completed**.
+    - Batch 9 (Integration - `test_api_scheduler_integration.py`): **Completed**.
+- **Task 6.2 (Integrate Persistent Store):** **Blocked** pending resolution of runtime test failures in Task 9.2 (specifically Batch 7).
 - **Task 5.2 (Update User & Developer Documentation):** **In Progress (Paused)**. Initial explanation drafts created and expanded. Further updates deferred to Phase 8.
 - **Phase 5 Deferred:** Tasks 5.3-5.5 remain deferred to Phase 8.
 
-## Recent Activities (Current Session - 2025-04-10 Afternoon)
+## Recent Activities (Current Session - 2025-04-10 Evening)
+- **Continued Task 9.2 (Fix Runtime Test Failures):**
+    - **Batch 8 (gRPC API - `test_task_servicer.py`):**
+        - Isolated 4 failures (`test_get_task_not_found`, `test_get_task_metadata_store_error`, `test_list_tasks_success`, `test_list_tasks_metadata_store_error`), primarily `InterfaceError`.
+        - Fixed `test_get_task_not_found` by adding specific `TaskNotFoundError` handling in `TaskServicer.GetTask`.
+        - Fixed `test_get_task_metadata_store_error` by correcting patch target to `task_servicer._metadata_store.get_task`.
+        - Fixed `test_list_tasks_success` by modifying `task_servicer` fixture to inject `db_session` into `SqlMetadataStore`.
+        - Fixed `test_list_tasks_metadata_store_error` by correcting patch target to `task_servicer._metadata_store.list_tasks`.
+        - Verified all tests in batch pass.
+    - **Batch 9 (Integration - `test_api_scheduler_integration.py`):**
+        - Isolated 4 failures (`test_rest_api_submit_non_agent_task`, `test_rest_api_submit_agent_task`, `test_grpc_api_submit_non_agent_task`, `test_grpc_api_submit_agent_task`), primarily `InterfaceError` during INSERT.
+        - Fixed gRPC tests by modifying `mock_scheduler` and `grpc_server` fixtures to inject `db_session` into `SqlMetadataStore`.
+        - Fixed REST tests by modifying `test_client` fixture to use `httpx.AsyncClient` with `ASGITransport`, ensure correct dependency overrides (including `get_metadata_store`), and updating tests to use `await`.
+        - Verified all tests in batch pass.
+- **Documentation Update:** Updated `TASK.md`, `activeContext.md`, `progress.md`, and created debugging logs for Batches 8 & 9.
+
+## Recent Activities (Previous Session - 2025-04-10 Afternoon)
 - **Continued Task 9.2 (Fix Runtime Test Failures):**
     - Ran tests in batches as per testing strategy.
     - **Batch 1 (`test_sql_store.py`):** Passed.
     - **Batch 2 (`test_dependencies.py`):** Passed.
     - **Batch 3 (`agentkit/tests/tools/`):** Passed.
-    - **Batch 4 (`test_async_workflow.py`):**
-        - Added RabbitMQ to `docker-compose.yml` and started container.
-        - Fixed `fixture 'stub_broker' not found` error by adding local fixture definition.
-        - Fixed `ImportError: cannot import name 'Results'` by correcting import path.
-        - Fixed `AttributeError: module 'ops_core.api.v1.endpoints.tasks' has no attribute 'get_mcp_client'` by correcting dependency override target.
-        - Fixed `AssertionError: assert 500 == 201` by correcting patch `side_effect` for `actor.send` and updating assertions to check mock call instead of `stub_broker.queues`.
-        - Batch 4 tests now pass.
+    - **Batch 4 (`test_async_workflow.py`):** Passed after fixing fixture/patching issues.
     - **Batch 5 (`test_e2e_workflow.py`):** Passed.
-    - **Batch 6 (`test_engine.py`):** Debugged and fixed 4 failures related to mocking strategy for `_run_agent_task_logic` (internal session handling) and assertion logic. All tests in Batch 6 now pass.
+    - **Batch 6 (`test_engine.py`):** Passed after fixing mocking/assertion issues.
     - **Full `tox` Run:** Executed `tox -e py312`. Identified 12 failures in API (`test_tasks.py`), gRPC (`test_task_servicer.py`), and integration (`test_api_scheduler_integration.py`) tests, primarily `sqlalchemy.exc.InterfaceError`.
-    - **Added New Batches:** Defined Batches 7 (API), 8 (gRPC), and 9 (Integration) in `TASK.md` to cover the remaining failing tests.
-    - **Batch 7 (API - `test_tasks.py`):** Attempted multiple fixes for session handling (dependency overrides, fixture modifications, explicit commits/closes). Still encountering 4 failures (500 errors on GET requests). Root cause likely persistent session conflict between test setup and app request lifecycle. Debugging paused.
-- **Documentation Update:** Updated `TASK.md`, `activeContext.md`, `progress.md`, and debugging logs to reflect current status.
+    - **Added New Batches:** Defined Batches 7 (API), 8 (gRPC), and 9 (Integration) in `TASK.md`.
+    - **Batch 7 (API - `test_tasks.py`):** Attempted multiple fixes for session handling. Still encountering 4 failures. Debugging paused.
 
 ## Recent Activities (Previous Session - 2025-04-10 Morning/Midday)
 - **Completed Task 9.1 (Fix Imports):** Systematically removed `src.` prefix from imports in multiple `ops_core` test files and source files. Confirmed test collection passes.
