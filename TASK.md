@@ -475,6 +475,15 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
         - **Batch 9 (Integration - `test_api_scheduler_integration.py`): Completed (2025-04-10).** Fixed 4 failures by ensuring consistent session injection in fixtures (`mock_scheduler`, `grpc_server`, `test_client`) and switching REST tests to use `httpx.AsyncClient`.
         - **All runtime test failures resolved.**
 
+- [Partially Completed] **Task Maint.11: Multi-Repository Restructure** `(Started 2025-04-10)`
+    *Description:* Transition from single-repo to multi-repo structure (`1-t`, `ops-core`, `agentkit`) while preserving `src` layout.
+    *Dependencies:* Task 9.2
+    *Comments:* Isolated test environment validation passed after fixing `agentkit` test errors. `ops-core` and `agentkit` repositories updated and pushed. `1-t` repository cleaned up (old component dirs removed) and `tox.ini` updated. **Blocked:** Final `tox` run in `1-t` failed due to incorrect dependency paths in `tox.ini`.
+
+- [ ] **Task Maint.12: Fix `1-t/tox.ini` Dependency Paths** `(Added 2025-04-10)`
+    *Description:* Correct the editable dependency paths in `1-t/tox.ini` to point to the local subdirectories (`./ops_core`, `./agentkit`) instead of relative sibling paths. Verify with `tox -e py312`.
+    *Dependencies:* Task Maint.11
+
 ---
 
 ## 4. Backlog / Future Enhancements

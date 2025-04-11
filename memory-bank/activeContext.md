@@ -1,15 +1,50 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-10 7:26 PM)
-- **Task 6.2 (Integrate Persistent Store):** **Completed**. Final verification (Task 6.2.7) passed.
-- **Task 9.2 (Fix Runtime Test Failures):** **Completed**. All batches (1-9) are passing.
-- **Task 5.2 (Update User & Developer Documentation):** **In Progress (Paused)**. Initial explanation drafts created and expanded. Further updates deferred to Phase 8.
+## Current Focus (Updated 2025-04-10 8:57 PM)
+- **Task Maint.11 (Multi-Repository Restructure):** **Partially Completed**. Repos restructured, code moved, tests fixed in isolation. `ops-core` and `agentkit` repos pushed. `1-t` repo cleaned, `tox.ini` updated. **Blocked** by Task Maint.12.
+- **Task Maint.12 (Fix `1-t/tox.ini` Dependency Paths):** **Pending**. Next task.
+- **Task 6.2 (Integrate Persistent Store):** **Completed**.
+- **Task 9.2 (Fix Runtime Test Failures):** **Completed**.
+- **Task 5.2 (Update User & Developer Documentation):** **In Progress (Paused)**. Further updates deferred to Phase 8.
 - **Phase 5 Deferred:** Tasks 5.3-5.5 remain deferred to Phase 8.
-- **Next Task:** Task 6.3 (Implement Live LLM Integration Tests).
+- **Next Task:** Task Maint.12 (Fix `1-t/tox.ini` Dependency Paths).
 
 ## Recent Activities (Current Session - 2025-04-10 Evening)
-- **Completed Task 6.2.7 (Verify Persistent Store Integration):**
-    - Ran full `tox -e py312` suite.
+- **Started Task Maint.11 (Multi-Repository Restructure):**
+    - Created isolated test environment (`restructure-test/`).
+    - Copied project state to `restructure-test/opspawn-development/`.
+    - Populated `restructure-test/opspawn-ops-core/` and `restructure-test/opspawn-agentkit/` with respective code/configs using `src` layout.
+    - Verified and corrected `pyproject.toml` files in test component repos.
+    - Cleaned up test `opspawn-development` copy (removed original component code).
+    - Updated `tox.ini` in test `opspawn-development` copy for multi-repo structure.
+    - Ran `tox -e py312` in test environment. Encountered `ModuleNotFoundError` due to `src.` import in `ops_core/mcp_client/client.py`. Fixed import.
+    - Re-ran `tox -e py312`. Encountered multiple test failures in `agentkit` tests (`test_schemas.py`, `test_execution.py`, `test_registry.py`).
+    - Iteratively fixed `agentkit` test failures by:
+        - Updating `ToolSpec` schema definition (`schemas.py`) to use `Dict` instead of `Type[BaseModel]`.
+        - Updating `ToolResult` instantiations in tests (`test_schemas.py`, `test_registry.py`) to include required fields (`tool_name`, `tool_args`).
+        - Updating `ToolSpec` default schema assertion (`test_schemas.py`).
+        - Updating `mcp_proxy.py` (`agentkit`) to use `.model_json_schema()`.
+        - Removing incorrect immutability check (`test_schemas.py`).
+        - Correcting `execute_tool_safely` argument name (`tool_input` -> `args`) in `test_execution.py`.
+        - Correcting mock tool `execute` signatures (`**kwargs` -> `args: dict`) in `test_execution.py`.
+        - Correcting assertions for exception messages and timeouts in `test_execution.py`.
+        - Updating `ToolRegistry` method calls (`register_tool` -> `add_tool`) in `test_registry.py`.
+        - Updating `get_tool` assertions to use `pytest.raises(ToolNotFoundError)` in `test_registry.py`.
+        - Updating `execute_tool` argument name (`tool_input` -> `arguments`) in `test_registry.py`.
+        - Updating `ToolRegistry.execute_tool` input validation logic (`registry.py`) to handle `Dict` schemas using `create_model`.
+        - Updating mock call assertions (`assert_awaited_once_with`) to use positional args in `test_registry.py`.
+    - Re-ran `tox -e py312` in test environment. Encountered collection errors due to `ToolSpec` validation in `ops_core/mcp_client/proxy_tool.py`.
+    - Fixed `ToolSpec` definition in `ops_core/mcp_client/proxy_tool.py` to use `.model_json_schema()` and `.model_dump()`.
+    - Re-ran `tox -e py312` in test environment. **Passed (140 passed, 1 skipped).**
+    - **Applied changes to main repositories:**
+        - Cleared and updated `ops_core` local repo, committed and pushed.
+        - Cleared and updated `agentkit` local repo, committed and pushed.
+        - Cleaned up `1-t` local repo (removed old component dirs).
+        - Updated `1-t/tox.ini` with multi-repo paths (initially incorrect, then corrected).
+    - **Attempted final verification:** Ran `tox -e py312` in `1-t`. **Failed** during dependency installation (`ERROR: ./agentkit[test] is not a valid editable requirement`). Identified incorrect paths in `1-t/tox.ini`.
+    - Added Task Maint.12 to fix `tox.ini` paths.
+- **Completed Task 6.2.7 (Verify Persistent Store Integration):** (Completed earlier this session)
+    - Ran full `tox -e py312` suite (before restructure).
     - Identified 1 failure: `ops_core/tests/grpc/test_task_servicer.py::test_get_task_not_found` (Incorrect gRPC status code).
     - Isolated failure by running `tox -e py312 -- ops_core/tests/grpc/test_task_servicer.py -v`.
     - Identified root cause: Incorrect import path for `TaskNotFoundError` in `src/ops_core/grpc_internal/task_servicer.py` (imported from `store` instead of `base`).
