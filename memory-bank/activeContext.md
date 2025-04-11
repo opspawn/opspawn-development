@@ -1,13 +1,23 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-10 7:05 PM)
+## Current Focus (Updated 2025-04-10 7:26 PM)
+- **Task 6.2 (Integrate Persistent Store):** **Completed**. Final verification (Task 6.2.7) passed.
 - **Task 9.2 (Fix Runtime Test Failures):** **Completed**. All batches (1-9) are passing.
-- **Task 6.2 (Integrate Persistent Store):** **Unblocked**. Ready for final verification (Task 6.2.7).
 - **Task 5.2 (Update User & Developer Documentation):** **In Progress (Paused)**. Initial explanation drafts created and expanded. Further updates deferred to Phase 8.
 - **Phase 5 Deferred:** Tasks 5.3-5.5 remain deferred to Phase 8.
+- **Next Task:** Task 6.3 (Implement Live LLM Integration Tests).
 
 ## Recent Activities (Current Session - 2025-04-10 Evening)
-- **Completed Task 9.2 (Fix Runtime Test Failures):**
+- **Completed Task 6.2.7 (Verify Persistent Store Integration):**
+    - Ran full `tox -e py312` suite.
+    - Identified 1 failure: `ops_core/tests/grpc/test_task_servicer.py::test_get_task_not_found` (Incorrect gRPC status code).
+    - Isolated failure by running `tox -e py312 -- ops_core/tests/grpc/test_task_servicer.py -v`.
+    - Identified root cause: Incorrect import path for `TaskNotFoundError` in `src/ops_core/grpc_internal/task_servicer.py` (imported from `store` instead of `base`).
+    - Corrected import path in `task_servicer.py`.
+    - Verified fix by re-running isolated tests (all passed).
+    - Re-ran full `tox -e py312` suite. Confirmed all tests passed (176 passed, 1 skipped).
+- **Documentation Update:** Updated `TASK.md`.
+- **Completed Task 9.2 (Fix Runtime Test Failures):** (Completed earlier this session)
     - **Batch 7 (REST API - `test_tasks.py`):**
         - Identified 2 failures: `NameError` in `test_create_task_success` and 500 error in `test_get_task_not_found`.
         - Fixed `NameError` by correcting mock assignment in `test_create_task_success`.
@@ -25,7 +35,7 @@
         - Fixed gRPC tests by modifying `mock_scheduler` and `grpc_server` fixtures to inject `db_session` into `SqlMetadataStore`.
         - Fixed REST tests by modifying `test_client` fixture to use `httpx.AsyncClient` with `ASGITransport`, ensure correct dependency overrides (including `get_metadata_store`), and updating tests to use `await`.
         - Verified all tests in batch pass.
-- **Documentation Update:** Updated `TASK.md`, `activeContext.md`, `progress.md`.
+- **Documentation Update:** Updated `TASK.md`, `activeContext.md`, `progress.md`. (Completed earlier this session)
 
 ## Recent Activities (Previous Session - 2025-04-10 Afternoon)
 - **Continued Task 9.2 (Fix Runtime Test Failures):** (Completed earlier this session)
@@ -161,7 +171,8 @@
 - Completed Maintenance Tasks Maint.1.
 
 ## Active Decisions & Considerations
-- **Next Steps:** Proceed with Task 6.2.7 (Run `tox` to verify persistent store integration). (Decision Date: 2025-04-10).
+- **Next Steps:** Proceed with Task 6.3 (Implement Live LLM Integration Tests). (Decision Date: 2025-04-10).
+- **Persistent Store Integration:** Verified complete and stable via full `tox` run (Task 6.2.7). (Decision Date: 2025-04-10).
 - **Repository Structure:** `src` layout restructure (Task 9.1) is complete. Test collection error resolved. (Decision Date: 2025-04-09/10).
 - **Revised Phasing:** Phase 6 (E2E Test Enablement), Phase 7 (Live E2E), Phase 8 (Final Docs) added. Tasks 5.3-5.5 deferred to Phase 8. (Decision Date: 2025-04-08).
 - **Async Workflow Testing:** Integration tests (`test_async_workflow.py`) simplified to verify API -> Broker dispatch only due to `StubBroker` limitations. (Decision Date: 2025-04-08).

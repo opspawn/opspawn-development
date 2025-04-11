@@ -1,13 +1,14 @@
-# Progress: Opspawn Core Foundation (Task 9.1 In Progress)
+# Progress: Opspawn Core Foundation (Phase 6 In Progress)
 
-## Current Status (Updated 2025-04-10 7:06 PM)
+## Current Status (Updated 2025-04-10 7:27 PM)
 - **Phase:** Phase 6 (E2E Test Enablement).
-- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 9 and Tasks 5.1, 6.1 completed. Maintenance tasks Maint.1-Maint.10 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Task 9.1 (restructure & collection error fix) completed. Task 9.2 (Fix Runtime Tests) completed.
-- **Current Task:** Task 6.2 (Integrate Persistent Store). Ready for final verification (Task 6.2.7).
-- **Next Task:** Task 6.2.7 (Run `tox` to verify persistent store integration).
+- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 9 and Tasks 5.1, 6.1, 6.2 completed. Maintenance tasks Maint.1-Maint.10 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Task 9.1 (restructure & collection error fix) completed. Task 9.2 (Fix Runtime Tests) completed.
+- **Current Task:** Task 6.3 (Implement Live LLM Integration Tests).
+- **Next Task:** Task 6.3.
 - **Blockers:** None.
 
-## What Works (As of 2025-04-10 7:06 PM)
+## What Works (As of 2025-04-10 7:27 PM)
+- **Full Test Suite:** The complete test suite (`tox -e py312`) passes (176 passed, 1 skipped), verifying the integration of the persistent metadata store.
 - **Repository Structure:** Project restructured to `src` layout. Test collection via `tox` is working.
 - **Test Batches 1-9:** Tests for DB Layer (`test_sql_store.py`), Dependency Injection (`test_dependencies.py`), Agentkit Tools (`agentkit/tests/tools/`), Async Workflow (`test_async_workflow.py`), E2E Workflow (`test_e2e_workflow.py`), Scheduler (`test_engine.py`), REST API (`test_tasks.py`), gRPC API (`test_task_servicer.py`), and Integration (`test_api_scheduler_integration.py`) are passing via `tox`.
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented.
@@ -72,16 +73,15 @@
     - PostgreSQL container running via `docker compose`.
     - Alembic migrations applied successfully.
     - `test_sql_store.py` tests verified passing after fixing session management, variable names, enum handling (`native_enum=False`), and JSON serialization issues (2025-04-09).
-- **Persistent Store Integration (Task 6.2 - Code Complete, Blocked):**
+- **Persistent Store Integration (Task 6.2 Completed):**
     - `ops_core.dependencies` updated to provide `SqlMetadataStore` and manage DB sessions.
     - Dramatiq actor (`scheduler/engine.py`) refactored for independent session management.
     - API endpoints and gRPC servicer updated to use `BaseMetadataStore` dependency.
     - Tests (`test_engine.py`, `test_tasks.py` (API), `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`) refactored to use `db_session` fixture and `SqlMetadataStore`.
-    - Ready for final verification (Task 6.2.7).
+    - Final verification via `tox -e py312` passed (176 passed, 1 skipped) after fixing gRPC `TaskNotFoundError` import (2025-04-10).
 
 ## What's Left to Build (Revised Plan - 2025-04-10)
 - **Phase 6:** E2E Test Enablement
-    - Task 6.2: Integrate Persistent Store (Ready for Task 6.2.7 verification).
     - Task 6.3: Implement Live LLM Integration Tests.
     - Task 6.4: Implement `agentkit` Long-Term Memory MVP (Optional).
 - **Phase 7:** Full Live E2E Testing

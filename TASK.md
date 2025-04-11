@@ -371,8 +371,8 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
     - [x] **Task 6.2.4:** Verify API (`ops_core/api/v1/endpoints/tasks.py`) integration with `SqlMetadataStore`. `(Completed 2025-04-09)`
     - [x] **Task 6.2.5:** Verify gRPC (`ops_core/grpc_internal/task_servicer.py`) integration with `SqlMetadataStore`. `(Completed 2025-04-09)`
     - [x] **Task 6.2.6:** Refactor unit/integration tests (`test_engine.py`, `test_tasks.py` (API), `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`) to use DB fixtures (`db_session`). `(Completed 2025-04-09)`
-    - [ ] **Task 6.2.7:** Run `tox` to verify all tests pass. `(Ready)`
-  *Comments:* Code changes complete. Final verification was blocked by Task 9.2, now ready.
+    - [x] **Task 6.2.7:** Run `tox` to verify all tests pass. `(Completed 2025-04-10)`
+  *Comments:* Code changes complete. Final verification was blocked by Task 9.2. Fixed gRPC `TaskNotFoundError` import mismatch. Full `tox -e py312` run passed (176 passed, 1 skipped).
 
 - [ ] **Task 6.3: Implement Live LLM Integration Tests**
   *Description:* Create specific, marked tests (`@pytest.mark.live`) to verify integration with real LLM APIs using environment variables for keys.
