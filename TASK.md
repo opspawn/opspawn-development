@@ -360,7 +360,7 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
   *Dependencies:* Phase 4 Completion
   *Comments:* Requires DB setup (e.g., Docker), schema definition (Alembic migrations), store implementation, and unit tests. `ops_core/ops_core/metadata/sql_store.py` implemented. Unit tests in `ops_core/tests/metadata/test_sql_store.py` implemented and fixtures added to `ops_core/tests/conftest.py`. DB setup and migrations completed. Test failures (`InternalError`, `NameError`, `AttributeError`, `NotSupportedError`, `TypeError`) resolved by fixing session management, variable names, enum handling (`native_enum=False`), and JSON serialization logic. All `test_sql_store.py` tests pass.
 
-- [ ] **Task 6.2: Integrate Persistent Store** `(Started 2025-04-09)`
+- [ ] **Task 6.2: Integrate Persistent Store** `(Started 2025-04-09; Unblocked 2025-04-10)`
   *Description:* Update `ops_core` components to use `SqlMetadataStore` instead of `InMemoryMetadataStore`.
   *Description:* Update `ops_core` components to use `SqlMetadataStore` instead of `InMemoryMetadataStore`.
   *Dependencies:* Task 6.1
@@ -371,8 +371,8 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
     - [x] **Task 6.2.4:** Verify API (`ops_core/api/v1/endpoints/tasks.py`) integration with `SqlMetadataStore`. `(Completed 2025-04-09)`
     - [x] **Task 6.2.5:** Verify gRPC (`ops_core/grpc_internal/task_servicer.py`) integration with `SqlMetadataStore`. `(Completed 2025-04-09)`
     - [x] **Task 6.2.6:** Refactor unit/integration tests (`test_engine.py`, `test_tasks.py` (API), `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`) to use DB fixtures (`db_session`). `(Completed 2025-04-09)`
-    - [Blocked] **Task 6.2.7:** Run `tox` to verify all tests pass. `(Blocked by tox/import errors - See Task B.1)`
-  *Comments:* Code changes complete. Final verification blocked by persistent `tox` environment/import resolution issues. Debugging moved to Task B.1.
+    - [ ] **Task 6.2.7:** Run `tox` to verify all tests pass. `(Ready)`
+  *Comments:* Code changes complete. Final verification was blocked by Task 9.2, now ready.
 
 - [ ] **Task 6.3: Implement Live LLM Integration Tests**
   *Description:* Create specific, marked tests (`@pytest.mark.live`) to verify integration with real LLM APIs using environment variables for keys.
@@ -460,7 +460,7 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
     *Description:* Refined the testing strategy in `memory-bank/testing_strategy.md` to include more granular batching options (keyword, node ID, marker) and a structured debugging log process. Updated `tox.ini` default command to include both `ops_core` and `agentkit` tests.
     *Dependencies:* Task 9.1 (Context)
 
-- [In Progress] **Task 9.2: Fix Runtime Test Failures** `(Updated 2025-04-10)`
+- [x] **Task 9.2: Fix Runtime Test Failures** `(Completed 2025-04-10)`
     *Description:* Address the remaining runtime test failures identified after the repository restructure (Task 9.1).
     *Dependencies:* Task 9.1
     *Comments:*
@@ -470,10 +470,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
         - **Batch 4 (Async Workflow - `test_async_workflow.py`): Completed (2025-04-10).** Passed after fixing fixture/patching issues.
         - **Batch 5 (E2E Workflow - `test_e2e_workflow.py`): Completed (2025-04-10).** Passed.
         - **Batch 6 (Scheduler - `test_engine.py`): Completed (2025-04-10).** Passed after fixing mocking/assertion issues.
-        - **Batch 7 (REST API - `ops_core/tests/api/`): Paused (2025-04-10).** Debugging `test_tasks.py`. Multiple attempts to fix session handling failed. 4 failures remain (GET requests). Root cause likely session conflict between test setup and app request lifecycle. (Learnings from Batch 8/9 likely applicable).
+        - **Batch 7 (REST API - `ops_core/tests/api/`): Completed (2025-04-10).** Fixed `NameError` in `test_create_task_success` and inconsistent `TaskNotFoundError` import causing 500 error in `test_get_task_not_found`. All tests in `test_tasks.py` now pass.
         - **Batch 8 (gRPC API - `ops_core/tests/grpc/`): Completed (2025-04-10).** Fixed 4 failures in `test_task_servicer.py` related to exception handling, session mismatch, and incorrect patching.
         - **Batch 9 (Integration - `test_api_scheduler_integration.py`): Completed (2025-04-10).** Fixed 4 failures by ensuring consistent session injection in fixtures (`mock_scheduler`, `grpc_server`, `test_client`) and switching REST tests to use `httpx.AsyncClient`.
-        - **Next Step:** Revisit Batch 7 (REST API) failures using insights from Batch 8/9 fixes.
+        - **All runtime test failures resolved.**
 
 ---
 

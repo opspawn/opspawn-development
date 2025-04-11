@@ -1,32 +1,34 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-10 6:50 PM)
-- **Task 9.2 (Fix Runtime Test Failures):** **In Progress**.
-    - Batch 7 (REST API - `test_tasks.py`): **Paused**. 4 failures remain due to session conflicts. Will revisit next.
-    - Batch 8 (gRPC API - `test_task_servicer.py`): **Completed**.
-    - Batch 9 (Integration - `test_api_scheduler_integration.py`): **Completed**.
-- **Task 6.2 (Integrate Persistent Store):** **Blocked** pending resolution of runtime test failures in Task 9.2 (specifically Batch 7).
+## Current Focus (Updated 2025-04-10 7:05 PM)
+- **Task 9.2 (Fix Runtime Test Failures):** **Completed**. All batches (1-9) are passing.
+- **Task 6.2 (Integrate Persistent Store):** **Unblocked**. Ready for final verification (Task 6.2.7).
 - **Task 5.2 (Update User & Developer Documentation):** **In Progress (Paused)**. Initial explanation drafts created and expanded. Further updates deferred to Phase 8.
 - **Phase 5 Deferred:** Tasks 5.3-5.5 remain deferred to Phase 8.
 
 ## Recent Activities (Current Session - 2025-04-10 Evening)
-- **Continued Task 9.2 (Fix Runtime Test Failures):**
-    - **Batch 8 (gRPC API - `test_task_servicer.py`):**
+- **Completed Task 9.2 (Fix Runtime Test Failures):**
+    - **Batch 7 (REST API - `test_tasks.py`):**
+        - Identified 2 failures: `NameError` in `test_create_task_success` and 500 error in `test_get_task_not_found`.
+        - Fixed `NameError` by correcting mock assignment in `test_create_task_success`.
+        - Fixed 500 error by correcting inconsistent import path for `TaskNotFoundError` between `sql_store.py` and `tasks.py`.
+        - Verified all tests in batch pass.
+    - **Batch 8 (gRPC API - `test_task_servicer.py`):** (Completed earlier this session)
         - Isolated 4 failures (`test_get_task_not_found`, `test_get_task_metadata_store_error`, `test_list_tasks_success`, `test_list_tasks_metadata_store_error`), primarily `InterfaceError`.
         - Fixed `test_get_task_not_found` by adding specific `TaskNotFoundError` handling in `TaskServicer.GetTask`.
         - Fixed `test_get_task_metadata_store_error` by correcting patch target to `task_servicer._metadata_store.get_task`.
         - Fixed `test_list_tasks_success` by modifying `task_servicer` fixture to inject `db_session` into `SqlMetadataStore`.
         - Fixed `test_list_tasks_metadata_store_error` by correcting patch target to `task_servicer._metadata_store.list_tasks`.
         - Verified all tests in batch pass.
-    - **Batch 9 (Integration - `test_api_scheduler_integration.py`):**
+    - **Batch 9 (Integration - `test_api_scheduler_integration.py`):** (Completed earlier this session)
         - Isolated 4 failures (`test_rest_api_submit_non_agent_task`, `test_rest_api_submit_agent_task`, `test_grpc_api_submit_non_agent_task`, `test_grpc_api_submit_agent_task`), primarily `InterfaceError` during INSERT.
         - Fixed gRPC tests by modifying `mock_scheduler` and `grpc_server` fixtures to inject `db_session` into `SqlMetadataStore`.
         - Fixed REST tests by modifying `test_client` fixture to use `httpx.AsyncClient` with `ASGITransport`, ensure correct dependency overrides (including `get_metadata_store`), and updating tests to use `await`.
         - Verified all tests in batch pass.
-- **Documentation Update:** Updated `TASK.md`, `activeContext.md`, `progress.md`, and created debugging logs for Batches 8 & 9.
+- **Documentation Update:** Updated `TASK.md`, `activeContext.md`, `progress.md`.
 
 ## Recent Activities (Previous Session - 2025-04-10 Afternoon)
-- **Continued Task 9.2 (Fix Runtime Test Failures):**
+- **Continued Task 9.2 (Fix Runtime Test Failures):** (Completed earlier this session)
     - Ran tests in batches as per testing strategy.
     - **Batch 1 (`test_sql_store.py`):** Passed.
     - **Batch 2 (`test_dependencies.py`):** Passed.
@@ -159,9 +161,9 @@
 - Completed Maintenance Tasks Maint.1.
 
 ## Active Decisions & Considerations
-- **Testing Focus:** Current priority is fixing the remaining runtime test failures identified in the `tox` output from 2025-04-10. Batch 7 (API) is currently blocked by session handling issues. Next focus will be Batch 8 (gRPC). (Decision Date: 2025-04-10).
+- **Next Steps:** Proceed with Task 6.2.7 (Run `tox` to verify persistent store integration). (Decision Date: 2025-04-10).
 - **Repository Structure:** `src` layout restructure (Task 9.1) is complete. Test collection error resolved. (Decision Date: 2025-04-09/10).
-- **Revised Phasing:** Phase 6 (E2E Enablement), Phase 7 (Live E2E), Phase 8 (Final Docs) added. Tasks 5.3-5.5 deferred to Phase 8. (Decision Date: 2025-04-08).
+- **Revised Phasing:** Phase 6 (E2E Test Enablement), Phase 7 (Live E2E), Phase 8 (Final Docs) added. Tasks 5.3-5.5 deferred to Phase 8. (Decision Date: 2025-04-08).
 - **Async Workflow Testing:** Integration tests (`test_async_workflow.py`) simplified to verify API -> Broker dispatch only due to `StubBroker` limitations. (Decision Date: 2025-04-08).
 - **Asynchronous Messaging:** Using **Dramatiq + RabbitMQ**. (Decision Date: 2025-04-06).
 - **MCP Integration Strategy:** Using **Dynamic Proxy Pattern**. (Decision Date: 2025-04-05).
