@@ -62,45 +62,7 @@ class GoogleClient(BaseLlmClient):
             # or users should use the underlying SDK directly.
             input_content = prompt
 
-            # 2. Prepare GenerationConfig with ONLY standard parameters known to be valid
-            system_prompt = kwargs.get("system_prompt") # Get system prompt if passed via kwargs
-
-            # Standard generation parameters ONLY
-            generation_config_params = {
-                "temperature": temperature,
-                "max_output_tokens": max_tokens,
-                "stop_sequences": stop_sequences,
-                "top_p": kwargs.get("top_p"), # Use get to avoid error if not passed
-                "top_k": kwargs.get("top_k"), # Use get to avoid error if not passed
-                "system_instruction": system_prompt,
-            }
-            # Filter out None values for GenerationConfig
-            filtered_generation_config_params = {
-                k: v for k, v in generation_config_params.items() if v is not None
-            }
-            generation_config_obj = genai_types.GenerationConfig(**filtered_generation_config_params)
-
-            # 2. Prepare GenerationConfig, including system_prompt and other kwargs
-            system_prompt = kwargs.pop("system_prompt", None) # Extract system prompt explicitly if passed via kwargs
-            config_params = {
-                "temperature": temperature,
-                "max_output_tokens": max_tokens,
-                "stop_sequences": stop_sequences,
-                "top_p": kwargs.get("top_p"), # Keep top_p/top_k in kwargs for filtering below
-                "top_k": kwargs.get("top_k"),
-                "system_instruction": system_prompt, # Add system instruction here
-                # Pass through any other valid GenerationConfig kwargs directly from input kwargs
-                # Include potential 'tools' and 'tool_config' from kwargs here
-                **kwargs
-            }
-            # Filter out None values AND ensure keys are valid for GenerationConfig
-            # This prevents passing unexpected kwargs that might cause issues.
-            valid_config_keys = genai_types.GenerationConfig.__annotations__.keys()
-            filtered_config_params = {
-                k: v for k, v in config_params.items() if v is not None and k in valid_config_keys
-            }
-
-            # 2. Prepare GenerationConfig, including standard params. Omit tool/func config for now.
+            # 2. Prepare GenerationConfig with standard parameters.
             system_prompt = kwargs.get("system_prompt") # Get system prompt if passed via kwargs
             config_params = {
                 "temperature": temperature,
@@ -109,54 +71,33 @@ class GoogleClient(BaseLlmClient):
                 "top_p": kwargs.get("top_p"),
                 "top_k": kwargs.get("top_k"),
                 "system_instruction": system_prompt,
-                # OMITTING tool/func related keys for now due to SDK inconsistency
-                # "automatic_function_calling": genai_types.AutomaticFunctionCallingConfig(disable=True),
-                # "tools": None,
-                # "tool_config": None,
+                # Note: OMITTING tool/func related keys like 'automatic_function_calling',
+                # 'tools', 'tool_config' due to previous SDK inconsistency issues.
             }
             # Filter out None values from the standard generation parameters
             filtered_generation_config_params = {
-                k: v for k, v in generation_config_params.items() if v is not None
+                k: v for k, v in config_params.items() if v is not None
             }
             # Omit 'system_instruction' if it's None, as it might cause issues if passed as None
             if "system_instruction" in filtered_generation_config_params and filtered_generation_config_params["system_instruction"] is None:
                  del filtered_generation_config_params["system_instruction"]
 
+            # Create the GenerationConfig object
+            generation_config_obj = genai_types.GenerationConfig(**filtered_generation_config_params)
 
-            # 3. Call the SYNCHRONOUS generate_content method in a separate thread.
-            #    Pass configuration parameters directly as keyword arguments,
-            #    instead of using a GenerationConfig object.
-            sync_generate_content = functools.partial(
-                self.client.models.generate_content, # Use sync client method
-                model=f"models/{model}",
+            # 3. Call the ASYNCHRONOUS generate_content method.
+            #    Pass the GenerationConfig object via the `config=` argument.
+            response = await self.client.aio.models.generate_content(
+                model=f"models/{model}", # Model name needs prefix here
                 contents=input_content,
-                **filtered_generation_config_params # Unpack filtered standard params directly
+                config=generation_config_obj # Pass the config object here using config=
             )
-            response = await asyncio.to_thread(sync_generate_content)
+
             # 4. Map the successful response to LlmResponse
-            finish_reason = "unknown"
-            if response.candidates:
-                 # Assuming finish_reason is an enum or string directly accessible
-                 raw_finish_reason = getattr(response.candidates[0], 'finish_reason', 'unknown')
-                 # Simplify conversion: just lowercase the string representation
-                 finish_reason = str(raw_finish_reason).lower()
-
-            # 3. Map the successful response to LlmResponse, handling potential ValueError for blocked content
-            try:
-                content = response.text # Revert back to using .text attribute
-                # Finish reason and usage metadata are already calculated above
-                usage_metadata = getattr(response, 'usage_metadata', None) # Get usage metadata
-
-                return LlmResponse(
-                    content=content,
-                    model_used=model,
-                    usage_metadata=usage_metadata, # Use calculated value
-                    finish_reason=finish_reason, # Use calculated value
-                    error=None,
-                )
-            except ValueError:
-                # Handle blocked prompt specifically
-                block_reason = getattr(getattr(response, 'prompt_feedback', None), 'block_reason', None)
+            # Check for blocked content first
+            prompt_feedback = getattr(response, 'prompt_feedback', None)
+            if prompt_feedback and getattr(prompt_feedback, 'block_reason', None):
+                block_reason = getattr(prompt_feedback, 'block_reason', None)
                 blocked_content = f"Blocked: {block_reason.name if block_reason else 'Unknown Reason'}"
                 return LlmResponse(
                     content=blocked_content,
@@ -165,9 +106,29 @@ class GoogleClient(BaseLlmClient):
                     finish_reason="safety", # Set finish reason to safety
                     error=None,
                 )
-        # Removed incorrect StopCandidateException block
+
+            # If not blocked, proceed to extract content and metadata
+            # Determine finish reason
+            finish_reason = "unknown"
+            if response.candidates:
+                raw_finish_reason = getattr(response.candidates[0], 'finish_reason', 'unknown')
+                finish_reason = str(raw_finish_reason).lower()
+
+            # Get usage metadata
+            usage_metadata = getattr(response, 'usage_metadata', None)
+
+            # Get content (should be safe now)
+            content = response.text
+
+            return LlmResponse(
+                content=content,
+                model_used=model,
+                usage_metadata=usage_metadata, # Use calculated value
+                finish_reason=finish_reason, # Use calculated value
+                error=None,
+            )
+        # Catch other potential errors (API errors, network issues, SDK internal errors, etc.)
         except Exception as e:
-            # Catch other potential errors (API errors, network issues, SDK internal errors, etc.)
             return LlmResponse(
                 content="",
                 model_used=model,
