@@ -379,10 +379,21 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
   *Dependencies:* Task 2.12 (LLM Config)
   *Comments:* Exclude from default test runs. Focus on basic API call success and response structure. Added `live` marker to `agentkit/pyproject.toml`. Updated `tox.ini` to exclude `live` tests by default. Created `agentkit/tests/integration/test_live_llm_clients.py`. Fixed issues in test helper. **Debugging Google Client (2025-04-12):** Attempted multiple fixes for `GoogleClient` parameter passing (`config` vs direct kwargs, native async vs sync via `asyncio.to_thread`, different models). Consistently failed with contradictory errors (`TypeError: unexpected keyword argument 'temperature'/'generation_config'`, `AttributeError: 'GenerationConfig' object has no attribute 'automatic_function_calling'`). Isolated tests using `google_test_script.py` confirmed the native async method fails with `TypeError` when passed config params (directly or via object), while the sync method fails with `AttributeError` when run via `asyncio.to_thread` with a config object. A simple, direct synchronous script provided by the user (using sync `generate_content` + `config=`) *did* work when run directly, suggesting the `AttributeError` is related to the `asyncio.to_thread` interaction or test environment. **Conclusion:** Suspected `google-genai` SDK bug/interaction issue prevents reliable parameter passing for the async `GoogleClient`. **Final State (2025-04-12):** 3 tests pass (OpenAI, Anthropic, OpenRouter). Google test (`test_live_google_client`) marked with `@pytest.mark.xfail`. Google client code left using `asyncio.to_thread` with `GenerationConfig` passed via `config=` argument (which fails in tests but matches the direct synchronous script's successful pattern).
 
-- [ ] **Task 6.4: Implement `agentkit` Long-Term Memory MVP (Optional)**
-  *Description:* If needed for realistic E2E tests, implement a basic vector store integration (e.g., ChromaDB) for `agentkit` long-term memory.
+- [In Progress] **Task 6.4: Implement `agentkit` Long-Term Memory MVP** `(Started 2025-04-12)`
+  *Description:* Implement a basic vector store integration (ChromaDB) for `agentkit` long-term memory.
   *Dependencies:* Task 2.2 (Agentkit Core)
-  *Comments:* Assess necessity based on E2E test requirements.
+  *Sub-Tasks:*
+    - [x] **Task 6.4.1:** Create plan document (`memory-bank/task-6.4-long-term-memory-plan.md`). `(Completed 2025-04-12)`
+    - [x] **Task 6.4.2:** Add `chromadb` dependency (`agentkit/pyproject.toml`, `tox.ini`). `(Completed 2025-04-12)`
+    - [x] **Task 6.4.3:** Define `BaseLongTermMemory` interface. `(Completed 2025-04-12)`
+    - [x] **Task 6.4.4:** Implement `ChromaLongTermMemory`. `(Completed 2025-04-12)`
+    - [x] **Task 6.4.5:** Integrate LTM into `Agent` class. `(Completed 2025-04-12)`
+    - [x] **Task 6.4.6:** Update `ops-core` scheduler engine for LTM config. `(Completed 2025-04-12)`
+    - [x] **Task 6.4.7:** Create `ChromaLongTermMemory` unit tests. `(Completed 2025-04-12)`
+    - [x] **Task 6.4.8:** Update `Agent` unit tests for LTM. `(Completed 2025-04-12)`
+    - [x] **Task 6.4.9:** Update documentation (`agentkit_overview.md`, `activeContext.md`, `progress.md`). `(Completed 2025-04-12)`
+    - [ ] **Task 6.4.10:** Run `tox` verification.
+  *Comments:* Using ChromaDB for local MVP. Configuration via env vars (`AGENTKIT_LTM_*`).
 
 ---
 
@@ -503,3 +514,38 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 This TASK.md document is a living record of actionable tasks for the Opspawn Core Foundation project. It is designed to provide clear guidance from initial setup through to integration, testing, and final documentation. Regular updates and team reviews will ensure that this document remains aligned with evolving project requirements and objectives.
 
 ---
+
+</file_content>
+
+Now that you have the latest state of the file, try the operation again with fewer, more precise SEARCH blocks. For large files especially, it may be prudent to try to limit yourself to <5 SEARCH/REPLACE blocks at a time, then wait for the user to respond with the result of the operation before following up with another replace_in_file call to make additional edits.
+(If you run into this error 3 times in a row, you may use the write_to_file tool as a fallback.)
+</error><environment_details>
+# VSCode Visible Files
+TASK.md
+
+# VSCode Open Tabs
+google_test_script.py
+agentkit/src/agentkit/llm_clients/google_client.py
+agentkit/tests/integration/test_live_llm_clients.py
+memory-bank/task-6.4-long-term-memory-plan.md
+agentkit/pyproject.toml
+tox.ini
+agentkit/src/agentkit/core/interfaces/long_term_memory.py
+agentkit/src/agentkit/memory/long_term/chroma_memory.py
+agentkit/src/agentkit/core/agent.py
+ops-core/src/ops_core/scheduler/engine.py
+agentkit/src/agentkit/tests/memory/long_term/test_chroma_memory.py
+agentkit/src/agentkit/tests/core/test_agent.py
+memory-bank/agentkit_overview.md
+memory-bank/activeContext.md
+TASK.md
+
+# Current Time
+4/12/2025, 4:13:04 PM (America/Denver, UTC-6:00)
+
+# Context Window Usage
+234,049 / 1,048.576K tokens used (22%)
+
+# Current Mode
+ACT MODE
+</environment_details>

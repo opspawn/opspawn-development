@@ -2,10 +2,10 @@
 
 ## Current Status (Updated 2025-04-12 12:19 PM)
 - **Phase:** Phase 6 (E2E Test Enablement).
-- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 9 completed. Tasks 5.1, 6.1, 6.2 completed. Maintenance tasks Maint.1-Maint.12 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8.
-- **Current Task:** Task 6.4 (Implement `agentkit` Long-Term Memory MVP (Optional)) or Phase 7.
-- **Next Task:** Task 6.4 or Task 7.1.
-- **Blockers:** None currently. (Google live test marked xfail due to suspected `google-genai` SDK issue/interaction).
+- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 9 completed. Tasks 5.1, 6.1, 6.2, 6.3 completed. Maintenance tasks Maint.1-Maint.12 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Task 6.4 is in progress.
+- **Current Task:** Task 6.4 (Implement `agentkit` Long-Term Memory MVP).
+- **Next Task:** Task 7.1 (Implement Full Live E2E Test Suite).
+- **Blockers:** None currently. (Google live test marked xfail).
 
 ## What Works (As of 2025-04-12 12:19 PM)
 - **Multi-Repo Structure (Local Subdirectories):** The multi-repository structure with `ops-core` and `agentkit` as subdirectories within `1-t` is now working. The `1-t/tox.ini` file correctly installs these as editable dependencies using absolute paths and runs tests from their respective `tests` directories. All tests (140 passed, 1 skipped) pass using this configuration.
@@ -80,14 +80,25 @@
     - API endpoints and gRPC servicer updated to use `BaseMetadataStore` dependency.
     - Tests (`test_engine.py`, `test_tasks.py` (API), `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`) refactored to use `db_session` fixture and `SqlMetadataStore`.
     - Final verification via `tox -e py312` passed (176 passed, 1 skipped) after fixing gRPC `TaskNotFoundError` import (2025-04-10).
-- **Live LLM Tests (Task 6.3 Completed - Google xfail):** OpenAI, Anthropic, and OpenRouter live tests pass. Google client test (`test_live_google_client`) marked xfail due to persistent SDK errors/interactions (`AttributeError: ... automatic_function_calling` or `TypeError: unexpected keyword argument ...`) when attempting to pass standard configuration parameters via async client or sync client wrapped in `asyncio.to_thread`.
+- **Live LLM Tests (Task 6.3 Completed - Google xfail):** OpenAI, Anthropic, and OpenRouter live tests pass. Google client test (`test_live_google_client`) marked xfail due to persistent SDK errors/interactions.
+- **Long-Term Memory (Task 6.4 In Progress):**
+    - Added `chromadb` dependency.
+    - Defined `BaseLongTermMemory` interface.
+    - Implemented `ChromaLongTermMemory`.
+    - Integrated LTM into `Agent` class.
+    - Added unit tests for `ChromaLongTermMemory`.
+    - Updated `Agent` unit tests.
+    - Updated `ops-core` scheduler engine for LTM configuration.
+    - Updated documentation (`agentkit_overview.md`, `activeContext.md`).
 
 ## What's Left to Build (Revised Plan - 2025-04-12)
 - **Phase 6:** E2E Test Enablement
     - [x] Task 6.3: Implement Live LLM Integration Tests (Completed - Google test marked xfail 2025-04-12).
-    - [ ] Task 6.4: Implement `agentkit` Long-Term Memory MVP (Optional).
+    - [In Progress] Task 6.4: Implement `agentkit` Long-Term Memory MVP.
+        - [ ] Update `TASK.md` with sub-tasks and status.
+        - [ ] Run `tox` verification.
 - **Phase 7:** Full Live E2E Testing
-    - Task 7.1: Implement Full Live E2E Test Suite.
+    - [ ] Task 7.1: Implement Full Live E2E Test Suite.
     - Task 7.2: Execute & Debug Live E2E Tests.
 - **Phase 8:** Final Documentation Update
     - Task 8.1: Update & Finalize All Documentation (Revisit deferred 5.2-5.5).
