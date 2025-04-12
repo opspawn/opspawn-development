@@ -14,20 +14,20 @@ from fastapi.testclient import TestClient
 from grpc import aio as grpc_aio
 
 # Import project components
-from src.ops_core.main import app as fastapi_app
-from src.ops_core.scheduler.engine import InMemoryScheduler
-from src.ops_core.metadata.store import InMemoryMetadataStore # Using InMemory for these tests
-from src.ops_core.mcp_client.client import OpsMcpClient
-from src.ops_core.models.tasks import Task, TaskStatus
-from src.ops_core.api.v1.endpoints import tasks as tasks_api
+from ops_core.main import app as fastapi_app
+from ops_core.scheduler.engine import InMemoryScheduler
+from ops_core.metadata.store import InMemoryMetadataStore # Using InMemory for these tests
+from ops_core.mcp_client.client import OpsMcpClient
+from ops_core.models.tasks import Task, TaskStatus
+from ops_core.api.v1.endpoints import tasks as tasks_api
 
 # Import dependencies container
-from src.ops_core.dependencies import deps
+from ops_core.dependencies import deps
 
-from src.ops_core.grpc_internal.task_servicer import TaskServicer
-from src.ops_core.grpc_internal import tasks_pb2, tasks_pb2_grpc
+from ops_core.grpc_internal.task_servicer import TaskServicer
+from ops_core.grpc_internal import tasks_pb2, tasks_pb2_grpc
 # Only need the actor object to patch its send method
-from src.ops_core.scheduler.engine import execute_agent_task_actor
+from ops_core.scheduler.engine import execute_agent_task_actor
 
 
 # --- Fixtures ---
@@ -84,8 +84,8 @@ def test_client(
     mock_mcp_client: MagicMock
 ) -> TestClient:
     """Provides a FastAPI TestClient with overridden dependencies."""
-    from src.ops_core.dependencies import get_metadata_store as api_get_store
-    from src.ops_core.dependencies import get_mcp_client as api_get_client
+    from ops_core.dependencies import get_metadata_store as api_get_store
+    from ops_core.dependencies import get_mcp_client as api_get_client
 
     # Ensure deps are set for the API context *before* creating TestClient
     # This allows TestClient's context manager to potentially run lifespan,
@@ -142,7 +142,7 @@ async def test_rest_api_dispatches_agent_task(
     task_id = None
 
     # Patch the actor's send method for this test scope
-    with patch('src.ops_core.scheduler.engine.execute_agent_task_actor.send') as mock_actor_send:
+    with patch('ops_core.scheduler.engine.execute_agent_task_actor.send') as mock_actor_send:
         response = test_client.post("/api/v1/tasks/", json=task_data)
 
     # --- Assertions ---
@@ -180,7 +180,7 @@ async def test_grpc_api_dispatches_agent_task(
     task_id = None
 
     # Patch the actor's send method for this test scope
-    with patch('src.ops_core.scheduler.engine.execute_agent_task_actor.send') as mock_actor_send:
+    with patch('ops_core.scheduler.engine.execute_agent_task_actor.send') as mock_actor_send:
         response = await grpc_client.CreateTask(request)
 
     # --- Assertions ---
@@ -212,7 +212,7 @@ async def test_rest_api_dispatches_failure_task( # Renamed for clarity
     task_id = None
 
     # Patch the actor's send method for this test scope
-    with patch('src.ops_core.scheduler.engine.execute_agent_task_actor.send') as mock_actor_send:
+    with patch('ops_core.scheduler.engine.execute_agent_task_actor.send') as mock_actor_send:
         response = test_client.post("/api/v1/tasks/", json=task_data)
 
     # --- Assertions ---
