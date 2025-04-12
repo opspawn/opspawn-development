@@ -156,6 +156,6 @@ cython_debug/
 Research/
 
 # Sub-repositories (managed separately)
-agentkit/
+# agentkit/ # Removed - Allow tracking changes within the local subdir
 ops-core/ # Ignore the root-level directory only
 ops-docs/

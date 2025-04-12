@@ -374,10 +374,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
     - [x] **Task 6.2.7:** Run `tox` to verify all tests pass. `(Completed 2025-04-10)`
   *Comments:* Code changes complete. Final verification was blocked by Task 9.2. Fixed gRPC `TaskNotFoundError` import mismatch. Full `tox -e py312` run passed (176 passed, 1 skipped).
 
-- [ ] **Task 6.3: Implement Live LLM Integration Tests**
+- [In Progress] **Task 6.3: Implement Live LLM Integration Tests** `(Started 2025-04-12)`
   *Description:* Create specific, marked tests (`@pytest.mark.live`) to verify integration with real LLM APIs using environment variables for keys.
   *Dependencies:* Task 2.12 (LLM Config)
-  *Comments:* Exclude from default test runs. Focus on basic API call success and response structure.
+  *Comments:* Exclude from default test runs. Focus on basic API call success and response structure. Added `live` marker to `agentkit/pyproject.toml`. Updated `tox.ini` to exclude `live` tests by default. Created `agentkit/tests/integration/test_live_llm_clients.py`. Fixed issues in test helper and Google client. **Reran tests (2025-04-12): 3 passed (OpenAI, Anthropic, OpenRouter), 1 failed (Google - `TypeError` on `generate_content` kwargs).** Next step is to fix Google client again.
 
 - [ ] **Task 6.4: Implement `agentkit` Long-Term Memory MVP (Optional)**
   *Description:* If needed for realistic E2E tests, implement a basic vector store integration (e.g., ChromaDB) for `agentkit` long-term memory.
