@@ -5,23 +5,23 @@
 - **Task Maint.12 (Fix `1-t/tox.ini` Dependency Paths & Commands):** **Completed**. Corrected editable dependency paths (using absolute paths) and command paths (using `{toxinidir}`) in `1-t/tox.ini` to work with the local subdirectory structure (`ops-core/`, `agentkit/`). Verified with `tox -e py312`.
 - **Task 6.2 (Integrate Persistent Store):** **Completed**.
 - **Task 9.2 (Fix Runtime Test Failures):** **Completed**.
-- **Task 6.3 (Implement Live LLM Integration Tests):** **In Progress (Partially Complete)**. Tests created and run. OpenAI, Anthropic, OpenRouter tests passed. Google test failed due to incorrect SDK argument passing (`temperature`). Needs further debugging.
+- **Task 6.3 (Implement Live LLM Integration Tests):** **In Progress (Partially Complete)**. Tests created and run. OpenAI, Anthropic, OpenRouter tests passed. Google test failed due to persistent, contradictory errors related to `google-genai` SDK's async `generate_content` parameter handling (`temperature`, `automatic_function_calling`, `tools`). Multiple fixes attempted based on documentation and error messages without success. Current code uses `asyncio.to_thread` workaround. Test uses `gemini-2.5-pro-exp-03-25`.
 - **Task 5.2 (Update User & Developer Documentation):** **In Progress (Paused)**. Further updates deferred to Phase 8.
 - **Phase 5 Deferred:** Tasks 5.3-5.5 remain deferred to Phase 8.
-- **Next Task:** Continue debugging Task 6.3 (Fix Google live test).
+- **Next Task:** Continue debugging Task 6.3 (Fix Google live test), potentially by reverting to the async method and trying to construct `GenerationConfig` without the `automatic_function_calling` key.
 
 ## Recent Activities (Current Session - 2025-04-12)
-- **Started Task 6.3 (Implement Live LLM Integration Tests):**
-    - Verified `live` marker exists in `agentkit/pyproject.toml`.
-    - Verified `tox.ini` excludes `live` tests by default.
-    - Created `agentkit/tests/integration/test_live_llm_clients.py`.
-    - Ran live tests: Initial run failed all 4 tests due to incorrect `model_name` argument in test helper.
-    - Fixed test helper (`_test_llm_client`) to use `model` argument and check `response.content`.
-    - Fixed `GoogleClient.generate` to accept `prompt` instead of `messages`.
-    - Reran live tests: 3 passed (OpenAI, Anthropic, OpenRouter), 1 failed (Google - `TypeError: AsyncModels.generate_content() got an unexpected keyword argument 'temperature'`).
-    - Fixed test helper again to remove incorrect `print` statement referencing `model_name`.
-    - Fixed `GoogleClient.generate` again to pass config parameters as kwargs instead of a `GenerationConfig` object.
-    - Reran live tests: 3 passed (OpenAI, Anthropic, OpenRouter), 1 failed (Google - `TypeError: AsyncModels.generate_content() got an unexpected keyword argument 'temperature'`). The fix for Google client was incorrect.
+- **Continued Task 6.3 (Implement Live LLM Integration Tests):**
+    - Debugged failing Google client test (`TypeError: ... unexpected keyword argument 'temperature'`).
+    - Attempted fix 1: Pass config params inside `GenerationConfig` object with `generation_config=` kwarg (Incorrect kwarg). Failed: `unexpected keyword argument 'generation_config'`.
+    - Attempted fix 2: Pass config params inside `GenerationConfig` object with `config=` kwarg (Correct kwarg, matches docs). Failed: `AttributeError: 'GenerationConfig' object has no attribute 'automatic_function_calling'`.
+    - Attempted fix 3: Pass standard params in `config=`, pass tool params as direct kwargs. Failed: `AttributeError: 'GenerationConfig' object has no attribute 'automatic_function_calling'`.
+    - Attempted fix 4: Pass only standard params in `config=`, omit other kwargs. Failed: `AttributeError: 'GenerationConfig' object has no attribute 'automatic_function_calling'`.
+    - Attempted fix 5: Pass standard params in `config=`, pass `tools=None`, `tool_config=None` directly. Failed: `TypeError: ... unexpected keyword argument 'tools'`.
+    - Attempted fix 6 (Workaround): Use `asyncio.to_thread` with sync `generate_content`, pass standard params in `config=`. Failed: `AttributeError: 'GenerationConfig' object has no attribute 'automatic_function_calling'`.
+    - Attempted fix 7 (Workaround): Use `asyncio.to_thread` with sync `generate_content`, pass standard params as direct kwargs. Failed: `TypeError: ... unexpected keyword argument 'temperature'`.
+    - Changed test model to `gemini-2.5-pro-exp-03-25`. Test still fails with the same error as fix 6/7 depending on the code state.
+    - **Conclusion:** Persistent contradictory errors suggest an SDK bug/inconsistency.
 - **Documentation Update:** Updated `TASK.md`.
 
 ## Recent Activities (Previous Session - 2025-04-10 Afternoon)
