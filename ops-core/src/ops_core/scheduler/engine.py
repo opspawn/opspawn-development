@@ -14,9 +14,15 @@ from typing import Any, Dict, Optional
 # Agentkit imports
 from agentkit.core.agent import Agent
 from agentkit.memory.short_term import ShortTermMemory
+from agentkit.memory.long_term.chroma_memory import ChromaLongTermMemory # Import Chroma LTM
 from agentkit.planning.placeholder_planner import PlaceholderPlanner # Default/fallback
 from agentkit.planning.react_planner import ReActPlanner # Import ReAct
-from agentkit.core.interfaces import BaseSecurityManager, BasePlanner, BaseLlmClient
+from agentkit.core.interfaces import ( # Group imports
+    BaseSecurityManager,
+    BasePlanner,
+    BaseLlmClient,
+    BaseLongTermMemory, # Import LTM interface
+)
 from agentkit.tools.registry import ToolRegistry
 # LLM Client imports (add others as needed)
 from agentkit.llm_clients.openai_client import OpenAiClient
@@ -74,6 +80,30 @@ def get_llm_client() -> BaseLlmClient:
         logger.error(f"Unsupported LLM provider specified: {provider}. Falling back to OpenAI.")
         # Fallback or raise error - let's fallback for now
         return OpenAiClient()
+
+def get_long_term_memory() -> Optional[BaseLongTermMemory]:
+    """Instantiates the appropriate long-term memory client based on environment variables."""
+    provider = os.getenv("AGENTKIT_LTM_PROVIDER", "none").lower()
+    logger.info(f"Checking long-term memory provider: {provider}")
+
+    if provider == "chroma":
+        persist_directory = os.getenv("AGENTKIT_LTM_CHROMA_PATH", "./.chroma_db")
+        collection_name = os.getenv("AGENTKIT_LTM_CHROMA_COLLECTION", "agent_memory")
+        logger.info(f"Instantiating ChromaDB LTM: path='{persist_directory}', collection='{collection_name}'")
+        try:
+            return ChromaLongTermMemory(
+                persist_directory=persist_directory,
+                collection_name=collection_name
+            )
+        except Exception as e:
+            logger.error(f"Failed to initialize ChromaDB LTM: {e}", exc_info=True)
+            return None # Fail gracefully if LTM init fails
+    elif provider == "none":
+        logger.info("Long-term memory is disabled (AGENTKIT_LTM_PROVIDER=none).")
+        return None
+    else:
+        logger.warning(f"Unsupported LTM provider specified: {provider}. Disabling LTM.")
+        return None
 
 def get_planner(llm_client: BaseLlmClient) -> BasePlanner:
     """Instantiates the appropriate planner, injecting the LLM client."""
@@ -202,10 +232,14 @@ async def _run_agent_task_logic(
                  logger.warning("MCP Proxy Tool spec not found in agentkit. Skipping injection.")
              except Exception as proxy_err:
                  logger.exception(f"Failed to register MCP Proxy tool for task {task_id}: {proxy_err}")
-                 # Decide if this is fatal - maybe just log and continue without proxy?
+                          # Decide if this is fatal - maybe just log and continue without proxy?
+
+        # Instantiate Long-Term Memory
+        long_term_memory_instance = get_long_term_memory()
 
         agent = Agent(
             memory=memory_instance,
+            long_term_memory=long_term_memory_instance, # Pass LTM instance
             planner=planner_instance, # Use configured planner
             tool_manager=tool_registry_instance,
             security_manager=security_manager_instance,
