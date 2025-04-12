@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentkit"
+version = "0.1.0"
+description = "Toolkit for building LLM-powered agents."
+# readme = "README.md" # Optional: Add if/when README exists
+requires-python = ">=3.8"
+dependencies = [
+    "pydantic",
+    "openai>=1.0.0,<2.0.0", # Added for OpenAI LLM Client
+    "anthropic>=0.20.0,<1.0.0", # Added for Anthropic LLM Client
+    "google-genai", # Use the new recommended SDK
+    # "protobuf==4.25.3", # Removed pin, let new SDK manage dependencies
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-asyncio",
+]
+
+[tool.setuptools.packages.find]
+# Look for packages inside the 'src' directory relative to this project root
+where = ["src"]
+# Setuptools should find the 'agentkit' package within the 'src/' directory specified by 'where'
+
+[tool.pytest.ini_options]
+# Add asyncio config here proactively to avoid the warning
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "live: mark test as live integration test requiring API keys",
+]
