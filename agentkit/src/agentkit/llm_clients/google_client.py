@@ -1,4 +1,6 @@
 import os
+import asyncio
+import functools
 from typing import Dict, Any, Optional, List
 import google.genai as genai # Changed import
 from google.genai import types as genai_types # Use alias for types
@@ -60,32 +62,77 @@ class GoogleClient(BaseLlmClient):
             # or users should use the underlying SDK directly.
             input_content = prompt
 
-            # 2. Prepare GenerationConfig, including system_prompt from kwargs
-            system_prompt = kwargs.pop("system_prompt", None) # Extract system prompt
+            # 2. Prepare GenerationConfig with ONLY standard parameters known to be valid
+            system_prompt = kwargs.get("system_prompt") # Get system prompt if passed via kwargs
+
+            # Standard generation parameters ONLY
+            generation_config_params = {
+                "temperature": temperature,
+                "max_output_tokens": max_tokens,
+                "stop_sequences": stop_sequences,
+                "top_p": kwargs.get("top_p"), # Use get to avoid error if not passed
+                "top_k": kwargs.get("top_k"), # Use get to avoid error if not passed
+                "system_instruction": system_prompt,
+            }
+            # Filter out None values for GenerationConfig
+            filtered_generation_config_params = {
+                k: v for k, v in generation_config_params.items() if v is not None
+            }
+            generation_config_obj = genai_types.GenerationConfig(**filtered_generation_config_params)
+
+            # 2. Prepare GenerationConfig, including system_prompt and other kwargs
+            system_prompt = kwargs.pop("system_prompt", None) # Extract system prompt explicitly if passed via kwargs
+            config_params = {
+                "temperature": temperature,
+                "max_output_tokens": max_tokens,
+                "stop_sequences": stop_sequences,
+                "top_p": kwargs.get("top_p"), # Keep top_p/top_k in kwargs for filtering below
+                "top_k": kwargs.get("top_k"),
+                "system_instruction": system_prompt, # Add system instruction here
+                # Pass through any other valid GenerationConfig kwargs directly from input kwargs
+                # Include potential 'tools' and 'tool_config' from kwargs here
+                **kwargs
+            }
+            # Filter out None values AND ensure keys are valid for GenerationConfig
+            # This prevents passing unexpected kwargs that might cause issues.
+            valid_config_keys = genai_types.GenerationConfig.__annotations__.keys()
+            filtered_config_params = {
+                k: v for k, v in config_params.items() if v is not None and k in valid_config_keys
+            }
+
+            # 2. Prepare GenerationConfig, including standard params. Omit tool/func config for now.
+            system_prompt = kwargs.get("system_prompt") # Get system prompt if passed via kwargs
             config_params = {
                 "temperature": temperature,
                 "max_output_tokens": max_tokens,
                 "stop_sequences": stop_sequences,
                 "top_p": kwargs.get("top_p"),
                 "top_k": kwargs.get("top_k"),
-                "system_instruction": system_prompt, # Add system instruction here
-                # Pass through any other valid GenerationConfig kwargs
-                **{k: v for k, v in kwargs.items() if k in genai_types.GenerationConfig.__annotations__ and k != "system_instruction"} # Avoid duplicating system_instruction
+                "system_instruction": system_prompt,
+                # OMITTING tool/func related keys for now due to SDK inconsistency
+                # "automatic_function_calling": genai_types.AutomaticFunctionCallingConfig(disable=True),
+                # "tools": None,
+                # "tool_config": None,
             }
-            # Filter out None values as SDK expects concrete values or omission
-            filtered_config_params = {k: v for k, v in config_params.items() if v is not None}
+            # Filter out None values from the standard generation parameters
+            filtered_generation_config_params = {
+                k: v for k, v in generation_config_params.items() if v is not None
+            }
+            # Omit 'system_instruction' if it's None, as it might cause issues if passed as None
+            if "system_instruction" in filtered_generation_config_params and filtered_generation_config_params["system_instruction"] is None:
+                 del filtered_generation_config_params["system_instruction"]
 
-            # 3. Call the async generate_content method
-            # The new SDK's generate_content takes the prompt string directly in 'contents'
-            # Pass configuration parameters directly as keyword arguments
-            response = await self.client.aio.models.generate_content(
-                model=f"models/{model}", # Models often need 'models/' prefix
-                contents=input_content, # Pass the prompt string directly
-                # generation_config=genai_types.GenerationConfig(**filtered_config_params), # Don't pass as object
-                **filtered_config_params, # Unpack config params as kwargs
-                # safety_settings=... # Can be added if needed
+
+            # 3. Call the SYNCHRONOUS generate_content method in a separate thread.
+            #    Pass configuration parameters directly as keyword arguments,
+            #    instead of using a GenerationConfig object.
+            sync_generate_content = functools.partial(
+                self.client.models.generate_content, # Use sync client method
+                model=f"models/{model}",
+                contents=input_content,
+                **filtered_generation_config_params # Unpack filtered standard params directly
             )
-
+            response = await asyncio.to_thread(sync_generate_content)
             # 4. Map the successful response to LlmResponse
             finish_reason = "unknown"
             if response.candidates:

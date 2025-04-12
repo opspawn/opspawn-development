@@ -11,7 +11,7 @@ from agentkit.core.interfaces.llm_client import BaseLlmClient, LlmResponse
 # Users might need to adjust these based on their API key access
 OPENAI_TEST_MODEL = "gpt-3.5-turbo"
 ANTHROPIC_TEST_MODEL = "claude-3-haiku-20240307"
-GOOGLE_TEST_MODEL = "gemini-1.5-flash-latest" # Or "gemini-pro" if flash not available
+GOOGLE_TEST_MODEL = "gemini-2.5-pro-exp-03-25" # Using the requested experimental model
 OPENROUTER_TEST_MODEL = "openai/gpt-3.5-turbo" # Example, could be others
 
 # --- Helper Function ---
