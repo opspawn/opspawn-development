@@ -14,12 +14,19 @@ dependencies = [
     "anthropic>=0.20.0,<1.0.0", # Added for Anthropic LLM Client
     "google-genai", # Use the new recommended SDK
     # "protobuf==4.25.3", # Removed pin, let new SDK manage dependencies
+    "numpy<2.0", # Pin numpy to avoid chromadb incompatibility with np.float_
 ]
 
 [project.optional-dependencies]
 test = [
     "pytest",
     "pytest-asyncio",
+    # Add numpy here too if test-specific numpy features are used,
+    # but pinning in core dependencies should suffice for the chromadb issue.
+]
+long_term_memory = [
+    "chromadb>=0.4.0,<0.5.0", # Added for ChromaDB LTM
+    # Numpy is already pinned in core dependencies
 ]
 
 [tool.setuptools.packages.find]
