@@ -2,30 +2,25 @@
 
 ## Current Focus (Updated 2025-04-13 11:39 AM)
 - **Task 7.2 (Execute & Debug Live E2E Tests):** **Paused**.
-    - **Status:** Debugging revealed persistent issues with Dramatiq worker invocation via CLI and subprocesses, likely related to environment/context interactions. Programmatic worker startup in a clean environment succeeded. Debugging efforts documented in `memory-bank/debugging/2025-04-13_task7.2_subprocess_investigation.md`.
-    - **Blocker:** Root cause of worker failure when invoked via CLI/subprocess remains unclear.
-- **Next Step (New Plan):** Analyze external demo project (`/home/sf2/Workspace/23-opspawn/3-FDRMQ/fastapi-rabbitmq-dramatiq-demo`) and create a new minimal test case in `1-t/flask-dramatiq-RabbitMQ-tests` to isolate core functionality and gain insights.
+    - **Status:** Minimal Flask/Dramatiq test case created and executed successfully, confirming basic CLI worker invocation works. Attempted "Delay Imports" strategy in `ops-core` worker: resolved startup errors but caused `ActorNotFound` during message processing. Changes reverted. Debugging efforts documented in `memory-bank/debugging/2025-04-13_task7.2_minimal_test_and_delay_imports.md`.
+    - **Blocker:** Root cause of worker failure when invoked via CLI/subprocess remains unclear, but likely related to complex imports/initialization within `ops-core`.
+- **Next Step (Plan):** Attempt **Idea 3: Refactor Actor Logic Location**. Move `execute_agent_task_actor` definition from `engine.py` to a new `ops_core/tasks/actors.py` module.
 
-## Recent Activities (Current Session - 2025-04-13 10:35 AM - 11:07 AM)
-- **Continued Task 7.2 (Debug Subprocess Worker Invocation):**
-    - Switched to Debug mode.
-    - Created debugging plan `PLANNING_step_7.2.5_subprocess_debug.md`.
-    - **Step 1 (Env Comparison):**
-        - Added env logging to `ops-core/src/ops_core/tasks/worker.py`.
-        - Improved stdout/stderr capture in `test_dramatiq_worker.py`.
-        - Ran worker via `tox exec` and captured env logs.
-        - Ran `test_dramatiq_worker.py` via `tox exec` (after fixing `ModuleNotFoundError` by running via tox). Captured subprocess env logs.
-        - Compared logs: Environments largely identical. Fixed incorrect passing of empty LLM env vars from test script to subprocess. Re-ran test; still failed.
-    - **Step 2 (Popen Tuning):**
-        - Explicitly set `cwd` in `subprocess.Popen`. Re-ran test; still failed.
-        - Modified test script to pass minimal `env` dict instead of `os.environ.copy()`. Fixed `AttributeError` in implementation. Re-ran test; still failed.
-    - **Step 3 (Detailed Logging):**
-        - Set worker logging to DEBUG. Added detailed `INFO` level timing logs to `ops-core/src/ops_core/scheduler/engine.py` imports and `get_...` functions. Fixed diff application errors.
-        - Re-ran test. Logs showed significant delay (~3-30s) occurs *during* the `import ops_core.scheduler.engine` statement in `worker.py`. Confirmed `get_...` functions are not called during import.
-    - **Step 4 (Simplified Test Case):**
-        - Created `minimal_worker.py` and `test_minimal_worker.py`.
-        - Fixed `AttributeError: module 'dramatiq' has no attribute 'RabbitmqBroker'` in `minimal_worker.py`.
-    - **Conclusion:** Issue narrowed down to `engine.py` import or subsequent Dramatiq initialization within the subprocess context. Ready to run minimal test case.
+## Recent Activities (Current Session - 2025-04-13 Afternoon)
+- **Continued Task 7.2 Debugging:**
+    - **Minimal Test Case:**
+        - Analyzed external demo (`fastapi-rabbitmq-dramatiq-demo`).
+        - Created minimal Flask/Dramatiq test case in `flask-dramatiq-RabbitMQ-tests/`.
+        - Successfully executed the minimal test case, confirming basic CLI worker invocation works in isolation.
+    - **Attempted Fix: Delay Imports (Idea 1):**
+        - Created plan `PLANNING_step_7.2.8_delay_imports.md`.
+        - Modified `ops-core/tasks/worker.py` to import actor directly.
+        - Modified `ops-core/scheduler/engine.py` to move heavy imports inside actor functions.
+        - Modified `ops-core/tasks/broker.py` to clear default middleware (fixing `OSError: Address already in use`).
+        - Tested worker CLI startup (`tox exec -- dramatiq ops_core.tasks.worker`): **Success**. Worker started without errors.
+        - Tested message processing (`send_test_message_clean_env.py`): **Failure**. Worker raised `ActorNotFound` error, despite discovering the actor during startup.
+    - **Reverted Changes:** Reverted modifications to `worker.py`, `engine.py`, and `broker.py`.
+    - **Created Debug Log:** `memory-bank/debugging/2025-04-13_task7.2_minimal_test_and_delay_imports.md`.
 
 ## Recent Activities (Previous Session - 2025-04-13 06:33 AM - 08:21 AM)
 - **Continued Task 7.2 (Execute & Debug Live E2E Tests):**

@@ -412,8 +412,13 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 
 - [Paused] **Task 7.2: Execute & Debug Live E2E Tests** `(Started 2025-04-12; Paused 2025-04-13)`
   *Description:* Run the live E2E tests in a properly configured environment. Identify and fix bugs related to component interactions in a live setting.
-  *Dependencies:* Task 7.1
-  *Comments:* Focus on stability and correctness. **Debugging (2025-04-13 Sessions):** Debugging revealed persistent issues with Dramatiq worker invocation via CLI and subprocesses, likely related to environment/context interactions rather than core worker logic. Programmatic worker startup in a clean environment succeeded. **Current Status:** Paused. **Decision (2025-04-13):** Pivoting to analyze an external demo project (`fastapi-rabbitmq-dramatiq-demo`) and create a new minimal test case in `1-t/flask-dramatiq-RabbitMQ-tests` to gain insights before resuming debugging in the main project. See `memory-bank/debugging/2025-04-13_task7.2_subprocess_investigation.md`.
+  *Dependencies:* Task 7.1, Minimal Test Case (`flask-dramatiq-RabbitMQ-tests/`)
+  *Comments:* Focus on stability and correctness. **Debugging (2025-04-13 Sessions):**
+    - Previous debugging revealed persistent issues with Dramatiq worker invocation via CLI/subprocess.
+    - **Minimal Test Case (2025-04-13 PM):** Created and successfully ran a minimal Flask/Dramatiq test case (`1-t/flask-dramatiq-RabbitMQ-tests/`), confirming basic Dramatiq CLI invocation works in isolation. See `memory-bank/debugging/2025-04-13_task7.2_minimal_test_and_delay_imports.md`.
+    - **Delay Imports Attempt (2025-04-13 PM):** Modified `ops-core` worker/engine to delay heavy imports. Resolved startup errors (`NameError`, `OSError`) but introduced `ActorNotFound` error during message processing. Changes reverted. See `memory-bank/debugging/2025-04-13_task7.2_minimal_test_and_delay_imports.md`.
+    - **Current Status:** Paused.
+    - **Next Step:** Attempt **Idea 3: Refactor Actor Logic Location**. Move `execute_agent_task_actor` definition from `engine.py` to a new `ops_core/tasks/actors.py` module.
 
 ---
 

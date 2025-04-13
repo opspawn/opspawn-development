@@ -2,8 +2,11 @@ import os
 import logging
 import dramatiq
 from dramatiq.brokers.rabbitmq import RabbitmqBroker
-from dramatiq.middleware import AsyncIO
-from minimal_worker import simple_task as simple_task_function # Import the raw function
+# Import the actual broker instance from ops_core
+# This ensures the sender uses the same configuration as the worker
+from ops_core.tasks import broker as ops_core_broker # Renamed to avoid conflict
+# Import the target actor function
+from ops_core.scheduler.engine import execute_agent_task_actor
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -13,22 +16,32 @@ logger = logging.getLogger(__name__)
 rabbitmq_url = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
 logger.info(f"Using RabbitMQ URL for sending: {rabbitmq_url}")
 
-# Explicitly configure the broker for the sender, matching the worker's config
-# This ensures queue declaration parameters match.
-from dramatiq.middleware import AsyncIO
-sender_broker = RabbitmqBroker(url=rabbitmq_url)
-sender_broker.add_middleware(AsyncIO()) # Match worker middleware
-dramatiq.set_broker(sender_broker)
-logger.info(f"Set explicit broker instance for sending: {sender_broker}")
+# Set the imported broker globally for Dramatiq
+# This is crucial for .send() to work correctly
+dramatiq.set_broker(ops_core_broker.broker)
+logger.info(f"Set global broker for sending: {ops_core_broker.broker}")
 
-# Explicitly declare the actor on the sender_broker using the imported function
-sender_task_actor = dramatiq.actor(broker=sender_broker)(simple_task_function)
-logger.info(f"Explicitly declared sender actor '{sender_task_actor.actor_name}' on sender broker.")
+# No need to re-declare the actor, just use the imported one
+# sender_task_actor = dramatiq.actor(broker=sender_broker)(simple_task_function) # REMOVED
+# logger.info(f"Explicitly declared sender actor '{sender_task_actor.actor_name}' on sender broker.") # REMOVED
 
 # Send a test message using the sender-specific actor
-message_data = {"content": "Hello from clean env sender!"}
-logger.info(f"Sending message: {message_data} to actor {sender_task_actor.actor_name} on queue {sender_task_actor.queue_name}")
-sender_task_actor.send(message_data)
+# Prepare arguments for execute_agent_task_actor
+test_task_id = "test_task_001"
+test_goal = "Test goal from sender script"
+test_input_data = {"param1": "value1", "details": "Sent via send_test_message_clean_env.py"}
+
+logger.info(f"Sending message to actor {execute_agent_task_actor.actor_name} on queue {execute_agent_task_actor.queue_name}")
+logger.info(f"  task_id: {test_task_id}")
+logger.info(f"  goal: {test_goal}")
+logger.info(f"  input_data: {test_input_data}")
+
+# Send the message using the imported actor
+execute_agent_task_actor.send(
+    task_id=test_task_id,
+    goal=test_goal,
+    input_data=test_input_data
+)
 
 logger.info("Message sent.")
 

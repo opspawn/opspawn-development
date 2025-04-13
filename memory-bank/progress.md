@@ -2,9 +2,9 @@
 
 ## Current Status (Updated 2025-04-13 4:38 PM)
 - **Phase:** Phase 7 (Full Live E2E Testing) - Paused.
-- **Overall Progress:** Phases 1-6 & 9 completed. Task 7.1 implementation complete. Task 7.2 debugging paused. Debugging scripts (`run_minimal_actor_directly.py`, `start_worker_programmatically.py`, `send_test_message_clean_env.py`) and trace logs (`dramatiq_trace.log`) created. Debug logs updated.
-- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **Paused**. Debugging revealed persistent issues with Dramatiq worker invocation via CLI/subprocess. Programmatic worker startup in a clean environment succeeded.
-- **Next Task (New Plan):** Analyze external demo project (`/home/sf2/Workspace/23-opspawn/3-FDRMQ/fastapi-rabbitmq-dramatiq-demo`) and create a new minimal test case in `1-t/flask-dramatiq-RabbitMQ-tests` to isolate core functionality and gain insights.
+- **Overall Progress:** Phases 1-6 & 9 completed. Task 7.1 implementation complete. Task 7.2 debugging paused. Minimal test case created and executed successfully. "Delay Imports" strategy attempted and reverted. Debug logs and planning docs updated.
+- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **Paused**. Minimal test case confirmed basic CLI invocation works. "Delay Imports" strategy failed due to `ActorNotFound` error during message processing.
+- **Next Task (Plan):** Attempt **Idea 3: Refactor Actor Logic Location**. Move `execute_agent_task_actor` definition from `engine.py` to a new `ops_core/tasks/actors.py` module.
 - **Blockers:** Root cause of worker failure when invoked via CLI/subprocess remains unclear (Task 7.2). (Google live test remains marked xfail due to suspected SDK issue).
 
 ## What Works (As of 2025-04-12 7:43 PM)
