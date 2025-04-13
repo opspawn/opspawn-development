@@ -104,24 +104,56 @@ async def main():
     # Migrations are now run synchronously before main()
     try:
         # 1. Start worker in subprocess FIRST
-        worker_env = os.environ.copy() # Pass environment
-        # Keep inherited PYTHONPATH from tox environment
-        logger.info(f"Inheriting PYTHONPATH for worker subprocess: {worker_env.get('PYTHONPATH')}")
-        # Explicitly pass LLM config env vars (and API keys if necessary)
-        llm_provider = os.getenv("AGENTKIT_LLM_PROVIDER", "google") # Get from main env or default
-        llm_model = os.getenv("AGENTKIT_LLM_MODEL", "gemini-2.5-pro-exp-03-25") # Get from main env or default
+        # Create a minimal environment for the worker
+        worker_env = {}
+        logger.info("Creating minimal environment for worker subprocess.")
+
+        # Essential variables
+        essential_vars = ["PATH", "HOME", "LANG", "TERM", "DATABASE_URL", "RABBITMQ_URL"]
+        for var in essential_vars:
+            value = os.getenv(var)
+            if value is not None:
+                worker_env[var] = value
+                # logger.debug(f"Adding essential var to worker env: {var}={value}") # DEBUG
+            else:
+                logger.warning(f"Essential variable '{var}' not found in parent environment for worker.")
+
+        # Construct PYTHONPATH carefully
+        # Combine paths added earlier and the virtual env site-packages if available
+        python_paths = [
+            str(Path(__file__).parent / "ops-core" / "src"),
+            str(Path(__file__).parent / "agentkit" / "src"),
+        ]
+        virtual_env = os.getenv("VIRTUAL_ENV")
+        if virtual_env:
+             # Construct expected site-packages path (adjust if needed for different Python versions)
+             site_packages = Path(virtual_env) / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}" / "site-packages"
+             if site_packages.exists():
+                  python_paths.append(str(site_packages))
+             else:
+                  logger.warning(f"Could not find site-packages path: {site_packages}")
+        # Add current directory '.' for relative imports within the worker module itself
+        python_paths.insert(0, '.')
+        worker_env["PYTHONPATH"] = os.pathsep.join(python_paths)
+        logger.info(f"Setting PYTHONPATH for worker: {worker_env['PYTHONPATH']}")
+
+
+        # LLM config env vars (and API keys if necessary)
+        llm_provider = os.getenv("AGENTKIT_LLM_PROVIDER") or "google"
+        llm_model = os.getenv("AGENTKIT_LLM_MODEL") or "gemini-2.5-pro-exp-03-25"
         worker_env["AGENTKIT_LLM_PROVIDER"] = llm_provider
         worker_env["AGENTKIT_LLM_MODEL"] = llm_model
+        logger.info(f"Setting AGENTKIT_LLM_PROVIDER for worker: {llm_provider}")
+        logger.info(f"Setting AGENTKIT_LLM_MODEL for worker: {llm_model}")
+
+        api_keys_passed = []
         for key in ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY", "OPENROUTER_API_KEY"]:
              if key in os.environ:
                   worker_env[key] = os.environ[key]
-        logger.info(f"Setting AGENTKIT_LLM_PROVIDER for worker: {llm_provider}")
-        logger.info(f"Setting AGENTKIT_LLM_MODEL for worker: {llm_model}")
-        logger.info(f"Passing API keys if set: {' '.join([k for k in ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GOOGLE_API_KEY', 'OPENROUTER_API_KEY'] if k in worker_env])}")
-        # Ensure DRAMATIQ_TESTING is NOT set for the worker
-        if "DRAMATIQ_TESTING" in worker_env:
-            del worker_env["DRAMATIQ_TESTING"]
-            logger.info("Removed DRAMATIQ_TESTING=1 from worker environment to force RabbitmqBroker.")
+                  api_keys_passed.append(key)
+        logger.info(f"Passing API keys if set: {' '.join(api_keys_passed)}")
+
+        # DRAMATIQ_TESTING is not inherited, so no need to delete it.
         cmd = [
             sys.executable, # Use the same python interpreter
             "-m", "dramatiq",
@@ -134,7 +166,8 @@ async def main():
             env=worker_env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
+            cwd=str(Path(__file__).parent) # Explicitly set CWD to workspace root
         )
 
         logger.info(f"Waiting {WORKER_STARTUP_WAIT}s for worker to initialize...")
@@ -234,17 +267,30 @@ async def main():
         if worker_process and worker_process.poll() is None:
             logger.info("Terminating worker process...")
             worker_process.terminate()
+            stdout = None
+            stderr = None
             try:
+                # Wait for termination and capture output
                 stdout, stderr = worker_process.communicate(timeout=5)
-                logger.info("Worker process terminated.")
-                logger.info(f"Worker STDOUT:\n{stdout}")
-                logger.info(f"Worker STDERR:\n{stderr}")
+                logger.info(f"Worker process terminated gracefully (return code: {worker_process.returncode}).")
             except subprocess.TimeoutExpired:
-                logger.warning("Worker process did not terminate gracefully, killing.")
+                logger.warning("Worker process did not terminate gracefully after 5s, killing.")
                 worker_process.kill()
+                # Capture output after kill
                 stdout, stderr = worker_process.communicate()
-                logger.info(f"Worker STDOUT:\n{stdout}")
-                logger.info(f"Worker STDERR:\n{stderr}")
+                logger.info(f"Worker process killed (return code: {worker_process.returncode}).")
+            except Exception as comm_err:
+                 logger.error(f"Error communicating with worker process during termination: {comm_err}")
+
+            # Always log captured output if available
+            if stdout:
+                logger.info(f"--- Worker STDOUT ---\n{stdout}\n--- End Worker STDOUT ---")
+            else:
+                logger.info("--- Worker STDOUT: (empty) ---")
+            if stderr:
+                logger.info(f"--- Worker STDERR ---\n{stderr}\n--- End Worker STDERR ---")
+            else:
+                logger.info("--- Worker STDERR: (empty) ---")
         if session:
             logger.info("Closing database session.")
             await session.close()

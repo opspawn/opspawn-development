@@ -1,27 +1,31 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-13 10:26 AM)
+## Current Focus (Updated 2025-04-13 11:07 AM)
 - **Task 7.2 (Execute & Debug Live E2E Tests):** **Blocked**.
-    - **Status:** Manual execution via `tox exec` works. However, launching the worker via `subprocess.Popen` from test scripts (`test_dramatiq_worker.py`) or fixtures (`conftest.py`) consistently fails; the worker starts but does not consume messages. A test using a clean virtual environment (excluding `locust`/`gevent`) also failed, invalidating the dependency conflict hypothesis.
-    - **Blocker:** Root cause of worker failure when launched as a subprocess is unknown. Likely related to subprocess management, environment/path handling, or Dramatiq/Pika/asyncio interactions in that specific context.
-- **Next Step:** Further investigate the differences between direct `tox exec` execution and `subprocess.Popen` execution within test environments, focusing on `test_dramatiq_worker.py` and the `live_dramatiq_worker` fixture in `conftest.py`.
+    - **Status:** Debugging the subprocess invocation failure continues. Manual `tox exec` works. `subprocess.Popen` from `test_dramatiq_worker.py` fails (worker starts, doesn't process). Clean env test failed. Environment comparison showed no major differences. Tuning `subprocess.Popen` args (`cwd`, minimal `env`) didn't help. Detailed logging identified a significant delay (~3-30s) during the import of `ops_core.scheduler.engine` within the worker subprocess. Created minimal worker/test (`minimal_worker.py`, `test_minimal_worker.py`) to isolate the issue. Fixed `AttributeError` in `minimal_worker.py`.
+    - **Blocker:** Root cause of worker failure/delay when launched as a subprocess is still unknown, but narrowed down to the import/initialization phase of `ops_core.scheduler.engine` or Dramatiq internals within that context.
+- **Next Step:** Execute `test_minimal_worker.py` via `tox exec` to see if the simplified case reproduces the failure (Step 4 of `PLANNING_step_7.2.5_subprocess_debug.md`).
 
-## Recent Activities (Current Session - 2025-04-13 10:05 AM - 10:26 AM)
+## Recent Activities (Current Session - 2025-04-13 10:35 AM - 11:07 AM)
 - **Continued Task 7.2 (Debug Subprocess Worker Invocation):**
-    - Created plan (`PLANNING_step_7.2.4_clean_env_test.md`) to test worker in a clean venv.
-    - Started Docker services.
-    - Created clean venv (`/tmp/dramatiq_test_env`).
-    - Installed minimal dependencies, encountered and resolved `chromadb` dependency conflict by temporarily commenting out LTM code in `ops_core.scheduler.engine`.
-    - Started worker manually in clean venv.
-    - Sent message using `test_dramatiq_worker.py` (via `tox exec`).
-    - **Result:** Clean environment worker **did not** process the message. Dependency conflict hypothesis invalidated.
-    - Reverted temporary LTM code changes in `ops_core.scheduler.engine`.
-    - Stopped clean environment worker.
-    - Attempted further debugging of `test_dramatiq_worker.py`:
-        - Simplified worker subprocess command args (`-vv`, removed `-p`/`-t`). No change.
-        - Modified subprocess launch to mimic E2E fixture (inherit PYTHONPATH, use `sys.executable`). No change.
-        - Reordered script logic to start worker before sending message. No change.
-    - **Conclusion:** Failure is specific to launching worker via `subprocess.Popen` from test scripts/fixtures. Root cause unknown, possibly related to process management, env/path handling, or asyncio interactions.
+    - Switched to Debug mode.
+    - Created debugging plan `PLANNING_step_7.2.5_subprocess_debug.md`.
+    - **Step 1 (Env Comparison):**
+        - Added env logging to `ops-core/src/ops_core/tasks/worker.py`.
+        - Improved stdout/stderr capture in `test_dramatiq_worker.py`.
+        - Ran worker via `tox exec` and captured env logs.
+        - Ran `test_dramatiq_worker.py` via `tox exec` (after fixing `ModuleNotFoundError` by running via tox). Captured subprocess env logs.
+        - Compared logs: Environments largely identical. Fixed incorrect passing of empty LLM env vars from test script to subprocess. Re-ran test; still failed.
+    - **Step 2 (Popen Tuning):**
+        - Explicitly set `cwd` in `subprocess.Popen`. Re-ran test; still failed.
+        - Modified test script to pass minimal `env` dict instead of `os.environ.copy()`. Fixed `AttributeError` in implementation. Re-ran test; still failed.
+    - **Step 3 (Detailed Logging):**
+        - Set worker logging to DEBUG. Added detailed `INFO` level timing logs to `ops-core/src/ops_core/scheduler/engine.py` imports and `get_...` functions. Fixed diff application errors.
+        - Re-ran test. Logs showed significant delay (~3-30s) occurs *during* the `import ops_core.scheduler.engine` statement in `worker.py`. Confirmed `get_...` functions are not called during import.
+    - **Step 4 (Simplified Test Case):**
+        - Created `minimal_worker.py` and `test_minimal_worker.py`.
+        - Fixed `AttributeError: module 'dramatiq' has no attribute 'RabbitmqBroker'` in `minimal_worker.py`.
+    - **Conclusion:** Issue narrowed down to `engine.py` import or subsequent Dramatiq initialization within the subprocess context. Ready to run minimal test case.
 
 ## Recent Activities (Previous Session - 2025-04-13 06:33 AM - 08:21 AM)
 - **Continued Task 7.2 (Execute & Debug Live E2E Tests):**
