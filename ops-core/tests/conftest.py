@@ -28,6 +28,8 @@ from ops_core.config.loader import get_resolved_mcp_config # Import config loade
 from ops_core.config.loader import McpConfig # Import the type
 from ops_core.metadata.store import InMemoryMetadataStore # Corrected path, keep for other tests
 from ops_core.mcp_client.client import OpsMcpClient # Corrected path
+# Import model modules globally to ensure metadata registration
+import ops_core.models.tasks
 # Removed sys.path hack
 # Removed actor import to break collection-time dependency chain causing metadata error
 # from src.ops_core.scheduler.engine import execute_agent_task_actor
@@ -136,7 +138,7 @@ def docker_compose_file(pytestconfig):
     """Override default location of docker-compose.yml file."""
     # Construct path relative to the root directory where pytest is invoked
     # Assuming pytest is run from the workspace root '/home/sf2/Workspace/23-opspawn/1-t'
-    return os.path.join(str(pytestconfig.rootdir), "..", "docker-compose.yml")
+    return os.path.join(str(pytestconfig.rootdir), "docker-compose.yml")
 
 
 # --- Live E2E Test Fixtures ---
@@ -146,8 +148,11 @@ import time
 import httpx
 from sqlalchemy.ext.asyncio import create_async_engine as create_async_engine_live
 from sqlalchemy.orm import sessionmaker as sessionmaker_live
-from alembic.config import Config as AlembicConfig
-from alembic import command as alembic_command
+from sqlalchemy import create_engine as create_sync_engine, inspect as sqlalchemy_inspect # Added for verification
+# Remove Alembic imports, add shared metadata import
+# from alembic.config import Config as AlembicConfig # Removed
+# from alembic import command as alembic_command # Removed
+from ops_core.models.base import metadata as target_metadata # Import shared metadata
 import pytest_docker
 
 # Session-scoped fixture to manage Docker containers
@@ -200,48 +205,64 @@ def is_rabbitmq_ready(ip, port):
         return False
 
 # Session-scoped fixture to run Alembic migrations
-@pytest.fixture(scope="session")
-def run_migrations(docker_services_ready, docker_ip):
-    """Runs Alembic migrations against the live test database."""
+@pytest.fixture(scope="session") # Use standard sync fixture
+def ensure_live_db_schema(docker_services_ready, docker_ip): # Make synchronous
+    """Ensures the database schema is created directly from metadata using a synchronous engine."""
     pg_port = docker_services_ready.port_for("postgres_db", 5432)
-    # Construct the DATABASE_URL for the container
-    # Use credentials from docker-compose.yml
-    # Add ssl=prefer to handle potential SSL issues with asyncpg
-    live_db_url = f"postgresql+asyncpg://opspawn_user:opspawn_password@{docker_ip}:{pg_port}/opspawn_db?ssl=prefer"
-    print(f"Running migrations against: {live_db_url}")
+    # Construct the ASYNC DATABASE_URL first (needed for yielding)
+    live_db_url_async = f"postgresql+asyncpg://opspawn_user:opspawn_password@{docker_ip}:{pg_port}/opspawn_db?ssl=prefer"
+    # Construct the SYNC DATABASE_URL for setup
+    live_db_url_sync = live_db_url_async.replace("+asyncpg", "").split("?")[0]
+    print(f"Ensuring schema exists using sync connection: {live_db_url_sync}")
 
-    # Set the DATABASE_URL environment variable for Alembic
-    os.environ["DATABASE_URL"] = live_db_url
+    # Import necessary SQLAlchemy components
+    from sqlalchemy import create_engine as create_sync_engine, inspect as sqlalchemy_inspect
 
-    # Find the alembic.ini file relative to this conftest.py
-    alembic_ini_path = os.path.join(os.path.dirname(__file__), '..', 'alembic.ini')
-    if not os.path.exists(alembic_ini_path):
-        raise FileNotFoundError(f"Alembic config not found at expected path: {alembic_ini_path}")
-
-    alembic_cfg = AlembicConfig(alembic_ini_path)
-    # Point Alembic to the correct directory containing the 'versions' folder
-    script_location = os.path.join(os.path.dirname(__file__), '..', 'alembic')
-    alembic_cfg.set_main_option("script_location", script_location)
-    # Ensure Alembic uses the correct DATABASE_URL from the environment
-    alembic_cfg.set_main_option("sqlalchemy.url", live_db_url)
-
+    # Create synchronous engine for schema setup
+    sync_engine = create_sync_engine(live_db_url_sync, echo=False)
     try:
-        alembic_command.upgrade(alembic_cfg, "head")
-        print("Alembic migrations completed successfully.")
+        # Log metadata state before operations
+        # Note: Top-level import of models should have populated this
+        print(f"Tables known to metadata before operations: {list(target_metadata.tables.keys())}")
+        if not target_metadata.tables:
+             print("WARNING: Metadata appears empty before schema operations!")
+
+        # Drop and create tables synchronously using metadata
+        print("Dropping existing tables (if any) synchronously...")
+        target_metadata.drop_all(sync_engine)
+        print("Creating tables synchronously using metadata.create_all...")
+        target_metadata.create_all(sync_engine)
+        print("Synchronous schema creation commands executed.")
+
+        # --- Verification Step (using sync engine) ---
+        print("Verifying table existence after synchronous creation...")
+        with sync_engine.connect() as connection:
+            inspector = sqlalchemy_inspect(connection) # Inspect the connection directly
+            found_tables = inspector.get_table_names()
+            print(f"Inspector found tables: {found_tables}")
+            if "task" in found_tables:
+                print("Verification successful: 'task' table exists.")
+            else:
+                print("Verification FAILED: 'task' table DOES NOT exist after sync creation.")
+                raise RuntimeError("Task table not created by sync metadata.create_all, failing test setup.")
+        # --- End Verification Step ---
+
     except Exception as e:
-        print(f"Alembic migration failed: {e}")
+        print(f"Synchronous schema setup or verification failed: {e}")
         raise
+    finally:
+        if sync_engine: # Ensure engine exists before disposing
+             sync_engine.dispose() # Dispose sync engine used for setup
 
-    print("[Fixture run_migrations] Setup complete, yielding DB URL.")
-    # Yield the URL for other fixtures if needed
-    yield live_db_url
-    print("[Fixture run_migrations] Teardown starting.")
-
+    print("[Fixture ensure_live_db_schema] Setup complete, yielding ASYNC DB URL.")
+    # Yield the ORIGINAL async URL for dependent async fixtures
+    yield live_db_url_async
+    print("[Fixture ensure_live_db_schema] Teardown starting.")
 # Session-scoped fixture for the live API server process
 @pytest.fixture(scope="session")
-def live_api_server(run_migrations, docker_services_ready, docker_ip):
+def live_api_server(ensure_live_db_schema, docker_services_ready, docker_ip): # Use renamed fixture
     """Starts the FastAPI server as a subprocess for the test session."""
-    live_db_url = run_migrations # Get the DB URL from the migration fixture
+    live_db_url = ensure_live_db_schema # Get the DB URL from the schema fixture
     rmq_port = docker_services_ready.port_for("rabbitmq", 5672)
     # Use credentials from docker-compose.yml
     live_rabbitmq_url = f"amqp://guest:guest@{docker_ip}:{rmq_port}/"
@@ -320,9 +341,9 @@ def live_api_server(run_migrations, docker_services_ready, docker_ip):
 
 # Session-scoped fixture for the live Dramatiq worker process
 @pytest.fixture(scope="session")
-def live_dramatiq_worker(run_migrations, docker_services_ready, docker_ip):
+def live_dramatiq_worker(ensure_live_db_schema, docker_services_ready, docker_ip): # Use renamed fixture
     """Starts the Dramatiq worker as a subprocess for the test session."""
-    live_db_url = run_migrations # Get the DB URL
+    live_db_url = ensure_live_db_schema # Get the DB URL
     rmq_port = docker_services_ready.port_for("rabbitmq", 5672)
     live_rabbitmq_url = f"amqp://guest:guest@{docker_ip}:{rmq_port}/"
 
@@ -381,9 +402,9 @@ def live_dramatiq_worker(run_migrations, docker_services_ready, docker_ip):
 
 # Session-scoped engine connected to the live Docker database
 @pytest_asyncio.fixture(scope="session")
-async def live_db_engine(run_migrations):
+async def live_db_engine(ensure_live_db_schema): # Use renamed fixture
     """Provides an async engine connected to the live test database."""
-    live_db_url = run_migrations
+    live_db_url = ensure_live_db_schema
     engine = create_async_engine_live(live_db_url, echo=False)
     yield engine
     await engine.dispose()

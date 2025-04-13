@@ -1,15 +1,29 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-13 05:58 AM)
-- **Task 7.2 (Execute & Debug Live E2E Tests):** **In Progress (Blocked)**. Debugged Dramatiq worker actor invocation using `test_dramatiq_worker.py` and manual execution.
-    - Verified RabbitMQ UI access.
-    - Confirmed message reaches queue and worker connects (message becomes "Unacked").
-    - Isolated issue: Worker receives message but fails silently *before* executing the first line of actor code.
-    - Ruled out: Broker config (`StubBroker` vs `RabbitmqBroker`), `async def` mismatch, `DRAMATIQ_TESTING` env var, Dramatiq version (1.17 vs 1.16), `AsyncIO` middleware, actor code simplification.
-    - **Current Issue:** Root cause likely within Dramatiq internals or dependency conflict in the `tox` environment. Debugging via application code exhausted.
-- **Next Step:** Given the block on the isolation script, attempt running the main E2E tests (`ops-core/tests/integration/test_live_e2e.py`) to see if the issue manifests differently or provides more clues. Alternatively, consider deeper dependency analysis or seeking external help for Dramatiq.
+## Current Focus (Updated 2025-04-13 06:30 AM)
+- **Task 7.2 (Execute & Debug Live E2E Tests):** **In Progress (Blocked)**.
+    - **Sub-Issue 1 (Dramatiq Worker Invocation):** Debugged using isolation script (`test_dramatiq_worker.py`). Worker receives message but fails silently before executing actor code. Root cause likely internal to Dramatiq or dependency conflict. Debugging via application code exhausted for this path. (See `debugging/2025-04-12_task7.2_worker_actor_invocation.md`)
+    - **Sub-Issue 2 (Live E2E Test Setup - Schema Creation):** Attempted running `test_live_e2e.py`. Encountered persistent failures creating the `task` table within the `ensure_live_db_schema` fixture in `ops-core/tests/conftest.py`. Debugging revealed the shared `MetaData` object was empty when `create_all` was called, likely due to import/evaluation order issues in the pytest/tox environment. Using raw SQL `CREATE TABLE` worked, but subsequent diff applications corrupted `conftest.py`. (See `debugging/2025-04-13_task7.2_live_e2e_schema_creation.md`)
+    - **Current Blockers:** 1) Unresolved Dramatiq worker invocation issue. 2) Corrupted `ops-core/tests/conftest.py` preventing successful test setup (schema creation workaround needs re-application).
+- **Next Step:** Fix `ops-core/tests/conftest.py` corruption. Re-apply the raw SQL schema creation workaround in the `ensure_live_db_schema` fixture. Re-run the live E2E test (`test_submit_task_and_poll_completion`) to verify setup and observe test behavior regarding the Dramatiq worker issue.
 
-## Recent Activities (Current Session - 2025-04-13 ~10:25 PM - 05:58 AM)
+## Recent Activities (Current Session - 2025-04-13 06:02 AM - 06:30 AM)
+- **Continued Task 7.2 (Execute & Debug Live E2E Tests - Setup):**
+    - Attempted to run `test_submit_task_and_poll_completion` via `tox`.
+    - Fixed `docker-compose.yml` path error in `ops-core/tests/conftest.py`.
+    - Fixed Docker port conflict by running `docker compose down`.
+    - Encountered `relation "task" does not exist` error during test setup.
+    - Debugged `ensure_live_db_schema` fixture in `ops-core/tests/conftest.py`:
+        - Confirmed Alembic migrations reported success but didn't create the table.
+        - Switched to `metadata.create_all`. Failed: `metadata` object was empty.
+        - Tried various import strategies (local import, class access) - `metadata` remained empty.
+        - Switched to synchronous fixture execution. Failed: `metadata` still empty.
+        - Switched to raw SQL `CREATE TABLE`. Succeeded in creating table.
+        - **Issue:** Subsequent diff applications corrupted `ops-core/tests/conftest.py`.
+    - Created debug log: `memory-bank/debugging/2025-04-13_task7.2_live_e2e_schema_creation.md`.
+    - **Conclusion:** Metadata registration issue in test environment prevents `metadata.create_all` from working reliably in the fixture. Raw SQL is a viable workaround. `conftest.py` needs repair.
+
+## Recent Activities (Previous Session - 2025-04-13 ~10:25 PM - 05:58 AM)
 - **Continued Task 7.2 (Debug Dramatiq Worker Actor Invocation):**
     - Verified RabbitMQ UI access.
     - Executed `test_dramatiq_worker.py` via `tox exec`.
