@@ -168,7 +168,9 @@ def docker_services_ready(docker_ip, docker_services):
     print("Adding longer delay after DB readiness check...")
     time.sleep(10)
     print("Delay finished.")
-    return docker_services
+    print("[Fixture docker_services_ready] Setup complete, yielding.")
+    yield docker_services
+    print("[Fixture docker_services_ready] Teardown starting.")
 
 def is_postgres_ready(ip, port):
     """Check if PostgreSQL is ready."""
@@ -230,8 +232,10 @@ def run_migrations(docker_services_ready, docker_ip):
         print(f"Alembic migration failed: {e}")
         raise
 
+    print("[Fixture run_migrations] Setup complete, yielding DB URL.")
     # Yield the URL for other fixtures if needed
     yield live_db_url
+    print("[Fixture run_migrations] Teardown starting.")
 
 # Session-scoped fixture for the live API server process
 @pytest.fixture(scope="session")
@@ -299,7 +303,8 @@ def live_api_server(run_migrations, docker_services_ready, docker_ip):
         process.terminate() # Clean up if server failed to start
         process.wait()
         pytest.fail(f"API server failed to start within {max_wait} seconds.")
-
+ 
+    print("[Fixture live_api_server] Setup complete, yielding API base URL.")
     yield api_base_url # Provide the base URL to tests
 
     # Teardown: Stop the server process
@@ -325,12 +330,13 @@ def live_dramatiq_worker(run_migrations, docker_services_ready, docker_ip):
     worker_env = os.environ.copy()
     worker_env["DATABASE_URL"] = live_db_url
     worker_env["RABBITMQ_URL"] = live_rabbitmq_url
-    # Add any other required env vars (e.g., LLM keys)
-    # worker_env["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
-    # worker_env["ANTHROPIC_API_KEY"] = os.getenv("ANTHROPIC_API_KEY", "")
-    # worker_env["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY", "")
-    # worker_env["OPENROUTER_API_KEY"] = os.getenv("OPENROUTER_API_KEY", "")
-    # worker_env["AGENTKIT_LLM_PROVIDER"] = os.getenv("AGENTKIT_LLM_PROVIDER", "openai") # Example
+    # Explicitly pass common LLM API keys to the worker environment
+    for key in ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY", "OPENROUTER_API_KEY", "AGENTKIT_LLM_PROVIDER", "AGENTKIT_LLM_MODEL"]:
+        value = os.getenv(key)
+        if value is not None:
+            worker_env[key] = value
+        elif key in worker_env: # Remove if present in copied env but not set in host
+             del worker_env[key]
 
     # Command to start the worker
     # Ensure dramatiq and ops_core are available in the environment running pytest
@@ -348,10 +354,18 @@ def live_dramatiq_worker(run_migrations, docker_services_ready, docker_ip):
     process = subprocess.Popen(cmd, env=worker_env)
 
     # Give the worker a moment to initialize
-    # A more robust check might involve querying RabbitMQ or a worker health status
-    time.sleep(5)
-    print("Dramatiq worker assumed started.")
-
+    # Check if worker process exited quickly after a short delay
+    time.sleep(2) # Wait a couple of seconds
+    if process.poll() is not None:
+        # Process terminated, capture output if possible (might be complex)
+        # For now, just fail the fixture setup
+        process.terminate()
+        process.wait()
+        pytest.fail(f"Dramatiq worker process exited prematurely with code {process.returncode}. Check worker logs/errors.")
+    else:
+        print("Dramatiq worker process is running after initial delay.")
+ 
+    print("[Fixture live_dramatiq_worker] Setup complete, yielding worker process.")
     yield process # Provide the process handle if needed
 
     # Teardown: Stop the worker process

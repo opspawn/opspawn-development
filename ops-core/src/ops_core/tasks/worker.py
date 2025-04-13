@@ -21,7 +21,7 @@ logger.info("Initializing Dramatiq worker...")
 from . import broker # noqa: F401 - Imported for side effects (broker registration)
 
 # Import modules containing Dramatiq actors so they are discovered.
-from src.ops_core.scheduler import engine # noqa: F401 - Imports execute_agent_task_actor
+from ops_core.scheduler import engine # noqa: F401 - Imports execute_agent_task_actor (Removed src. prefix)
 
 logger.info("Dramatiq worker initialized. Actors discovered.")
 logger.info(f"Broker configured: {broker.rabbitmq_broker}")

@@ -3,6 +3,7 @@ API Endpoints for managing Tasks.
 """
 
 from typing import List
+import logging # Add logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 # Import dependencies directly from the central location
@@ -11,6 +12,8 @@ from ops_core.scheduler.engine import InMemoryScheduler # Corrected path
 from ops_core.metadata.base import BaseMetadataStore, TaskNotFoundError # Corrected path, Added TaskNotFoundError
 from ops_core.models.tasks import Task # Corrected path
 from ..schemas.tasks import TaskCreateRequest, TaskResponse, TaskListResponse
+ 
+logger = logging.getLogger(__name__) # Define logger at module level
 
 # --- Router ---
 router = APIRouter(
@@ -33,6 +36,7 @@ router = APIRouter(
         status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Internal server error during task submission."},
     },
 )
+# logger = logging.getLogger(__name__) # Removed misplaced logger instance
 async def create_task(
     task_request: TaskCreateRequest,
     scheduler: InMemoryScheduler = Depends(get_scheduler),
@@ -46,16 +50,21 @@ async def create_task(
     - Returns the newly created task object with its initial status (e.g., PENDING).
     """
     # Reason: Generate a default name and use the scheduler's submit method.
+    logger.info(f"API create_task: Received request: {task_request.model_dump()}") # Keep this log
     try:
         # Generate a default name if not provided in the request (schema doesn't have it yet)
         task_name = f"API Task - {task_request.task_type}"
+        logger.info(f"API create_task: Calling scheduler.submit_task with name='{task_name}', type='{task_request.task_type}'...") # Keep this log
         task = await scheduler.submit_task(
             name=task_name, # Pass the generated name
             task_type=task_request.task_type,
             input_data=task_request.input_data,
         )
+        logger.info(f"API create_task: scheduler.submit_task returned task ID: {task.task_id}") # Keep this log
+        logger.info(f"API create_task: Returning task {task.task_id} with status {task.status}") # Keep this log
         return task
     except Exception as e:
+        logger.exception(f"API create_task: Error during task submission: {e}") # Keep this log
         # TODO: Add more specific error handling
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

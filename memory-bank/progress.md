@@ -1,10 +1,10 @@
 # Progress: Opspawn Core Foundation (Phase 6 In Progress)
 
-## Current Status (Updated 2025-04-12 12:19 PM)
-- **Phase:** Phase 6 (E2E Test Enablement).
-- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 9 completed. Tasks 5.1, 6.1, 6.2, 6.3, 6.4 completed. Maintenance tasks Maint.1-Maint.14 completed. Task 7.1 started. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Backlog Enhancements 6 & 7 added.
-- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - In Progress. Debugging setup and execution issues. Last attempt interrupted before results.
-- **Next Task:** Task 7.2 (Execute & Debug Live E2E Tests) - Continue debugging based on the results of the last test run attempt.
+## Current Status (Updated 2025-04-12 8:27 PM)
+- **Phase:** Phase 7 (Full Live E2E Testing).
+- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 6, 9 completed. Tasks 5.1 completed. Maintenance tasks Maint.1-Maint.14 completed. Task 7.1 implementation complete. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Backlog Enhancements 6 & 7 added.
+- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - In Progress (Paused). Debugged numerous setup/runtime issues (API validation, Docker conflicts, DB commits, worker env/imports/timeouts, logging). Created and debugged an isolation script (`test_dramatiq_worker.py`) up to the point of running it successfully. The main E2E tests were still stalling before the isolation script was fully debugged.
+- **Next Task:** Task 7.2 (Execute & Debug Live E2E Tests) - Run the corrected `test_dramatiq_worker.py` isolation script to verify worker functionality. If successful, re-run the main E2E tests (`tox -e py312 -- -m live ops-core/tests/integration/test_live_e2e.py`).
 - **Blockers:** None currently. (Google live test remains marked xfail due to suspected SDK issue).
 
 ## What Works (As of 2025-04-12 7:43 PM)
@@ -95,7 +95,7 @@
 - **LLM Client Robustness (Task Maint.14 Completed):** All LLM clients (`OpenAIClient`, `AnthropicClient`, `GoogleClient`, `OpenRouterClient`) now include retry logic (using `tenacity`) for transient errors and support a configurable `timeout` parameter. Unit tests verify this functionality.
 - **Default LLM Configuration:** Default provider set to "google", default model set to "gemini-2.5-pro-exp-03-25".
 - **Live E2E Test Suite (Task 7.1 Implementation):** Fixtures for managing Docker services (DB, RabbitMQ) and application processes (API, Worker) implemented in `ops-core/tests/conftest.py`. Initial tests covering success, failure, and concurrency implemented in `ops-core/tests/integration/test_live_e2e.py`.
-- **Live E2E Test Setup (Task 7.2 Debugging):** Several setup issues fixed: marker registration, docker-compose path, session event loop scope, API request payload (`task_type`), API response schema (`id`), DB startup delay.
+- **Live E2E Test Debugging (Task 7.2):** Addressed API response validation (ID/type), test code alignment, DB commit in store, Docker conflicts (name/port), worker env vars, worker import path, agent execution timeout, added extensive logging. Created and debugged worker isolation script (`test_dramatiq_worker.py`).
 
 ## What's Left to Build (Revised Plan - 2025-04-12)
 - **Phase 7:** Full Live E2E Testing

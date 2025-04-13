@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres_db:
     image: postgres:15 # Using PostgreSQL version 15
-    container_name: opspawn_postgres
+    # container_name: opspawn_postgres # Removed to avoid conflicts in tests
     environment:
       POSTGRES_USER: opspawn_user
       POSTGRES_PASSWORD: opspawn_password
@@ -16,10 +16,10 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management # Use the image with the management plugin
-    container_name: opspawn_rabbitmq
+    # container_name: opspawn_rabbitmq # Removed to avoid conflicts in tests
     ports:
       - "5672:5672"   # AMQP port
-      - "15672:15672" # Management UI port
+      # - "15672:15672" # Management UI port (Commented out for tests to avoid host port conflicts)
     environment:
       RABBITMQ_DEFAULT_USER: guest # Default user/pass for local dev
       RABBITMQ_DEFAULT_PASS: guest

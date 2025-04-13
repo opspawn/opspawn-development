@@ -45,7 +45,7 @@ class TaskResponse(BaseModel):
     Schema representing a task's state and details in API responses.
     Provides comprehensive information about a submitted task.
     """
-    id: uuid.UUID = Field(..., description="Unique identifier for the task.", examples=[uuid.uuid4()]) # Changed task_id to id and type to UUID
+    task_id: str = Field(..., description="Unique identifier for the task.", examples=[f"task_{uuid.uuid4()}"]) # Changed field name to task_id and type to str
     task_type: str = Field(..., description="Type identifier for the task.", examples=["agent_run"])
     status: TaskStatus = Field(..., description="Current status of the task.", examples=[TaskStatus.PENDING])
     input_data: Dict[str, Any] = Field(..., description="The original input data provided for the task.")

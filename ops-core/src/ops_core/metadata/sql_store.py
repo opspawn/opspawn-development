@@ -6,6 +6,7 @@ from typing import List, Optional, Any, Dict
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+import logging # Add logging
 from sqlmodel import select, SQLModel # Import SQLModel here
 
 from ops_core.config.loader import get_resolved_mcp_config # Corrected import path
@@ -39,6 +40,8 @@ async def get_session() -> AsyncSession:
             raise
         finally:
             await session.close()
+ 
+logger = logging.getLogger(__name__) # Add logger instance
 
 class SqlMetadataStore(BaseMetadataStore):
     """
@@ -69,10 +72,18 @@ class SqlMetadataStore(BaseMetadataStore):
 
     async def add_task(self, task: Task) -> Task:
         """Adds a new task to the database."""
+        logger.info(f"SqlMetadataStore add_task: Adding task {task.task_id}...")
         async with self._get_session_context() as session: # Use helper context
+            logger.debug(f"SqlMetadataStore add_task: Session obtained for task {task.task_id}.")
             session.add(task)
+            logger.debug(f"SqlMetadataStore add_task: Task {task.task_id} added to session.")
             # Rely on the test fixture's transaction context manager to commit/rollback
+            logger.debug(f"SqlMetadataStore add_task: Flushing session for task {task.task_id}...")
             await session.flush() # Ensure the object gets an ID if needed before returning
+            logger.debug(f"SqlMetadataStore add_task: Session flushed for task {task.task_id}.")
+            logger.info(f"SqlMetadataStore add_task: Committing session for task {task.task_id}...")
+            await session.commit() # Explicitly commit the transaction
+            logger.info(f"SqlMetadataStore add_task: Session committed for task {task.task_id}.")
             return task
 
     async def get_task(self, task_id: str) -> Task:

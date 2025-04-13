@@ -12,9 +12,10 @@ from ops_core.models.tasks import Task, TaskStatus
 pytestmark = pytest.mark.live
 
 
-async def get_task_from_db(session: AsyncSession, task_id: UUID) -> Task | None:
+async def get_task_from_db(session: AsyncSession, task_id_str: str) -> Task | None: # Expect string ID
     """Helper function to retrieve a task from the database."""
-    result = await session.execute(select(Task).where(Task.id == task_id))
+    # Query using the correct string field Task.task_id
+    result = await session.execute(select(Task).where(Task.task_id == task_id_str))
     return result.scalars().first()
 
 
@@ -34,17 +35,18 @@ async def test_submit_task_and_poll_completion(
         "task_type": "agent_task" # Added missing required field
     }
     task_id_str: str | None = None
-    task_id: UUID | None = None
+    # task_id: UUID | None = None # Removed unused UUID variable
 
     # 1. Submit task via API
     response = await live_api_client.post("/api/v1/tasks/", json=task_input)
     assert response.status_code == 201, f"API Error: {response.text}"
     response_data = response.json()
-    task_id_str = response_data.get("id")
+    task_id_str = response_data.get("task_id") # Fetch 'task_id' from response
     assert task_id_str is not None
-    task_id = UUID(task_id_str)
-    print(f"Task submitted with ID: {task_id}")
-
+    # task_id = UUID(task_id_str) # Removed UUID conversion, use task_id_str directly
+    print(f"Task submitted with ID: {task_id_str}") # Use task_id_str
+    await asyncio.sleep(1) # Add a small delay before polling
+ 
     # 2. Poll for completion
     max_polls = 30  # Increased polling time for potentially slow LLM calls
     poll_interval = 5 # seconds
@@ -52,10 +54,10 @@ async def test_submit_task_and_poll_completion(
     final_output = None
 
     for i in range(max_polls):
-        print(f"Polling task {task_id} (Attempt {i+1}/{max_polls})...")
+        print(f"Polling task {task_id_str} (Attempt {i+1}/{max_polls})...") # Use task_id_str
         await asyncio.sleep(poll_interval)
         try:
-            response = await live_api_client.get(f"/api/v1/tasks/{task_id_str}")
+            response = await live_api_client.get(f"/api/v1/tasks/{task_id_str}") # Use task_id_str (already correct)
             response.raise_for_status() # Raise exception for 4xx/5xx errors
             response_data = response.json()
             status = response_data.get("status")
@@ -68,7 +70,7 @@ async def test_submit_task_and_poll_completion(
                 break
             elif status == TaskStatus.FAILED:
                 final_status = TaskStatus.FAILED
-                pytest.fail(f"Task {task_id} failed: {final_output}")
+                pytest.fail(f"Task {task_id_str} failed: {final_output}") # Use task_id_str
             # Continue polling if PENDING or RUNNING
         except httpx.HTTPStatusError as e:
             pytest.fail(f"API error during polling: {e.response.status_code} - {e.response.text}")
@@ -76,14 +78,14 @@ async def test_submit_task_and_poll_completion(
             pytest.fail(f"Unexpected error during polling: {e}")
 
     if final_status != TaskStatus.COMPLETED:
-        pytest.fail(f"Task {task_id} did not complete within timeout ({max_polls * poll_interval}s). Final status: {final_status}")
+        pytest.fail(f"Task {task_id_str} did not complete within timeout ({max_polls * poll_interval}s). Final status: {final_status}") # Use task_id_str
 
     # 3. Verify final state in DB
-    print(f"Verifying final state for task {task_id} in DB...")
+    print(f"Verifying final state for task {task_id_str} in DB...") # Use task_id_str
     # Use the live_db_session fixture
-    final_task = await get_task_from_db(live_db_session, task_id)
+    final_task = await get_task_from_db(live_db_session, task_id_str) # Pass task_id_str
 
-    assert final_task is not None, f"Task {task_id} not found in database."
+    assert final_task is not None, f"Task {task_id_str} not found in database." # Use task_id_str
     assert final_task.status == TaskStatus.COMPLETED
     assert final_task.output is not None
     assert isinstance(final_task.output, str)
@@ -91,7 +93,7 @@ async def test_submit_task_and_poll_completion(
     assert len(final_task.output) > 10, "Output seems too short."
     assert "test" in final_task.output.lower() or "code" in final_task.output.lower(), \
            f"Expected keyword not found in output: {final_task.output}"
-    print(f"Task {task_id} completed successfully and verified in DB.")
+    print(f"Task {task_id_str} completed successfully and verified in DB.") # Use task_id_str
     print(f"Output:\n{final_task.output}")
 
 
@@ -121,7 +123,7 @@ async def test_submit_task_and_expect_failure(
 
 
     task_id_str: str | None = None
-    task_id: UUID | None = None
+    # task_id: UUID | None = None # Removed unused UUID variable
 
     # 1. Submit task via API
     # Note: The API might not support overriding agent_config yet.
@@ -139,11 +141,12 @@ async def test_submit_task_and_expect_failure(
 
     assert response.status_code == 201, f"API Error: {response.text}"
     response_data = response.json()
-    task_id_str = response_data.get("id")
+    task_id_str = response_data.get("task_id") # Fetch 'task_id' from response
     assert task_id_str is not None
-    task_id = UUID(task_id_str)
-    print(f"Task submitted for expected failure with ID: {task_id}")
-
+    # task_id = UUID(task_id_str) # Removed UUID conversion, use task_id_str directly
+    print(f"Task submitted for expected failure with ID: {task_id_str}") # Use task_id_str
+    await asyncio.sleep(1) # Add a small delay before polling
+ 
     # 2. Poll for FAILED status
     max_polls = 20 # Failure might happen faster
     poll_interval = 3 # seconds
@@ -151,10 +154,10 @@ async def test_submit_task_and_expect_failure(
     final_output = None
 
     for i in range(max_polls):
-        print(f"Polling failing task {task_id} (Attempt {i+1}/{max_polls})...")
+        print(f"Polling failing task {task_id_str} (Attempt {i+1}/{max_polls})...") # Use task_id_str
         await asyncio.sleep(poll_interval)
         try:
-            response = await live_api_client.get(f"/api/v1/tasks/{task_id_str}")
+            response = await live_api_client.get(f"/api/v1/tasks/{task_id_str}") # Use task_id_str (already correct)
             response.raise_for_status()
             response_data = response.json()
             status = response_data.get("status")
@@ -166,7 +169,7 @@ async def test_submit_task_and_expect_failure(
                 final_status = TaskStatus.FAILED
                 break
             elif status == TaskStatus.COMPLETED:
-                 pytest.fail(f"Task {task_id} unexpectedly completed successfully.")
+                 pytest.fail(f"Task {task_id_str} unexpectedly completed successfully.") # Use task_id_str
             # Continue polling if PENDING or RUNNING
         except httpx.HTTPStatusError as e:
             pytest.fail(f"API error during polling: {e.response.status_code} - {e.response.text}")
@@ -174,18 +177,18 @@ async def test_submit_task_and_expect_failure(
             pytest.fail(f"Unexpected error during polling: {e}")
 
     if final_status != TaskStatus.FAILED:
-        pytest.fail(f"Task {task_id} did not fail within timeout ({max_polls * poll_interval}s). Final status: {final_status}")
+        pytest.fail(f"Task {task_id_str} did not fail within timeout ({max_polls * poll_interval}s). Final status: {final_status}") # Use task_id_str
 
     # 3. Verify final state in DB
-    print(f"Verifying FAILED state for task {task_id} in DB...")
-    final_task = await get_task_from_db(live_db_session, task_id)
+    print(f"Verifying FAILED state for task {task_id_str} in DB...") # Use task_id_str
+    final_task = await get_task_from_db(live_db_session, task_id_str) # Pass task_id_str
 
-    assert final_task is not None, f"Task {task_id} not found in database."
+    assert final_task is not None, f"Task {task_id_str} not found in database." # Use task_id_str
     assert final_task.status == TaskStatus.FAILED
     assert final_task.output is not None # Should contain error message
     assert isinstance(final_task.output, str)
     assert len(final_task.output) > 5 # Error messages usually have some length
-    print(f"Task {task_id} failed as expected and verified in DB.")
+    print(f"Task {task_id_str} failed as expected and verified in DB.") # Use task_id_str
     print(f"Failure Output:\n{final_task.output}")
 
 
@@ -201,7 +204,7 @@ async def test_concurrent_task_submissions(
         "prompt": f"Write a haiku about concurrency number {i+1}.",
         "task_type": "agent_task" # Added missing required field
     } for i in range(num_tasks)]
-    task_ids = []
+    # task_ids = [] # Removed unused list
     task_id_strs = []
 
     # 1. Submit tasks concurrently
@@ -209,18 +212,19 @@ async def test_concurrent_task_submissions(
         response = await live_api_client.post("/api/v1/tasks/", json=task_input)
         assert response.status_code == 201, f"API Error: {response.text}"
         response_data = response.json()
-        task_id_str = response_data.get("id")
+        task_id_str = response_data.get("task_id") # Expect 'task_id' (string) now
         assert task_id_str is not None
-        return UUID(task_id_str), task_id_str
+        # Return only the string task_id
+        return task_id_str
 
     submission_tasks = [submit_task(inp) for inp in task_inputs]
     results = await asyncio.gather(*submission_tasks)
-    for task_id, task_id_str in results:
-        task_ids.append(task_id)
-        task_id_strs.append(task_id_str)
-        print(f"Concurrent task submitted with ID: {task_id}")
+    for task_id_str_result in results: # Unpack only the string ID
+        # task_ids.append(task_id_str_result) # Removed unused list append
+        task_id_strs.append(task_id_str_result)
+        print(f"Concurrent task submitted with ID: {task_id_str_result}") # Use correct variable
 
-    assert len(task_ids) == num_tasks
+    assert len(task_id_strs) == num_tasks # Assert using the correct list
 
     # 2. Poll for completion of all tasks
     max_polls = 40 # Allow more time for multiple tasks
@@ -231,33 +235,33 @@ async def test_concurrent_task_submissions(
     for i in range(max_polls):
         print(f"Polling concurrent tasks (Attempt {i+1}/{max_polls})...")
         all_done = True
-        for task_id, task_id_str in zip(task_ids, task_id_strs):
-            if task_id in completed_tasks or task_id in failed_tasks:
+        for task_id_str in task_id_strs: # Iterate only over task_id_strs (already correct)
+            if task_id_str in completed_tasks or task_id_str in failed_tasks: # Check using task_id_str
                 continue # Already reached terminal state
 
             all_done = False # At least one task still pending/running
             try:
-                response = await live_api_client.get(f"/api/v1/tasks/{task_id_str}")
+                response = await live_api_client.get(f"/api/v1/tasks/{task_id_str}") # Use task_id_str (already correct)
                 response.raise_for_status()
                 response_data = response.json()
                 status = response_data.get("status")
                 output = response_data.get("output")
 
-                print(f"  Task {task_id} Status: {status}")
+                print(f"  Task {task_id_str} Status: {status}") # Use task_id_str
 
                 if status == TaskStatus.COMPLETED:
-                    completed_tasks.add(task_id)
+                    completed_tasks.add(task_id_str) # Add task_id_str
                 elif status == TaskStatus.FAILED:
-                    failed_tasks.add(task_id)
-                    print(f"  Task {task_id} FAILED: {output}") # Log failure but don't fail the whole test yet
+                    failed_tasks.add(task_id_str) # Add task_id_str
+                    print(f"  Task {task_id_str} FAILED: {output}") # Use task_id_str
 
             except httpx.HTTPStatusError as e:
                  # Treat API error during polling as a task failure for verification purposes
-                print(f"  API error polling task {task_id}: {e.response.status_code} - {e.response.text}")
-                failed_tasks.add(task_id)
+                print(f"  API error polling task {task_id_str}: {e.response.status_code} - {e.response.text}") # Use task_id_str
+                failed_tasks.add(task_id_str) # Add task_id_str
             except Exception as e:
-                print(f"  Unexpected error polling task {task_id}: {e}")
-                failed_tasks.add(task_id)
+                print(f"  Unexpected error polling task {task_id_str}: {e}") # Use task_id_str
+                failed_tasks.add(task_id_str) # Add task_id_str
 
         if all_done:
             print("All concurrent tasks reached a terminal state.")
@@ -270,25 +274,29 @@ async def test_concurrent_task_submissions(
     # 3. Verify final state in DB for all tasks
     print("Verifying final states for concurrent tasks in DB...")
     final_tasks = {}
-    verification_tasks = [get_task_from_db(live_db_session, task_id) for task_id in task_ids]
-    db_results = await asyncio.gather(*verification_tasks)
+    # Fetch results from DB using the collected string IDs
+    verification_tasks = [get_task_from_db(live_db_session, task_id_str) for task_id_str in task_id_strs]
+    # Fetch DB results sequentially to avoid concurrent session use
+    db_results = []
+    for task_id_str_to_verify in task_id_strs:
+        db_results.append(await get_task_from_db(live_db_session, task_id_str_to_verify))
 
-    for task_id, final_task in zip(task_ids, db_results):
-        assert final_task is not None, f"Task {task_id} not found in database."
-        final_tasks[task_id] = final_task
+    for task_id_str, final_task in zip(task_id_strs, db_results): # Iterate using task_id_strs
+        assert final_task is not None, f"Task {task_id_str} not found in database." # Use task_id_str
+        final_tasks[task_id_str] = final_task # Store using task_id_str
 
-        if task_id in failed_tasks:
-            assert final_task.status == TaskStatus.FAILED, f"Task {task_id} polled as failed but DB status is {final_task.status}"
-            print(f"Task {task_id} verified as FAILED in DB.")
-        elif task_id in completed_tasks:
-            assert final_task.status == TaskStatus.COMPLETED, f"Task {task_id} polled as completed but DB status is {final_task.status}"
+        if task_id_str in failed_tasks: # Check using task_id_str
+            assert final_task.status == TaskStatus.FAILED, f"Task {task_id_str} polled as failed but DB status is {final_task.status}" # Use task_id_str
+            print(f"Task {task_id_str} verified as FAILED in DB.") # Use task_id_str
+        elif task_id_str in completed_tasks: # Check using task_id_str
+            assert final_task.status == TaskStatus.COMPLETED, f"Task {task_id_str} polled as completed but DB status is {final_task.status}" # Use task_id_str
             assert final_task.output is not None
             assert isinstance(final_task.output, str)
             assert len(final_task.output) > 5 # Basic check
-            print(f"Task {task_id} verified as COMPLETED in DB.")
+            print(f"Task {task_id_str} verified as COMPLETED in DB.") # Use task_id_str
         else:
             # This case should ideally not be reached if the polling loop logic is correct
-             pytest.fail(f"Task {task_id} did not reach a known terminal state during polling but loop finished.")
+             pytest.fail(f"Task {task_id_str} did not reach a known terminal state during polling but loop finished.") # Use task_id_str
 
     # Ensure all tasks either completed or failed as observed during polling
     assert len(completed_tasks) + len(failed_tasks) == num_tasks, "Mismatch between polled terminal states and total tasks."

@@ -1,47 +1,62 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-10 9:15 PM)
-- **Task Maint.11 (Multi-Repository Restructure):** **Completed**. Repos restructured, code moved, tests fixed in isolation. `ops-core` and `agentkit` repos pushed. `1-t` repo cleaned, `tox.ini` updated and verified.
-- **Task Maint.12 (Fix `1-t/tox.ini` Dependency Paths & Commands):** **Completed**. Corrected editable dependency paths (using absolute paths) and command paths (using `{toxinidir}`) in `1-t/tox.ini` to work with the local subdirectory structure (`ops-core/`, `agentkit/`). Verified with `tox -e py312`.
-- **Task 6.2 (Integrate Persistent Store):** **Completed**.
-- **Task 9.2 (Fix Runtime Test Failures):** **Completed**.
-- **Task 6.3 (Implement Live LLM Integration Tests):** **Completed (Google test marked xfail)**. Tests created and run. OpenAI, Anthropic, OpenRouter tests passed. Google test (`test_live_google_client`) marked with `@pytest.mark.xfail` due to persistent, contradictory errors related to `google-genai` SDK parameter handling (suspected SDK bug).
-- **Task 5.2 (Update User & Developer Documentation):** **In Progress (Paused)**. Further updates deferred to Phase 8.
-- **Task 6.4 (Implement `agentkit` Long-Term Memory MVP):** **Completed**.
-- **Task 5.2 (Update User & Developer Documentation):** **In Progress (Paused)**. Further updates deferred to Phase 8.
-- **Task Maint.13 (Fix Google Client Tests):** **Completed**. (Payload fix and specific error handling improvements).
-- **Task Maint.14 (Add Retry/Timeout to LLM Clients):** **Completed**. Added `tenacity` dependency, implemented retry decorators and timeout parameters in all LLM clients, and updated unit tests.
-- **Task 7.1 (Implement Full Live E2E Test Suite):** **Implementation Complete**. Added task definition, `pytest-docker` dependency, service/process fixtures in `conftest.py`, and initial tests (`test_submit_task_and_poll_completion`, `test_submit_task_and_expect_failure`, `test_concurrent_task_submissions`) in `test_live_e2e.py`. Execution/debugging pending (Task 7.2).
-- **Default LLM Configuration Update:** Changed the default LLM provider to "google" and the default model to "gemini-2.5-pro-exp-03-25" in `ops-core` scheduler and `agentkit` Google client.
+## Current Focus (Updated 2025-04-12 8:26 PM)
+- **Task 7.2 (Execute & Debug Live E2E Tests):** **In Progress (Paused)**. Debugged multiple issues including API response validation, Docker conflicts (name/port), DB transaction commits, worker environment variables, worker import paths, and worker/agent timeouts. Created and debugged an isolation script (`test_dramatiq_worker.py`) to test worker/actor functionality independently, fixing Alembic execution issues within the script. The main E2E tests were still stalling before the isolation script was fully debugged and run successfully.
+- **Task Maint.11 - Maint.14:** Completed.
+- **Task 6.2 - 6.4:** Completed.
+- **Task 9.2:** Completed.
+- **Task 7.1:** Implementation Complete.
+- **Task 5.2:** Paused.
 - **Phase 5 Deferred:** Tasks 5.3-5.5 remain deferred to Phase 8.
-- **Next Task:** Task 7.2 (Execute & Debug Live E2E Tests) - Continue debugging test failures.
+- **Next Task:** Task 7.2 (Execute & Debug Live E2E Tests) - Run the corrected `test_dramatiq_worker.py` isolation script to verify worker functionality. If successful, re-run the main E2E tests (`tox -e py312 -- -m live ops-core/tests/integration/test_live_e2e.py`).
 
-## Recent Activities (Current Session - 2025-04-12 Evening)
-- **Started Task 7.2 (Execute & Debug Live E2E Tests):**
-    - Attempted to run tests via `tox -e py312 -- -m live ops-core/tests/integration/test_live_e2e.py`.
-    - **Failure 1:** No tests selected due to conflicting markers (`-m "not live"` default vs `-m live` arg) and unknown marker (`e2e_live`).
-        - Fixed marker name in `test_live_e2e.py` (`e2e_live` -> `live`).
-        - Removed default `-m "not live"` from `tox.ini`.
-        - Registered `live` marker in `ops-core/pyproject.toml`.
-    - **Failure 2:** `pytest-docker` failed to find `docker-compose.yml` (looking in `ops-core/tests/`).
-        - Added `docker_compose_files = ["../docker-compose.yml"]` to `[tool.pytest.ini_options]` in `ops-core/pyproject.toml`.
-    - **Failure 3:** `pytest-docker` still failed to find `docker-compose.yml`, and `docker_compose_files` was an unknown config option.
-        - Removed `docker_compose_files` from `ops-core/pyproject.toml`.
-        - Added `docker_compose_file` fixture override to `ops-core/tests/conftest.py` pointing to `../docker-compose.yml`.
-    - **Failure 4:** `docker compose up` failed with container name conflict (`/opspawn_postgres` already in use).
-        - Ran `docker compose down -v` to clean up previous containers/volumes.
-    - **Failure 5:** Tests failed during setup in `run_migrations` fixture with `ConnectionError: unexpected connection_lost() call` (asyncpg SSL issue).
-        - Modified `run_migrations` in `ops-core/tests/conftest.py` to use `?ssl=disable` in DB URL.
-    - **Failure 6:** Tests failed during setup in `run_migrations` fixture with `asyncpg.exceptions.ConnectionDoesNotExistError: connection was closed in the middle of operation`.
-        - Reverted DB URL in `run_migrations` back to `?ssl=prefer`.
-        - Increased `time.sleep()` delay in `docker_services_ready` fixture from 2 to 10 seconds.
-    - **Failure 7:** Tests failed with `ScopeMismatch` error (session-scoped fixture `live_db_engine` tried to use function-scoped `event_loop`).
-        - Added session-scoped `event_loop` fixture override to `ops-core/tests/conftest.py`.
-    - **Failure 8:** Tests failed with `AssertionError: API Error: {"detail":[{"type":"missing","loc":["body","task_type"],"msg":"Field required",...}]}` (API request missing `task_type`).
-        - Added `"task_type": "agent_task"` to API request payloads in `ops-core/tests/integration/test_live_e2e.py`.
-    - **Failure 9:** Tests failed with `fastapi.exceptions.ResponseValidationError: 1 validation errors: {'type': 'missing', 'loc': ('response', 'id'), 'msg': 'Field required', ...}` (API response model mismatch).
-        - Corrected `TaskResponse` schema in `ops-core/src/ops_core/api/v1/schemas/tasks.py` to use `id: uuid.UUID` instead of `task_id: str`.
-    - **Last Action:** Attempted to run `tox -e py312 -- -m live ops-core/tests/integration/test_live_e2e.py` again after fixing the response schema. Result pending.
+## Recent Activities (Current Session - 2025-04-12 Evening ~7:45 PM - 8:26 PM)
+- **Continued Task 7.2 (Execute & Debug Live E2E Tests):**
+    - Switched from Architect to Code mode to allow command execution.
+    - Ran tests: Failed with `ResponseValidationError` (missing `id` field).
+    - Fixed by adding `alias='task_id'` to `TaskResponse.id`.
+    - Ran tests: Failed with `ResponseValidationError` (`uuid_parsing` error).
+    - Fixed by changing `TaskResponse.id` to `task_id: str` and updating test code (`test_live_e2e.py`) to use string ID.
+    - Ran tests: Failed with `AssertionError` (test code still looking for `id` in response) and `UnboundLocalError` (test code using wrong variable).
+    - Fixed test code (`test_live_e2e.py`) to use `task_id` from response and correct variable names.
+    - Ran tests: Failed with `404 Not Found` during polling.
+    - Added explicit `session.commit()` to `SqlMetadataStore.add_task`.
+    - Ran tests: Failed with Docker container name conflict (`opspawn_postgres`).
+    - Fixed by removing `container_name` from `docker-compose.yml` and running `docker compose down -v`.
+    - Ran tests: Failed with Docker port allocation error (`15672`).
+    - Fixed by commenting out port `15672` in `docker-compose.yml` and running `docker compose down -v`.
+    - Ran tests: Failed with Docker port allocation error (`5672`).
+    - Identified running `docker-proxy` processes using `ss`. Stopped conflicting `postgres:15` and `rabbitmq:3-management` containers using `docker ps` and `docker stop`.
+    - Ran tests: Stalled.
+    - Added agent execution timeout (`asyncio.wait_for`) to Dramatiq actor (`scheduler/engine.py`).
+    - Ran tests: Stalled.
+    - Added extensive logging to worker actor (`scheduler/engine.py`).
+    - Ran tests: Stalled.
+    - Added print statements to session fixtures (`conftest.py`) to trace setup.
+    - Ran tests: Stalled, logs indicated hang during `live_dramatiq_worker` fixture setup.
+    - Added check for premature worker exit to `live_dramatiq_worker` fixture.
+    - Ran tests: Stalled.
+    - Corrected import path (`src.ops_core` -> `ops_core`) in `tasks/worker.py`.
+    - Ran tests: Stalled.
+    - **Pivoted to Isolation Script:** Created `test_dramatiq_worker.py` to test worker/actor independently.
+    - Ran script: Failed (`ModuleNotFoundError: sqlalchemy`).
+    - Ran script via tox python: Failed (`ImportError: cannot import name 'async_session_factory'`).
+    - Corrected session factory name (`AsyncSessionFactory`) in script.
+    - Ran script: Failed (`ConnectionRefusedError` for DB).
+    - Started Docker services manually (`docker compose up -d`).
+    - Ran script: Failed (`UndefinedTableError: relation "task" does not exist`).
+    - Added Alembic migration step (subprocess) to script.
+    - Ran script: Failed (Alembic path error - looking in `1-t/alembic`).
+    - Corrected `script_location` in `ops-core/alembic.ini`.
+    - Ran script: Failed (Alembic path error - still looking in `1-t/alembic`).
+    - Corrected Alembic subprocess call in script to run from `ops-core` directory.
+    - Ran script: Failed (`dotenv` error - looking for `.env` in `ops-core`).
+    - Removed `dotenv run` wrapper from Alembic subprocess call in script.
+    - Ran script: Failed (`ModuleNotFoundError: No module named 'ops_core'` from Alembic).
+    - Corrected Alembic subprocess call to run from `1-t` root with correct config path.
+    - Ran script: Failed (Alembic path error - looking in `1-t/alembic` again).
+    - Refactored script to run Alembic programmatically using synchronous engine.
+    - **Session ended before running the refactored isolation script.**
 
 ## Recent Activities (Previous Session - 2025-04-12 Afternoon)
 - **Updated Default LLM Configuration:** Changed default provider to "google" in `ops-core/src/ops_core/scheduler/engine.py` and default model to "gemini-2.5-pro-exp-03-25" in `agentkit/src/agentkit/llm_clients/google_client.py`.
