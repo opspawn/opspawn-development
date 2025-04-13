@@ -1,0 +1,6 @@
+[submodule "ops-core"]
+	path = ops-core
+	url = git@github.com-opspawn:opspawn/ops-core.git
+[submodule "agentkit"]
+	path = agentkit
+	url = git@github.com-opspawn:opspawn/agentkit.git
