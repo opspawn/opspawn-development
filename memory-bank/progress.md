@@ -1,11 +1,11 @@
 # Progress: Opspawn Core Foundation (Phase 6 In Progress)
 
-## Current Status (Updated 2025-04-13 06:30 AM)
+## Current Status (Updated 2025-04-13 08:22 AM)
 - **Phase:** Phase 7 (Full Live E2E Testing).
 - **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 6, 9 completed. Tasks 5.1 completed. Maintenance tasks Maint.1-Maint.14 completed. Task 7.1 implementation complete. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Backlog Enhancements 6 & 7 added. Testing strategy documentation updated. Debug logs updated.
-- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **In Progress (Blocked)**. Debugged Dramatiq worker actor invocation issue (see `debugging/2025-04-12_task7.2_worker_actor_invocation.md`). Attempted to run live E2E tests but encountered persistent schema creation failures in the test setup fixture (`ensure_live_db_schema` in `ops-core/tests/conftest.py`) due to metadata registration issues in the test environment. Raw SQL schema creation worked as a workaround, but `conftest.py` became corrupted during debugging (see `debugging/2025-04-13_task7.2_live_e2e_schema_creation.md`).
-- **Next Task:** Task 7.2 (Execute & Debug Live E2E Tests) - Fix `ops-core/tests/conftest.py` corruption, re-apply raw SQL schema creation workaround, and re-run live E2E tests.
-- **Blockers:** 1) Unresolved Dramatiq worker issue preventing actor invocation. 2) Corrupted `ops-core/tests/conftest.py` preventing test setup. (Google live test remains marked xfail due to suspected SDK issue).
+- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **Blocked**. Successfully fixed E2E test setup issues (`conftest.py` schema creation, scheduler dispatch logic, import errors, worker env/delay, Pika connection errors). E2E tests now successfully submit tasks and dispatch messages to RabbitMQ. However, the tests still time out because the Dramatiq worker does not execute the actor code upon receiving the message.
+- **Next Task:** Manually debug the Dramatiq worker process (`dramatiq ops_core.tasks.worker`) in isolation to determine why the actor code is not executed.
+- **Blockers:** Unresolved Dramatiq worker actor invocation issue (see `memory-bank/debugging/2025-04-12_task7.2_worker_actor_invocation.md`). (Google live test remains marked xfail due to suspected SDK issue).
 
 ## What Works (As of 2025-04-12 7:43 PM)
 - **Multi-Repo Structure (Local Subdirectories):** The multi-repository structure with `ops-core` and `agentkit` as subdirectories within `1-t` is now working. The `1-t/tox.ini` file correctly installs these as editable dependencies using absolute paths and runs tests from their respective `tests` directories. All tests (140 passed, 1 skipped) pass using this configuration.

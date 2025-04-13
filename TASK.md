@@ -410,10 +410,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
   *Dependencies:* Phase 6 Completion
           *Comments:* Requires careful environment setup and management. Needs LLM API keys (e.g., `OPENAI_API_KEY`) in the environment. Initial implementation complete; further test cases depend on feature availability. Task 7.1 implementation is considered complete.
 
-- [In Progress] **Task 7.2: Execute & Debug Live E2E Tests** `(Started 2025-04-12; Blocked 2025-04-13)`
+- [Blocked] **Task 7.2: Execute & Debug Live E2E Tests** `(Started 2025-04-12; Blocked 2025-04-13)`
   *Description:* Run the live E2E tests in a properly configured environment. Identify and fix bugs related to component interactions in a live setting.
   *Dependencies:* Task 7.1
-  *Comments:* Focus on stability and correctness of the integrated system. **Debugging (2025-04-12/13):** Debugged Dramatiq worker actor invocation issue (see `memory-bank/debugging/2025-04-12_task7.2_worker_actor_invocation.md`). Attempted to run live E2E tests (`test_submit_task_and_poll_completion`) but encountered persistent schema creation failures in `ops-core/tests/conftest.py` due to metadata registration issues. Raw SQL schema creation worked as a workaround, but `conftest.py` became corrupted during debugging (see `memory-bank/debugging/2025-04-13_task7.2_live_e2e_schema_creation.md`). **Current Status:** Blocked by 1) Unresolved Dramatiq worker invocation issue, and 2) Corrupted `ops-core/tests/conftest.py` preventing test setup. **Next Step:** Fix `ops-core/tests/conftest.py` corruption, re-apply raw SQL schema creation workaround, and re-run live E2E tests.
+  *Comments:* Focus on stability and correctness of the integrated system. **Debugging (2025-04-12/13):** Debugged Dramatiq worker actor invocation issue (see `memory-bank/debugging/2025-04-12_task7.2_worker_actor_invocation.md`). Fixed E2E test setup issues (`conftest.py` schema creation, scheduler dispatch logic, import errors, worker fixture env/delay). Confirmed task submission and message dispatch to RabbitMQ are working. However, the worker process still fails to execute the actor code upon receiving the message, causing tests to time out. E2E test fixture is unable to reliably capture worker logs for further diagnosis. **Current Status:** Blocked by unresolved Dramatiq worker actor invocation issue. **Next Step:** Manually debug the worker process (`dramatiq ops_core.tasks.worker`) in isolation to determine why the actor code is not executed.
 
 ---
 

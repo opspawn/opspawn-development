@@ -1,27 +1,32 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-13 06:30 AM)
-- **Task 7.2 (Execute & Debug Live E2E Tests):** **In Progress (Blocked)**.
-    - **Sub-Issue 1 (Dramatiq Worker Invocation):** Debugged using isolation script (`test_dramatiq_worker.py`). Worker receives message but fails silently before executing actor code. Root cause likely internal to Dramatiq or dependency conflict. Debugging via application code exhausted for this path. (See `debugging/2025-04-12_task7.2_worker_actor_invocation.md`)
-    - **Sub-Issue 2 (Live E2E Test Setup - Schema Creation):** Attempted running `test_live_e2e.py`. Encountered persistent failures creating the `task` table within the `ensure_live_db_schema` fixture in `ops-core/tests/conftest.py`. Debugging revealed the shared `MetaData` object was empty when `create_all` was called, likely due to import/evaluation order issues in the pytest/tox environment. Using raw SQL `CREATE TABLE` worked, but subsequent diff applications corrupted `conftest.py`. (See `debugging/2025-04-13_task7.2_live_e2e_schema_creation.md`)
-    - **Current Blockers:** 1) Unresolved Dramatiq worker invocation issue. 2) Corrupted `ops-core/tests/conftest.py` preventing successful test setup (schema creation workaround needs re-application).
-- **Next Step:** Fix `ops-core/tests/conftest.py` corruption. Re-apply the raw SQL schema creation workaround in the `ensure_live_db_schema` fixture. Re-run the live E2E test (`test_submit_task_and_poll_completion`) to verify setup and observe test behavior regarding the Dramatiq worker issue.
+## Current Focus (Updated 2025-04-13 08:21 AM)
+- **Task 7.2 (Execute & Debug Live E2E Tests):** **Blocked**.
+    - **Status:** E2E test setup issues (schema creation, task dispatch, imports, worker env) have been resolved. Tests now successfully submit tasks and dispatch messages to RabbitMQ. However, the tests still time out because the Dramatiq worker, while running, does not execute the actor code upon receiving the message. This confirms the core issue identified in previous manual debugging. E2E test fixture is unable to reliably capture worker logs for further diagnosis.
+    - **Blocker:** Unresolved Dramatiq worker actor invocation issue (See `debugging/2025-04-12_task7.2_worker_actor_invocation.md`).
+- **Next Step:** Manually debug the worker process (`dramatiq ops_core.tasks.worker`) in isolation to determine why the actor code is not executed.
 
-## Recent Activities (Current Session - 2025-04-13 06:02 AM - 06:30 AM)
-- **Continued Task 7.2 (Execute & Debug Live E2E Tests - Setup):**
-    - Attempted to run `test_submit_task_and_poll_completion` via `tox`.
-    - Fixed `docker-compose.yml` path error in `ops-core/tests/conftest.py`.
-    - Fixed Docker port conflict by running `docker compose down`.
-    - Encountered `relation "task" does not exist` error during test setup.
-    - Debugged `ensure_live_db_schema` fixture in `ops-core/tests/conftest.py`:
-        - Confirmed Alembic migrations reported success but didn't create the table.
-        - Switched to `metadata.create_all`. Failed: `metadata` object was empty.
-        - Tried various import strategies (local import, class access) - `metadata` remained empty.
-        - Switched to synchronous fixture execution. Failed: `metadata` still empty.
-        - Switched to raw SQL `CREATE TABLE`. Succeeded in creating table.
-        - **Issue:** Subsequent diff applications corrupted `ops-core/tests/conftest.py`.
-    - Created debug log: `memory-bank/debugging/2025-04-13_task7.2_live_e2e_schema_creation.md`.
-    - **Conclusion:** Metadata registration issue in test environment prevents `metadata.create_all` from working reliably in the fixture. Raw SQL is a viable workaround. `conftest.py` needs repair.
+## Recent Activities (Current Session - 2025-04-13 06:33 AM - 08:21 AM)
+- **Continued Task 7.2 (Execute & Debug Live E2E Tests):**
+    - Repaired `ops-core/tests/conftest.py` using raw SQL schema creation workaround. Committed fix.
+    - Ran E2E test. Failed: Task stuck in `pending`. Identified missing dispatch logic for `agent_task` type in `ops-core/src/ops_core/scheduler/engine.py`.
+    - Fixed scheduler dispatch logic. Committed fix.
+    - Ran E2E test. Failed: `ModuleNotFoundError` for `ops_core.scheduler.tasks`. Identified incorrect relative import path in `engine.py`.
+    - Fixed import path in `engine.py`. Committed fix.
+    - Ran E2E test. Failed: `ImportError` for `execute_agent_task_actor`. Identified unnecessary import in `engine.py` (actor defined locally).
+    - Removed unnecessary import in `engine.py`. Committed fix.
+    - Ran E2E test. Failed: Timeout (task stuck `pending`). Confirmed task submitted and sent to RabbitMQ. Issue points to worker not processing message.
+    - Modified `live_dramatiq_worker` fixture in `conftest.py` to unset `DRAMATIQ_TESTING` env var. Committed fix.
+    - Ran E2E test. Failed: Timeout (task stuck `pending`). Pika connection errors observed during message send.
+    - Increased delay in `docker_services_ready` fixture (`conftest.py`) from 10s to 20s. Committed fix.
+    - Ran E2E test. Failed: Timeout (task stuck `pending`). Pika connection errors resolved. Confirmed worker still not processing message.
+    - Modified `live_dramatiq_worker` fixture to capture worker stdout/stderr and add verbosity (`-v 2`) to `dramatiq` command. Committed fix.
+    - Ran E2E test. Failed: Timeout (task stuck `pending`). Worker logs still not captured in pytest output.
+    - Reverted worker fixture debugging changes (verbosity, test command).
+    - Disabled `AsyncIO` middleware in `broker.py` as a test. Committed change.
+    - Ran E2E test. Failed: Timeout (task stuck `pending`). Disabling middleware had no effect.
+    - Reverted middleware change.
+    - **Conclusion:** E2E test setup is functional up to message dispatch. Worker actor invocation remains the blocker. Manual debugging is required. Updated documentation.
 
 ## Recent Activities (Previous Session - 2025-04-13 ~10:25 PM - 05:58 AM)
 - **Continued Task 7.2 (Debug Dramatiq Worker Actor Invocation):**
