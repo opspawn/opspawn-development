@@ -171,7 +171,7 @@ def docker_services_ready(docker_ip, docker_services):
     )
     # Add a longer delay to allow DB to fully initialize internally
     print("Adding longer delay after DB readiness check...")
-    time.sleep(10)
+    time.sleep(20) # Increased delay for RabbitMQ/DB full initialization
     print("Delay finished.")
     print("[Fixture docker_services_ready] Setup complete, yielding.")
     yield docker_services
