@@ -2,9 +2,9 @@
 
 ## Current Focus (Updated 2025-04-13 09:07 AM)
 - **Task 7.2 (Execute & Debug Live E2E Tests):** **Blocked**.
-    - **Status:** Manual debugging session confirmed worker *can* invoke actor when run via `tox exec`. Fixed several downstream bugs (`AttributeError` in DB commit, `TypeError` in planner call, `TypeError` in OpenAI timeout). However, the actor invocation *still fails* in the test environments (`test_dramatiq_worker.py`, E2E tests).
-    - **Blocker:** Discrepancy between manual execution environment and test execution environments preventing actor invocation in tests.
-- **Next Step:** Investigate the test environment discrepancy (e.g., process launch, env vars, fixture interactions in `test_dramatiq_worker.py` and `conftest.py`).
+    - **Status:** Debugging confirmed the worker fails to consume messages when run via `test_dramatiq_worker.py` (using `subprocess.Popen`), manually via `tox exec`, or directly using the `.tox/py312` Python interpreter (bypassing `tox exec`). The issue is not the launch method but appears related to the specific Python environment created by `tox` (`.tox/py312`). Pika debug logs show successful connection and consumer setup (`Basic.ConsumeOk`), but the message is never delivered to the worker.
+    - **Blocker:** Suspected dependency conflict within the `.tox/py312` environment (potentially `gevent` from `locust`) interfering with Pika/Dramatiq message consumption.
+- **Next Step:** Test worker execution in a clean virtual environment without potentially conflicting dependencies like `locust`/`gevent`.
 
 ## Recent Activities (Current Session - 2025-04-13 08:33 AM - 09:07 AM)
 - **Continued Task 7.2 (Manual Debugging - Worker Invocation):**

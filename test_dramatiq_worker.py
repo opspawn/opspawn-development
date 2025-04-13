@@ -159,6 +159,7 @@ async def main():
         cmd = [
             sys.executable, # Use the same python interpreter
             "-m", "dramatiq",
+            "ops_core.tasks.broker:broker", # Explicitly provide broker path
             "ops_core.tasks.worker", # Use module path again
             "-p", "1", # Use 1 worker process
             "-t", "1", # Use 1 worker thread
@@ -186,7 +187,6 @@ async def main():
             raise RuntimeError("Worker failed to start.")
         else:
             logger.info("Worker process appears to be running.")
-
         # 5. Wait for task completion (or timeout)
         logger.info(f"Waiting up to {TASK_COMPLETION_WAIT}s for task {TEST_TASK_ID} to complete...")
         start_wait_time = time.time()
@@ -224,6 +224,18 @@ async def main():
             logger.exception(f"Error getting final task status: {e}")
 
 
+        # --- Instructions for Manual Worker Test ---
+        # logger.info("="*50)
+        # logger.info("MANUAL WORKER TEST INSTRUCTIONS:")
+        # logger.info(f"1. A message for task ID '{TEST_TASK_ID}' has been sent to RabbitMQ.")
+        # logger.info("2. Open a NEW terminal in the '/home/sf2/Workspace/23-opspawn/1-t' directory.")
+        # logger.info("3. Ensure Docker containers (RabbitMQ, DB) are running (`docker compose up -d`).")
+        # logger.info("4. Run the following command in the new terminal to start the worker:")
+        # logger.info("   tox exec -e py312 -- env DRAMATIQ_TESTING= python -m dramatiq ops_core.tasks.broker:broker ops_core.tasks.worker --verbose")
+        # logger.info("5. Observe the worker logs in the new terminal. Look for processing related to the task ID above.")
+        # logger.info("6. Check the database manually (or re-run this script later with polling restored) to see if the task status changes from PENDING.")
+        # logger.info("="*50)
+
     except Exception as e:
         logger.exception(f"An error occurred during the test: {e}")
     finally:
@@ -243,7 +255,6 @@ async def main():
                 stdout, stderr = worker_process.communicate()
                 logger.info(f"Worker STDOUT:\n{stdout}")
                 logger.info(f"Worker STDERR:\n{stderr}")
-
         if session:
             logger.info("Closing database session.")
             await session.close()
