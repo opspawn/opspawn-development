@@ -71,7 +71,7 @@ class GoogleClient(BaseLlmClient):
     async def generate(
         self,
         prompt: str, # Changed back to prompt: str
-        model: Optional[str] = "gemini-pro", # Default model
+        model: Optional[str] = "gemini-2.5-pro-exp-03-25", # Default model updated
         stop_sequences: Optional[List[str]] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None, # Called max_output_tokens in Gemini
