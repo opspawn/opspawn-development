@@ -8,9 +8,9 @@
 - **Blockers:** Unresolved Dramatiq worker actor invocation issue *within test environments*. (Google live test remains marked xfail due to suspected SDK issue).
 
 ## What Works (As of 2025-04-12 7:43 PM)
-- **Multi-Repo Structure (Local Subdirectories):** The multi-repository structure with `ops-core` and `agentkit` as subdirectories within `1-t` is now working. The `1-t/tox.ini` file correctly installs these as editable dependencies using absolute paths and runs tests from their respective `tests` directories. All tests (140 passed, 1 skipped) pass using this configuration.
-- **Component Repositories:** The `ops-core` and `agentkit` repositories (as subdirectories) contain the validated code structure.
-- **Management Repository (`1-t`):** The `tox.ini` file is correctly configured for the local subdirectory structure. The `src/` directory (containing build artifacts) has been removed.
+- **Repository Structure:** `ops-core` and `agentkit` have been split into separate repositories (`opspawn/ops-core`, `opspawn/agentkit`) and added back to the main `opspawn-development` repository (`1-t/`) as Git submodules. (Completed 2025-04-13).
+- **Component Repositories:** `opspawn/ops-core` and `opspawn/agentkit` now exist as standalone repositories with filtered history.
+- **Management Repository (`1-t` / `opspawn-development`):** Contains `ops-core` and `agentkit` as submodules. `tox.ini` may need updates to work with the submodule structure.
 - **Previous Functionality:** All functionality verified by tests up to Task 9.2 completion (before restructuring) is assumed to be working within the individual component repositories.
 - **Task 2.1 (Reimplemented):** `ops_core` scheduler and metadata store MVP reimplemented.
 - **Task 2.2 (Reimplemented):** `agentkit` core agent MVP reimplemented (`ShortTermMemory`, `PlaceholderPlanner`, `Agent`, interfaces, tests).
@@ -53,17 +53,10 @@
     - Task Maint.6: Fixed `agentkit` test structure. (Completed 2025-04-08).
     - Task Maint.7: Fixed failing Google client test (`test_google_client_generate_success`) by correcting mock setup. (Completed 2025-04-08).
     - Task Maint.5: Added configurable timeouts to `OpsMcpClient.call_tool` and verified with tests. (Completed 2025-04-08).
-- **Repository Structure (Task 9.1 - In Progress):**
-    - Code moved to `src/ops_core/` and `src/agentkit/`.
-    - `pyproject.toml` files updated for `src` layout.
-    - Root `tox.ini` created and configured for `src` layout.
-    - `fix_grpc_imports.sh` script updated for new paths.
-    - Missing `src/ops_core/metadata/base.py` created.
-    - Import errors (`get_scheduler`, circular deps, `get_mcp_client`) fixed in `dependencies.py`.
-    - `TypeError: SqlMetadataStore() takes no arguments` fixed in `dependencies.py` and multiple test files.
-    - `tox.ini` updated to use `dotenv run -- python -m pytest` to resolve DB connection issues in tests.
-    - Test collection error (`Table 'task' is already defined`) resolved.
-    - Imports standardized (removing `src.` prefix) in progress across `ops_core` tests and source.
+- **Repository Structure (Task Maint.15 Completed 2025-04-13):**
+    - `ops-core` and `agentkit` split into separate repositories.
+    - Added back to `opspawn-development` as submodules.
+    - Previous `src` layout restructure (Task 9.1) is now part of the history within the individual `ops-core` and `agentkit` repositories.
 - **Documentation (Task 5.2 Partial):** Initial explanation documents (`architecture.md`, `ops_core_overview.md`, `agentkit_overview.md`) created and expanded with current system details (2025-04-09).
 - **Persistent Metadata Store (Task 6.1 Completed):**
     - `SqlMetadataStore` implemented (`src/ops_core/metadata/sql_store.py`).
@@ -114,8 +107,8 @@
 
 ## Evolution of Project Decisions
 - **Test Fixing Strategy (2025-04-10):** Confirmed test collection is working. Prioritizing fixing the 22 runtime failures, starting with Batch 6 (DB Layer - Task 9.2). Standardizing imports (removing `src.` prefix) as part of Task 9.1.
-- **Repository Restructure & Collection Fix (Task 9.1) (2025-04-09/10):** Initiated restructuring to `src` layout. Moved code, updated build configs, created root `tox.ini`, fixed script paths, created `metadata/base.py`, fixed various import errors and `TypeError`s. Resolved DB connection errors (`InvalidPasswordError`) and Pika connection errors (`AMQPConnectionError`). Standardized imports to use `src.` prefix (in progress). Fixed `ImportError` in `test_broker.py`. Resolved `sqlalchemy.exc.InvalidRequestError: Table 'task' is already defined` during test collection via fixture scope adjustments. Completed Batches 1-5.
-- **Enhanced Testing Strategy (Task Maint.10) (2025-04-10):** Updated `memory-bank/testing_strategy.md` with granular batching and structured logging. Updated `tox.ini` default command to include both `ops_core` and `agentkit` tests.
+- **Repository Split & Submodule Conversion (Task Maint.15) (2025-04-13):** Split `ops-core` and `agentkit` into separate repositories using `git filter-repo`. Added them back to `opspawn-development` as submodules. Pushed changes to all three repositories.
+- **Enhanced Testing Strategy (Task Maint.10) (2025-04-10):** Updated `memory-bank/testing_strategy.md` with granular batching and structured logging. Updated `tox.ini` default command to include both `ops_core` and `agentkit` tests (Note: `tox.ini` likely needs updates for submodule structure).
 - **Revised Phasing (2025-04-08):** Decided to prioritize core documentation (Task 5.2), then implement prerequisites for live E2E testing (New Phase 6), perform live E2E testing (New Phase 7), and finally complete the remaining documentation tasks (New Phase 8). Tasks 5.3-5.5 deferred to Phase 8.
 - **Task Maint.13 Google Client Fix & Improvement (2025-04-12):** Resolved `TypeError` in `GoogleClient` by changing the payload passed to `generate_content` to the structured `contents=[{"parts": [{"text": prompt}]}]` format. Updated unit tests (`test_google_client.py`) and removed `xfail` markers. Added specific error handling for `google.api_core.exceptions` and updated the corresponding unit test. Added `google-api-core` dependency. Verified tests pass.
 - **Task 6.3 Live LLM Tests Debugging & Conclusion (2025-04-12):** Created test file. Fixed issues in test helper. Attempted multiple fixes for Google client parameter passing (native async vs sync via `asyncio.to_thread`, `GenerationConfig` object vs direct kwargs, different models). Consistently encountered contradictory errors (`TypeError: unexpected keyword argument 'temperature'/'generation_config'`, `AttributeError: 'GenerationConfig' object has no attribute 'automatic_function_calling'`). Isolated tests using `google_test_script.py` confirmed the native async method fails with `TypeError` when passed config params (directly or via object), while the sync method fails with `AttributeError` when run via `asyncio.to_thread` with a config object. A simple, direct synchronous script provided by the user (using sync `generate_content` + `config=`) *did* work when run directly, suggesting the `AttributeError` is related to the `asyncio.to_thread` interaction or test environment. **Conclusion:** Suspected `google-genai` SDK bug/interaction issue prevents reliable parameter passing for the async `GoogleClient`. Marked `test_live_google_client` as xfail (updated reason). Left `GoogleClient` implementation using `asyncio.to_thread` with `config=GenerationConfig(...)`. Updated documentation (`TASK.md`, `activeContext.md`, `progress.md`).

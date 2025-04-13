@@ -264,7 +264,7 @@
 - **Next Steps:** Add Tool/Function Calling and Structured Response enhancements to backlog (Done). Start new session to implement LLM client robustness improvements (Retry/Timeout). (Decision Date: 2025-04-12).
 - **Test Batch Verification:** Completed verification of all test batches. `tox.ini` fixed. Google client unit tests were marked xfail, but are now fixed. (Decision Date: 2025-04-12).
 - **Persistent Store Integration:** Verified complete and stable via full `tox` run (Task 6.2.7). (Decision Date: 2025-04-10).
-- **Repository Structure:** Multi-repo structure with local subdirectories (`1-t/`, `ops-core/`, `agentkit/`) and `src` layout is complete and verified. (Decision Date: 2025-04-10).
+- **Repository Structure:** `ops-core` and `agentkit` have been split into separate repositories (`opspawn/ops-core`, `opspawn/agentkit`) and added back to the main `opspawn-development` repository (`1-t/`) as Git submodules. (Decision Date: 2025-04-13).
 - **Revised Phasing:** Phase 6 (E2E Test Enablement), Phase 7 (Live E2E), Phase 8 (Final Docs) added. Tasks 5.3-5.5 deferred to Phase 8. (Decision Date: 2025-04-08).
 - **Async Workflow Testing:** Integration tests (`test_async_workflow.py`) simplified to verify API -> Broker dispatch only due to `StubBroker` limitations. (Decision Date: 2025-04-08).
 - **Asynchronous Messaging:** Using **Dramatiq + RabbitMQ**. (Decision Date: 2025-04-06).

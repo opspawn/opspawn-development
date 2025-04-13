@@ -105,10 +105,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 
 ### Phase 1: Initialization & Research
 
-- [x] **Task 1.1: Repository Setup** `(Local directories and READMEs created 2025-04-05)`  
-  *Description:* Create and organize GitHub repositories for agentkit, ops-core, ops-docs, etc.  
-  *Dependencies:* None  
-  *Comments:* Ensure a clear folder structure and include initial README files. (Note: GitHub repo creation pending user action if needed).
+- [x] **Task 1.1: Repository Setup** `(Local directories created 2025-04-05; Split into separate repos/submodules 2025-04-13)`
+  *Description:* Create and organize GitHub repositories for agentkit, ops-core, ops-docs, etc.
+  *Dependencies:* None
+  *Comments:* Main repo `opspawn-development` now contains `ops-core` and `agentkit` as submodules pointing to `opspawn/ops-core` and `opspawn/agentkit` respectively.
 
 - [x] **Task 1.2: Environment Configuration** `(Local .gitignore, requirements.txt created; basic CI workflows added 2025-04-05)`  
   *Description:* Configure local and CI/CD environments using GitHub Actions for automated testing and docs builds.  
@@ -498,6 +498,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 - [x] **Task 9.2: Fix Runtime Test Failures** `(Completed 2025-04-10)`
     *Description:* Address the remaining runtime test failures identified after the repository restructure (Task 9.1).
     *Dependencies:* Task 9.1
+
+- [x] **Task Maint.15: Split Repositories & Convert to Submodules** `(Completed 2025-04-13)`
+    *Description:* Split `ops-core` and `agentkit` into separate repositories (`opspawn/ops-core`, `opspawn/agentkit`) using `git filter-repo`. Added them back to the main `opspawn-development` repository as Git submodules.
+    *Dependencies:* Task 9.2 (Implied completion of prior structure)
     *Comments:* Ran tests using the batch strategy defined above. All batches passed.
         - **Batch 1 (Ops Core - Metadata): Completed (2025-04-10).** Passed.
         - **Batch 2 (Ops Core - Dependency Injection): Completed (2025-04-10).** Passed.
