@@ -401,13 +401,14 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 
         - [In Progress] **Task 7.1: Implement Full Live E2E Test Suite** `(Started 2025-04-12)`
           *Description:* Create tests (marked `@pytest.mark.e2e_live`) that manage the lifecycle of required services (API, Worker, RabbitMQ, DB) and verify full, unmocked agent execution workflows via API calls and DB state checks. This involves:
-            - Created `ops-core/tests/integration/test_live_e2e.py`. `(Done)`
-            - Added `pytest-docker` dependency to `tox.ini`. `(Done)`
-    - Implementing fixtures to manage Docker containers (DB, RabbitMQ) and application processes (API server, Dramatiq worker).
-    - Writing initial tests for task submission, status polling, and result verification using `httpx.AsyncClient` and direct DB checks.
-    - Marking tests with `@pytest.mark.e2e_live`.
+            - Created `ops-core/tests/integration/test_live_e2e.py`. `(Done 2025-04-12)`
+            - Added `pytest-docker` dependency to `tox.ini`. `(Done 2025-04-12)`
+            - Implemented fixtures in `ops-core/tests/conftest.py` to manage Docker containers (DB, RabbitMQ) and application processes (API server, Dramatiq worker). `(Done 2025-04-12)`
+            - Implemented initial tests (`test_submit_task_and_poll_completion`, `test_submit_task_and_expect_failure`, `test_concurrent_task_submissions`) covering success, failure, and concurrency scenarios using live fixtures. `(Done 2025-04-12)`
+            - Marked tests with `@pytest.mark.e2e_live`. `(Done 2025-04-12)`
+            - Adding more complex test cases (e.g., specific agent configs, tool use) deferred pending API/feature support. `(Deferred)`
   *Dependencies:* Phase 6 Completion
-  *Comments:* Requires careful environment setup and management.
+  *Comments:* Requires careful environment setup and management. Needs LLM API keys (e.g., `OPENAI_API_KEY`) in the environment. Initial implementation complete; further test cases depend on feature availability. Task 7.1 implementation is considered complete.
 
 - [ ] **Task 7.2: Execute & Debug Live E2E Tests**
   *Description:* Run the live E2E tests in a properly configured environment. Identify and fix bugs related to component interactions in a live setting.

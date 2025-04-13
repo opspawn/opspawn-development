@@ -3,11 +3,11 @@
 ## Current Status (Updated 2025-04-12 12:19 PM)
 - **Phase:** Phase 6 (E2E Test Enablement).
 - **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 9 completed. Tasks 5.1, 6.1, 6.2, 6.3, 6.4 completed. Maintenance tasks Maint.1-Maint.14 completed. Task 7.1 started. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Backlog Enhancements 6 & 7 added.
-- **Current Task:** Task 7.1 (Implement Full Live E2E Test Suite) - In Progress.
-- **Next Task:** Continue Task 7.1 (Implement Fixtures).
+- **Current Task:** Task 7.1 (Implement Full Live E2E Test Suite) - Implementation Complete.
+- **Next Task:** Task 7.2 (Execute & Debug Live E2E Tests).
 - **Blockers:** None currently. (Google live test remains marked xfail due to suspected SDK issue).
 
-## What Works (As of 2025-04-12 6:36 PM)
+## What Works (As of 2025-04-12 6:56 PM)
 - **Multi-Repo Structure (Local Subdirectories):** The multi-repository structure with `ops-core` and `agentkit` as subdirectories within `1-t` is now working. The `1-t/tox.ini` file correctly installs these as editable dependencies using absolute paths and runs tests from their respective `tests` directories. All tests (140 passed, 1 skipped) pass using this configuration.
 - **Component Repositories:** The `ops-core` and `agentkit` repositories (as subdirectories) contain the validated code structure.
 - **Management Repository (`1-t`):** The `tox.ini` file is correctly configured for the local subdirectory structure. The `src/` directory (containing build artifacts) has been removed.
@@ -93,11 +93,13 @@
 - **Test Batch Verification:** Updated batch definitions in `TASK.md`. Fixed `tox.ini` asyncio config. Google client unit tests were marked xfail but are now fixed. Ran all 14 batches successfully.
 - **Google Client Unit Tests (Task Maint.13 Completed):** Payload structure `TypeError` resolved. Specific error handling added. Unit tests pass without `xfail`.
 - **LLM Client Robustness (Task Maint.14 Completed):** All LLM clients (`OpenAIClient`, `AnthropicClient`, `GoogleClient`, `OpenRouterClient`) now include retry logic (using `tenacity`) for transient errors and support a configurable `timeout` parameter. Unit tests verify this functionality.
+- **Default LLM Configuration:** Default provider set to "google", default model set to "gemini-2.5-pro-exp-03-25".
+- **Live E2E Test Suite (Task 7.1 Implementation):** Fixtures for managing Docker services (DB, RabbitMQ) and application processes (API, Worker) implemented in `ops-core/tests/conftest.py`. Initial tests covering success, failure, and concurrency implemented in `ops-core/tests/integration/test_live_e2e.py`.
 
 ## What's Left to Build (Revised Plan - 2025-04-12)
 - **Phase 7:** Full Live E2E Testing
-    - [ ] Task 7.1: Implement Full Live E2E Test Suite.
-    - Task 7.2: Execute & Debug Live E2E Tests.
+    - [x] Task 7.1: Implement Full Live E2E Test Suite `(Implementation Done 2025-04-12)`
+    - [ ] Task 7.2: Execute & Debug Live E2E Tests.
 - **Phase 8:** Final Documentation Update
     - Task 8.1: Update & Finalize All Documentation (Revisit deferred 5.2-5.5).
 - **Backlog:**

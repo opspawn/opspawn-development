@@ -11,16 +11,20 @@
 - **Task 5.2 (Update User & Developer Documentation):** **In Progress (Paused)**. Further updates deferred to Phase 8.
 - **Task Maint.13 (Fix Google Client Tests):** **Completed**. (Payload fix and specific error handling improvements).
 - **Task Maint.14 (Add Retry/Timeout to LLM Clients):** **Completed**. Added `tenacity` dependency, implemented retry decorators and timeout parameters in all LLM clients, and updated unit tests.
-- **Task 7.1 (Implement Full Live E2E Test Suite):** **In Progress**. Added task definition, `pytest-docker` dependency, and initial test file. Fixture implementation pending.
+- **Task 7.1 (Implement Full Live E2E Test Suite):** **Implementation Complete**. Added task definition, `pytest-docker` dependency, service/process fixtures in `conftest.py`, and initial tests (`test_submit_task_and_poll_completion`, `test_submit_task_and_expect_failure`, `test_concurrent_task_submissions`) in `test_live_e2e.py`. Execution/debugging pending (Task 7.2).
+- **Default LLM Configuration Update:** Changed the default LLM provider to "google" and the default model to "gemini-2.5-pro-exp-03-25" in `ops-core` scheduler and `agentkit` Google client.
 - **Phase 5 Deferred:** Tasks 5.3-5.5 remain deferred to Phase 8.
-- **Next Task:** Continue Task 7.1 (Implement Fixtures).
+- **Next Task:** Task 7.2 (Execute & Debug Live E2E Tests).
 
 ## Recent Activities (Current Session - 2025-04-12)
+- **Updated Default LLM Configuration:** Changed default provider to "google" in `ops-core/scheduler/engine.py` and default model to "gemini-2.5-pro-exp-03-25" in `agentkit/llm_clients/google_client.py`.
+- **Completed Implementation for Task 7.1 (Implement Full Live E2E Test Suite):**
+    - Implemented initial tests in `ops-core/tests/integration/test_live_e2e.py` covering success, failure, and concurrency scenarios using the live fixtures.
+    - Implemented pytest fixtures in `ops-core/tests/conftest.py` using `pytest-docker` to manage Docker services (PostgreSQL, RabbitMQ) and `subprocess` to manage application processes (API server, Dramatiq worker). Fixtures include service readiness checks and Alembic migration execution.
 - **Started Task 7.1 (Implement Full Live E2E Test Suite):**
     - Added Task 7.1 definition to `TASK.md`.
     - Added `pytest-docker` dependency to `tox.ini`.
     - Created initial test file `ops-core/tests/integration/test_live_e2e.py`.
-    - Attempted to add Docker fixtures to `ops-core/tests/conftest.py` (Interrupted).
 - **Completed Task Maint.14 (Add Retry/Timeout to LLM Clients):**
     - Added `tenacity` dependency to `agentkit/pyproject.toml`.
     - Added optional `timeout` parameter to `BaseLlmClient.generate` interface.
