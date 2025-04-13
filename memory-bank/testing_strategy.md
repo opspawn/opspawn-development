@@ -57,6 +57,24 @@ Running the entire test suite via `tox -r` is essential for final verification b
     *   Update `activeContext.md` and `progress.md` with the status.
     *   If the debugging revealed new patterns, insights, or necessary changes to standard procedures, update this file (`testing_strategy.md`), `systemPatterns.md`, or `techContext.md` accordingly.
 
+### Recursive Isolation Debugging Strategy
+
+When encountering complex integration issues or persistent test failures where the root cause isn't immediately obvious from standard logs or initial debugging steps, a recursive isolation strategy can be employed. This systematic approach involves progressively narrowing down the scope of the problem:
+
+1.  **Add Verbose Logging:** Enhance the failing test or script with extremely detailed logging throughout its data flow and component interactions. Log inputs, outputs, intermediate states, and function entry/exit points. The goal is to pinpoint *where* the process breaks down or deviates from expected behavior.
+2.  **Analyze Logs & Identify Problem Area:** Carefully review the verbose logs to identify the specific component, function call, or interaction point where the failure occurs or the state becomes incorrect.
+3.  **Isolate the Problem Area:** If the logs don't reveal the exact cause or if the interaction is too complex to debug directly, create a new, minimal test script or function that *isolates* the identified problem area. This isolated test should:
+    *   Focus *only* on the suspected component(s) and interaction(s).
+    *   Use minimal, hardcoded inputs or simple mocks for dependencies outside the isolated scope.
+    *   Be easy to run and reproduce the specific failure observed in the broader context.
+4.  **Debug the Isolated Case:** Run and debug the isolated test case. Because the scope is smaller, identifying and fixing the bug within this context is often significantly easier. Use standard debugging techniques (breakpoints, further logging, code inspection) as needed.
+5.  **Backtrack & Apply Fix/Insights:** Once the issue is resolved in the isolated case, apply the necessary code fix or the insights gained back to the original, more complex test script or source code that initially failed.
+6.  **Verify Fix in Original Context:** Re-run the original failing test or script to confirm that the fix applied resolves the issue in the broader context.
+7.  **Repeat if Necessary:** If the original test still fails (perhaps due to another underlying issue revealed by the first fix), repeat the process: analyze the new failure point in the logs, isolate it further if needed, debug, backtrack, and verify. This creates a recursive loop of isolation, debugging, and integration until the original test passes reliably.
+8.  **Track the Trace:** Maintain a clear record (e.g., in `activeContext.md` or specific debugging notes) of the isolation steps taken. This "debugging trace" is crucial for understanding the path taken and allows for easier backtracking if a particular isolation path proves incorrect or needs revisiting.
+
+**Key Principle:** Only move to creating a more granular isolation script if debugging the current level (whether the original test or a previous isolation script) is not yielding progress or clarity. Start broad with logging, then narrow the focus recursively as needed.
+
 ## Debugging Log Location
 
 *   Store individual debugging logs in: `memory-bank/debugging/`

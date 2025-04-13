@@ -1,11 +1,11 @@
 # Progress: Opspawn Core Foundation (Phase 6 In Progress)
 
-## Current Status (Updated 2025-04-12 9:14 PM)
+## Current Status (Updated 2025-04-12 9:45 PM)
 - **Phase:** Phase 7 (Full Live E2E Testing).
-- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 6, 9 completed. Tasks 5.1 completed. Maintenance tasks Maint.1-Maint.14 completed. Task 7.1 implementation complete. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Backlog Enhancements 6 & 7 added.
-- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - In Progress (Paused for Context Reset). Continued debugging the Dramatiq worker/actor interaction using the `test_dramatiq_worker.py` isolation script. Resolved multiple setup and runtime errors related to Alembic, DB connections, worker startup, asyncio loops, planner calls, security manager signatures, and tool formatting. Shortened agent execution timeout.
-- **Next Task:** Task 7.2 (Execute & Debug Live E2E Tests) - Re-run the `test_dramatiq_worker.py` isolation script to verify the latest fixes allow the agent to proceed further in its execution loop.
-- **Blockers:** None currently. (Google live test remains marked xfail due to suspected SDK issue).
+- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 6, 9 completed. Tasks 5.1 completed. Maintenance tasks Maint.1-Maint.14 completed. Task 7.1 implementation complete. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Backlog Enhancements 6 & 7 added. Testing strategy documentation updated.
+- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **In Progress (Paused for Context Reset)**. Continued debugging the `test_dramatiq_worker.py` isolation script. Added extensive verbose logging. Confirmed worker starts, connects to RabbitMQ, discovers actor, but does not invoke the actor function when a message is sent. The issue appears to be in the worker's message consumption or dispatch mechanism.
+- **Next Task:** Task 7.2 (Execute & Debug Live E2E Tests) - Continue debugging the Dramatiq worker message consumption/dispatch issue.
+- **Blockers:** Worker not invoking actor function. (Google live test remains marked xfail due to suspected SDK issue).
 
 ## What Works (As of 2025-04-12 7:43 PM)
 - **Multi-Repo Structure (Local Subdirectories):** The multi-repository structure with `ops-core` and `agentkit` as subdirectories within `1-t` is now working. The `1-t/tox.ini` file correctly installs these as editable dependencies using absolute paths and runs tests from their respective `tests` directories. All tests (140 passed, 1 skipped) pass using this configuration.
@@ -95,7 +95,7 @@
 - **LLM Client Robustness (Task Maint.14 Completed):** All LLM clients (`OpenAIClient`, `AnthropicClient`, `GoogleClient`, `OpenRouterClient`) now include retry logic (using `tenacity`) for transient errors and support a configurable `timeout` parameter. Unit tests verify this functionality.
 - **Default LLM Configuration:** Default provider set to "google", default model set to "gemini-2.5-pro-exp-03-25".
 - **Live E2E Test Suite (Task 7.1 Implementation):** Fixtures for managing Docker services (DB, RabbitMQ) and application processes (API, Worker) implemented in `ops-core/tests/conftest.py`. Initial tests covering success, failure, and concurrency implemented in `ops-core/tests/integration/test_live_e2e.py`.
-- **Live E2E Test Debugging (Task 7.2):** Addressed API response validation (ID/type), test code alignment, DB commit in store, Docker conflicts (name/port), worker env vars, worker import path, agent execution timeout, added extensive logging. Created and debugged worker isolation script (`test_dramatiq_worker.py`), resolving issues with Alembic, DB connection, worker startup, asyncio, planner calls, security manager, and tool formatting. Shortened agent timeout.
+- **Live E2E Test Debugging (Task 7.2):** Addressed API response validation (ID/type), test code alignment, DB commit in store, Docker conflicts (name/port), worker env vars, worker import path, agent execution timeout, added extensive logging. Created and debugged worker isolation script (`test_dramatiq_worker.py`), resolving issues with Alembic, DB connection, worker startup, asyncio, planner calls, security manager, and tool formatting. Increased agent timeout. Added verbose logging. Confirmed worker starts/connects/discovers but doesn't invoke actor.
 
 ## What's Left to Build (Revised Plan - 2025-04-12)
 - **Phase 7:** Full Live E2E Testing

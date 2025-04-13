@@ -64,8 +64,8 @@ TEST_TASK_ID = f"task_{uuid.uuid4()}"
 TEST_GOAL = "Write a short confirmation message."
 TEST_INPUT_DATA = {"prompt": TEST_GOAL} # Match input structure if needed
 
-WORKER_STARTUP_WAIT = 5 # seconds to wait for worker process to initialize
-TASK_COMPLETION_WAIT = 70 # seconds (includes agent timeout + buffer)
+WORKER_STARTUP_WAIT = 2 # seconds to wait for worker process to initialize
+TASK_COMPLETION_WAIT = 15 # seconds (longer than agent timeout + buffer)
 
 # Removed importlib.util as we revert to command.upgrade
 
@@ -117,8 +117,12 @@ async def main():
         # Ensure the broker is the correct one (RabbitMQ)
         if not isinstance(broker.broker, broker.RabbitmqBroker):
              logger.warning(f"Broker is not RabbitmqBroker ({type(broker.broker)}), sending might fail in live env.")
-        execute_agent_task_actor.send(task_id=TEST_TASK_ID, goal=TEST_GOAL, input_data=TEST_INPUT_DATA)
+        # <<< Log message details before sending >>>
+        message_data = {"task_id": TEST_TASK_ID, "goal": TEST_GOAL, "input_data": TEST_INPUT_DATA}
+        logger.info(f"VERBOSE_LOG: Sending message data: {message_data}")
+        execute_agent_task_actor.send(**message_data)
         logger.info("Message sent.")
+        logger.info(f"VERBOSE_LOG: Message sent for task {TEST_TASK_ID} via broker {type(broker.broker).__name__}")
 
         # 4. Start worker in subprocess
         worker_env = os.environ.copy() # Pass environment
@@ -142,9 +146,10 @@ async def main():
         cmd = [
             sys.executable, # Use the same python interpreter
             "-m", "dramatiq",
-            "ops_core.tasks.broker:broker",
-            "ops_core.tasks.worker"
-            # Removed --verbose and --logs-config /dev/null as it caused errors
+            "ops_core.tasks.worker", # Use module path again
+            "-p", "1", # Use 1 worker process
+            "-t", "1", # Use 1 worker thread
+            "-v" # Keep verbose flag
         ]
         logger.info(f"Starting worker subprocess with command: {' '.join(cmd)}")
         # Capture stdout/stderr
@@ -187,7 +192,7 @@ async def main():
             except Exception as e:
                  logger.exception(f"Error polling task status: {e}")
 
-            await asyncio.sleep(5) # Poll interval
+            await asyncio.sleep(1) # Poll interval (reduced)
         else:
             logger.warning(f"Task {TEST_TASK_ID} did not complete within {TASK_COMPLETION_WAIT}s timeout. Final polled status: {final_status}")
 

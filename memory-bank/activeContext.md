@@ -1,45 +1,42 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-12 9:14 PM)
-- **Task 7.2 (Execute & Debug Live E2E Tests):** **In Progress (Paused for Context Reset)**. Continued debugging using the isolation script (`test_dramatiq_worker.py`). Resolved issues with:
-    - Alembic migration execution (sync/async conflict, path errors, context errors).
-    - Database connection (`.env` loading order, credentials).
-    - Worker subprocess startup (invalid CLI args, `PYTHONPATH`, `__init__.py`).
-    - `asyncio` loop conflict (`Agent.run`).
-    - Planner call signature (`ReActPlanner.plan`).
-    - Security manager signature (`DefaultSecurityManager.check_permissions`).
-    - Planner tool formatting (`AttributeError: 'dict' object has no attribute 'name'`).
-- **Agent Timeout:** Shortened agent execution timeout to 5s in `ops-core/scheduler/engine.py`.
-- **Next Step:** Re-run `test_dramatiq_worker.py` to verify the latest fix (planner tool formatting).
+## Current Focus (Updated 2025-04-12 9:43 PM)
+- **Task 7.2 (Execute & Debug Live E2E Tests):** **In Progress (Paused for Context Reset)**. Continued debugging the `test_dramatiq_worker.py` isolation script.
+    - Verified previous fixes (Alembic, DB conn, worker startup, asyncio loop, planner/security signatures, tool formatting).
+    - Added extensive verbose logging to `test_dramatiq_worker.py`, `ops_core/tasks/worker.py`, `ops_core/scheduler/engine.py`, `ops_core/tasks/broker.py`.
+    - Updated `memory-bank/testing_strategy.md` with recursive isolation strategy.
+    - Confirmed via logs that the worker process starts, uses RabbitMQ, discovers the `execute_agent_task_actor`, and adds consumers for the 'default' queue.
+    - **Current Issue:** Despite the seemingly correct setup, the worker process is **not** invoking the actor function (`_execute_agent_task_actor_impl`) when the message is sent to the queue. The `!!!!!! VERBOSE_LOG: ACTOR ENTRY POINT REACHED... !!!!!!` log message is never printed by the worker.
+- **Agent Timeout:** Increased agent execution timeout to 20s in `ops-core/scheduler/engine.py`.
+- **Next Step:** Continue debugging the Dramatiq worker message consumption/dispatch mechanism. Potential next steps include checking RabbitMQ management UI or simplifying the actor further (e.g., making it synchronous).
 
-## Recent Activities (Current Session - 2025-04-12 ~8:30 PM - 9:14 PM)
+## Recent Activities (Current Session - 2025-04-12 ~9:20 PM - 9:43 PM)
 - **Continued Task 7.2 (Execute & Debug Live E2E Tests via Isolation Script):**
-    - Refreshed context (TASK.md, activeContext.md, progress.md, PLANNING.md).
-    - Created and saved plan (`PLANNING_step_7.2.1.md`).
+    - Refreshed context (TASK.md, activeContext.md, progress.md).
+    - Confirmed plan to re-run isolation script.
     - Switched to Code mode.
-    - Ran `test_dramatiq_worker.py`: Failed (script not found due to wrong CWD).
-    - Ran script with correct CWD: Failed (Alembic migration hung - sync/async conflict).
-    - Modified script to run migrations synchronously via `do_run_migrations`: Failed (`ModuleNotFoundError: ops_core.alembic`).
-    - Added `ops-core` to `sys.path` in script: Failed (`ModuleNotFoundError: ops_core.alembic`).
-    - Created `ops-core/__init__.py`: Failed (`ModuleNotFoundError: ops_core.alembic`).
-    - Reversed `sys.path` order in script: Failed (`ModuleNotFoundError: ops_core.alembic`).
-    - Modified script to load `env.py` dynamically via `importlib`: Failed (`AttributeError: module 'alembic.context' has no attribute 'config'`).
-    - Commented out `context.config` usage in `env.py`: Failed (`NameError: Can't invoke function 'is_offline_mode'`).
-    - Commented out `if context.is_offline_mode()` block in `env.py`: Failed (`sqlalchemy.exc.MissingGreenlet` - sync engine with async driver).
-    - Added `psycopg2-binary` dependency to `ops-core/pyproject.toml`.
-    - Modified script to use sync DB URL (`+psycopg2`) for sync engine.
-    - Recreated `tox` environment (interrupted, then ran full tests revealing unrelated `docker-compose.yml` path error in E2E fixtures).
-    - Re-ran `tox -r -e py312` successfully to install `psycopg2-binary`.
-    - Ran script: Failed (`asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "user"` - incorrect user/pass used despite `.env`).
-    - Identified `.env` loading order issue (`sql_store.py` loaded before `load_dotenv` in script).
-    - Moved `load_dotenv()` to top of script: Failed (Worker process crashed - `AttributeError: module 'ops_core.tasks.broker' has no attribute 'rabbitmq_broker'`).
-    - Corrected logging statement in `ops_core/tasks/worker.py` to use `broker`.
-    - Ran script: Failed (`RuntimeError: asyncio.run() cannot be called from a running event loop` in `Agent.run`).
-    - Modified `Agent.run` to be `async` and `await self.run_async()`.
-    - Ran script: Failed (`AttributeError: 'dict' object has no attribute 'name'` in `ReActPlanner`).
-    - Modified `ReActPlanner.plan` to use dictionary key access (`t['name']`) for tools.
-    - Shortened agent execution timeout to 5s in `ops-core/scheduler/engine.py`.
-    - **Context reset requested.**
+    - Ran `test_dramatiq_worker.py`: Verified previous fix for `ReActPlanner` tool formatting. Task remained PENDING (hit 5s agent timeout).
+    - Reduced polling waits in `test_dramatiq_worker.py`.
+    - Increased agent execution timeout to 20s in `ops-core/scheduler/engine.py`.
+    - Ran script: Task still PENDING. Worker logs showed initialization but no actor invocation.
+    - Simplified actor registration logic in `ops-core/scheduler/engine.py`.
+    - Ran script: Task still PENDING. Worker logs showed initialization but no actor invocation.
+    - Added critical log message at actor entry point in `ops-core/scheduler/engine.py`. Fixed resulting syntax errors.
+    - Ran script: Task still PENDING. Critical log message *not* present in worker output.
+    - Simplified worker command in `test_dramatiq_worker.py` (removed explicit broker).
+    - Ran script: Task still PENDING. Critical log message *not* present.
+    - Reverted worker command simplification in `test_dramatiq_worker.py`.
+    - Added diagnostic print to `ops-core/tasks/broker.py` to confirm broker type in worker.
+    - Ran script: Task still PENDING. Confirmed worker uses `RabbitmqBroker`. Critical log message *not* present.
+    - Forced worker to single process/thread (`-p 1 -t 1`) in `test_dramatiq_worker.py`.
+    - Ran script: Task still PENDING. Critical log message *not* present.
+    - Temporarily removed `AsyncIO` middleware from `ops-core/tasks/broker.py`.
+    - Ran script: Task still PENDING. Critical log message *not* present.
+    - Restored `AsyncIO` middleware and removed `Results` middleware from `ops-core/tasks/broker.py`.
+    - Ran script: Task still PENDING. Critical log message *not* present.
+    - Added verbose logging throughout `test_dramatiq_worker.py`, `ops_core/tasks/worker.py`, `ops_core/scheduler/engine.py`. Fixed resulting indentation errors.
+    - Updated `memory-bank/testing_strategy.md` with recursive isolation strategy.
+    - **Prepared for context reset.**
 
 ## Recent Activities (Previous Session - 2025-04-12 Afternoon)
 - **Updated Default LLM Configuration:** Changed default provider to "google" in `ops-core/src/ops_core/scheduler/engine.py` and default model to "gemini-2.5-pro-exp-03-25" in `agentkit/src/agentkit/llm_clients/google_client.py`.
