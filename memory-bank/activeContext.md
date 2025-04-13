@@ -1,62 +1,45 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-12 8:26 PM)
-- **Task 7.2 (Execute & Debug Live E2E Tests):** **In Progress (Paused)**. Debugged multiple issues including API response validation, Docker conflicts (name/port), DB transaction commits, worker environment variables, worker import paths, and worker/agent timeouts. Created and debugged an isolation script (`test_dramatiq_worker.py`) to test worker/actor functionality independently, fixing Alembic execution issues within the script. The main E2E tests were still stalling before the isolation script was fully debugged and run successfully.
-- **Task Maint.11 - Maint.14:** Completed.
-- **Task 6.2 - 6.4:** Completed.
-- **Task 9.2:** Completed.
-- **Task 7.1:** Implementation Complete.
-- **Task 5.2:** Paused.
-- **Phase 5 Deferred:** Tasks 5.3-5.5 remain deferred to Phase 8.
-- **Next Task:** Task 7.2 (Execute & Debug Live E2E Tests) - Run the corrected `test_dramatiq_worker.py` isolation script to verify worker functionality. If successful, re-run the main E2E tests (`tox -e py312 -- -m live ops-core/tests/integration/test_live_e2e.py`).
+## Current Focus (Updated 2025-04-12 9:14 PM)
+- **Task 7.2 (Execute & Debug Live E2E Tests):** **In Progress (Paused for Context Reset)**. Continued debugging using the isolation script (`test_dramatiq_worker.py`). Resolved issues with:
+    - Alembic migration execution (sync/async conflict, path errors, context errors).
+    - Database connection (`.env` loading order, credentials).
+    - Worker subprocess startup (invalid CLI args, `PYTHONPATH`, `__init__.py`).
+    - `asyncio` loop conflict (`Agent.run`).
+    - Planner call signature (`ReActPlanner.plan`).
+    - Security manager signature (`DefaultSecurityManager.check_permissions`).
+    - Planner tool formatting (`AttributeError: 'dict' object has no attribute 'name'`).
+- **Agent Timeout:** Shortened agent execution timeout to 5s in `ops-core/scheduler/engine.py`.
+- **Next Step:** Re-run `test_dramatiq_worker.py` to verify the latest fix (planner tool formatting).
 
-## Recent Activities (Current Session - 2025-04-12 Evening ~7:45 PM - 8:26 PM)
-- **Continued Task 7.2 (Execute & Debug Live E2E Tests):**
-    - Switched from Architect to Code mode to allow command execution.
-    - Ran tests: Failed with `ResponseValidationError` (missing `id` field).
-    - Fixed by adding `alias='task_id'` to `TaskResponse.id`.
-    - Ran tests: Failed with `ResponseValidationError` (`uuid_parsing` error).
-    - Fixed by changing `TaskResponse.id` to `task_id: str` and updating test code (`test_live_e2e.py`) to use string ID.
-    - Ran tests: Failed with `AssertionError` (test code still looking for `id` in response) and `UnboundLocalError` (test code using wrong variable).
-    - Fixed test code (`test_live_e2e.py`) to use `task_id` from response and correct variable names.
-    - Ran tests: Failed with `404 Not Found` during polling.
-    - Added explicit `session.commit()` to `SqlMetadataStore.add_task`.
-    - Ran tests: Failed with Docker container name conflict (`opspawn_postgres`).
-    - Fixed by removing `container_name` from `docker-compose.yml` and running `docker compose down -v`.
-    - Ran tests: Failed with Docker port allocation error (`15672`).
-    - Fixed by commenting out port `15672` in `docker-compose.yml` and running `docker compose down -v`.
-    - Ran tests: Failed with Docker port allocation error (`5672`).
-    - Identified running `docker-proxy` processes using `ss`. Stopped conflicting `postgres:15` and `rabbitmq:3-management` containers using `docker ps` and `docker stop`.
-    - Ran tests: Stalled.
-    - Added agent execution timeout (`asyncio.wait_for`) to Dramatiq actor (`scheduler/engine.py`).
-    - Ran tests: Stalled.
-    - Added extensive logging to worker actor (`scheduler/engine.py`).
-    - Ran tests: Stalled.
-    - Added print statements to session fixtures (`conftest.py`) to trace setup.
-    - Ran tests: Stalled, logs indicated hang during `live_dramatiq_worker` fixture setup.
-    - Added check for premature worker exit to `live_dramatiq_worker` fixture.
-    - Ran tests: Stalled.
-    - Corrected import path (`src.ops_core` -> `ops_core`) in `tasks/worker.py`.
-    - Ran tests: Stalled.
-    - **Pivoted to Isolation Script:** Created `test_dramatiq_worker.py` to test worker/actor independently.
-    - Ran script: Failed (`ModuleNotFoundError: sqlalchemy`).
-    - Ran script via tox python: Failed (`ImportError: cannot import name 'async_session_factory'`).
-    - Corrected session factory name (`AsyncSessionFactory`) in script.
-    - Ran script: Failed (`ConnectionRefusedError` for DB).
-    - Started Docker services manually (`docker compose up -d`).
-    - Ran script: Failed (`UndefinedTableError: relation "task" does not exist`).
-    - Added Alembic migration step (subprocess) to script.
-    - Ran script: Failed (Alembic path error - looking in `1-t/alembic`).
-    - Corrected `script_location` in `ops-core/alembic.ini`.
-    - Ran script: Failed (Alembic path error - still looking in `1-t/alembic`).
-    - Corrected Alembic subprocess call in script to run from `ops-core` directory.
-    - Ran script: Failed (`dotenv` error - looking for `.env` in `ops-core`).
-    - Removed `dotenv run` wrapper from Alembic subprocess call in script.
-    - Ran script: Failed (`ModuleNotFoundError: No module named 'ops_core'` from Alembic).
-    - Corrected Alembic subprocess call to run from `1-t` root with correct config path.
-    - Ran script: Failed (Alembic path error - looking in `1-t/alembic` again).
-    - Refactored script to run Alembic programmatically using synchronous engine.
-    - **Session ended before running the refactored isolation script.**
+## Recent Activities (Current Session - 2025-04-12 ~8:30 PM - 9:14 PM)
+- **Continued Task 7.2 (Execute & Debug Live E2E Tests via Isolation Script):**
+    - Refreshed context (TASK.md, activeContext.md, progress.md, PLANNING.md).
+    - Created and saved plan (`PLANNING_step_7.2.1.md`).
+    - Switched to Code mode.
+    - Ran `test_dramatiq_worker.py`: Failed (script not found due to wrong CWD).
+    - Ran script with correct CWD: Failed (Alembic migration hung - sync/async conflict).
+    - Modified script to run migrations synchronously via `do_run_migrations`: Failed (`ModuleNotFoundError: ops_core.alembic`).
+    - Added `ops-core` to `sys.path` in script: Failed (`ModuleNotFoundError: ops_core.alembic`).
+    - Created `ops-core/__init__.py`: Failed (`ModuleNotFoundError: ops_core.alembic`).
+    - Reversed `sys.path` order in script: Failed (`ModuleNotFoundError: ops_core.alembic`).
+    - Modified script to load `env.py` dynamically via `importlib`: Failed (`AttributeError: module 'alembic.context' has no attribute 'config'`).
+    - Commented out `context.config` usage in `env.py`: Failed (`NameError: Can't invoke function 'is_offline_mode'`).
+    - Commented out `if context.is_offline_mode()` block in `env.py`: Failed (`sqlalchemy.exc.MissingGreenlet` - sync engine with async driver).
+    - Added `psycopg2-binary` dependency to `ops-core/pyproject.toml`.
+    - Modified script to use sync DB URL (`+psycopg2`) for sync engine.
+    - Recreated `tox` environment (interrupted, then ran full tests revealing unrelated `docker-compose.yml` path error in E2E fixtures).
+    - Re-ran `tox -r -e py312` successfully to install `psycopg2-binary`.
+    - Ran script: Failed (`asyncpg.exceptions.InvalidPasswordError: password authentication failed for user "user"` - incorrect user/pass used despite `.env`).
+    - Identified `.env` loading order issue (`sql_store.py` loaded before `load_dotenv` in script).
+    - Moved `load_dotenv()` to top of script: Failed (Worker process crashed - `AttributeError: module 'ops_core.tasks.broker' has no attribute 'rabbitmq_broker'`).
+    - Corrected logging statement in `ops_core/tasks/worker.py` to use `broker`.
+    - Ran script: Failed (`RuntimeError: asyncio.run() cannot be called from a running event loop` in `Agent.run`).
+    - Modified `Agent.run` to be `async` and `await self.run_async()`.
+    - Ran script: Failed (`AttributeError: 'dict' object has no attribute 'name'` in `ReActPlanner`).
+    - Modified `ReActPlanner.plan` to use dictionary key access (`t['name']`) for tools.
+    - Shortened agent execution timeout to 5s in `ops-core/scheduler/engine.py`.
+    - **Context reset requested.**
 
 ## Recent Activities (Previous Session - 2025-04-12 Afternoon)
 - **Updated Default LLM Configuration:** Changed default provider to "google" in `ops-core/src/ops_core/scheduler/engine.py` and default model to "gemini-2.5-pro-exp-03-25" in `agentkit/src/agentkit/llm_clients/google_client.py`.

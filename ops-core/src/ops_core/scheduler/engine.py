@@ -7,6 +7,8 @@ and testing. It interacts with a metadata store to manage task states.
 
 import asyncio
 import logging
+import traceback # Import traceback for detailed error logging
+import traceback # Import traceback for detailed error logging
 import os
 import uuid
 from typing import Any, Dict, Optional
@@ -52,9 +54,11 @@ class DefaultSecurityManager(BaseSecurityManager):
         logger.debug(f"Security check for action '{action_type}': Allowing.")
         return True
 
-    # Implement the missing abstract method
-    def check_permissions(self, required_permissions: list[str]) -> bool:
-        logger.debug(f"Permission check for '{required_permissions}': Allowing by default.")
+    # Implement the method matching the BaseSecurityManager interface
+    async def check_permissions(self, action: str, context: Dict[str, Any]) -> bool:
+        """Check permissions based on action and context."""
+        # For now, maintain permissive behavior but log the received action/context
+        logger.debug(f"Security Check: Action='{action}', Context Keys='{list(context.keys())}'. Allowing by default.")
         return True
 
 # --- LLM/Planner Instantiation Logic ---
@@ -191,6 +195,7 @@ async def _run_agent_task_logic(
     metadata_store: BaseMetadataStore, # Accept store instance
     mcp_client: OpsMcpClient # Accept MCP client instance
 ):
+    logger.info(f"[_run_agent_task_logic] Actor logic started for task {task_id}.") # Add start log
     """Helper function containing the core logic for running an agent task."""
     logger.info(f"Starting agent task logic for task_id: {task_id}, goal: {goal}")
     # metadata_store and mcp_client are now passed as arguments
@@ -282,14 +287,19 @@ async def _run_agent_task_logic(
             "memory_history": memory_content, # Include memory
         }
         # Determine status and error message based on agent_result
-        # This assumes agent_result is a dict with 'status' and potentially 'error' keys
-        # Adjust based on actual Agent.run return type if different
-        if isinstance(agent_result, dict) and agent_result.get("status") == "Failed":
+        error_message = None
+        # Check if the result indicates a failure (e.g., error string from planning)
+        if isinstance(agent_result, str) and ("failed" in agent_result.lower() or "error" in agent_result.lower()):
+             final_status = TaskStatus.FAILED
+             error_message = agent_result # Use the returned string as the error message
+        # Also check for dictionary-based failure status if agent returns that
+        elif isinstance(agent_result, dict) and agent_result.get("status") == "Failed":
             final_status = TaskStatus.FAILED
             error_message = agent_result.get("error", "Agent failed without specific error message.")
         else:
+            # Otherwise, assume completion
             final_status = TaskStatus.COMPLETED
-            error_message = None
+            error_message = None # Ensure error_message is None on success
 
         # Update output first (method doesn't take error_message)
         logger.info(f"Task {task_id}: Updating task output in store...")
@@ -301,14 +311,15 @@ async def _run_agent_task_logic(
         logger.info(f"Task {task_id}: Task output updated.")
         # Explicitly update status after output
         logger.info(f"Task {task_id}: Updating final status to {final_status}...")
-        await metadata_store.update_task_status(task_id, final_status)
+        await metadata_store.update_task_status(task_id, final_status, error_message=error_message) # Pass error message if any
         logger.info(f"Updated metadata for task {task_id} with status {final_status}")
+        logger.info(f"[_run_agent_task_logic] Agent task {task_id} completed successfully.") # Add success log
 
     except TaskNotFoundError:
         logger.error(f"Task {task_id} not found during agent execution.")
         # Cannot update task if not found
     except Exception as e:
-        logger.exception(f"Agent task {task_id} failed with unexpected error: {e}")
+        logger.error(f"[_run_agent_task_logic] Agent task {task_id} failed with unexpected error: {e}\n{traceback.format_exc()}", exc_info=False) # Log full traceback
         if metadata_store: # Check if store is available before trying to update
             try:
                 # Attempt to mark the task as failed in the store
@@ -333,7 +344,7 @@ async def _run_agent_task_logic(
 
 # Define the core implementation function first
 # Define a timeout for agent execution
-AGENT_EXECUTION_TIMEOUT = 60.0 # seconds
+AGENT_EXECUTION_TIMEOUT = 5.0 # seconds (Shortened as requested)
 
 async def _execute_agent_task_actor_impl(task_id: str, goal: str, input_data: Dict[str, Any]):
     """

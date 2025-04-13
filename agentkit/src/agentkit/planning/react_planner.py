@@ -72,7 +72,17 @@ class ReActPlanner(BasePlanner):
         history = history or []
 
         # Format tool descriptions
-        tool_descs = "\n".join([f"- {t.name}: {t.description} (Input Schema: {t.input_schema})" for t in available_tools])
+        # Log the received available_tools for debugging
+        import logging # Ensure logging is imported if not already
+        logger = logging.getLogger(__name__) # Ensure logger is available
+        logger.debug(f"ReActPlanner received available_tools: {available_tools}")
+        try:
+            # Access dictionary keys instead of attributes since available_tools is a list of dicts
+            tool_descs = "\n".join([f"- {t['name']}: {t['description']} (Input Schema: {t['input_schema']})" for t in available_tools])
+        except Exception as e:
+            logger.error(f"Error formatting tool descriptions. available_tools: {available_tools}", exc_info=True)
+            # Return an error plan instead of raising
+            return Plan(steps=[PlanStep(action_type="error", details={"message": f"Internal error formatting tools: {e}"})])
 
         # Format history
         history_str = "\n".join([f"{step_type}: {step_content}" for item in history for step_type, step_content in item.items()])
@@ -80,9 +90,10 @@ class ReActPlanner(BasePlanner):
         # Construct the prompt
         prompt = REACT_PROMPT_TEMPLATE.format(
             goal=goal,
-            tool_descriptions=tool_descs,
+            tool_descriptions=tool_descs, # Use the formatted descriptions
             history=history_str
         )
+        # logger.debug(f"ReActPlanner sending prompt to LLM:\n{prompt}") # Temporarily disable long prompt logging
 
         # Generate the next thought/action using the LLM
         llm_response: LlmResponse = await self.llm_client.generate(

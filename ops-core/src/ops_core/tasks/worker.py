@@ -24,6 +24,6 @@ from . import broker # noqa: F401 - Imported for side effects (broker registrati
 from ops_core.scheduler import engine # noqa: F401 - Imports execute_agent_task_actor (Removed src. prefix)
 
 logger.info("Dramatiq worker initialized. Actors discovered.")
-logger.info(f"Broker configured: {broker.rabbitmq_broker}")
+logger.info(f"Broker configured: {broker}") # Use the imported broker instance directly
 
 # The Dramatiq CLI will handle the rest (connecting, processing tasks)

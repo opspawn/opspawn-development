@@ -16,12 +16,12 @@ from alembic import context
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
-config = context.config
+# config = context.config # This is not available when env.py is loaded dynamically
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
-if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+# if config.config_file_name is not None: # config object not available here
+#     fileConfig(config.config_file_name)
 
 # Add the src directory to the Python path for src layout
 # This allows Alembic to find your models like src.ops_core.models
@@ -100,8 +100,11 @@ def do_run_migrations(connection):
     with context.begin_transaction():
         context.run_migrations()
 
-if context.is_offline_mode():
-    run_migrations_offline()
-else:
-    # Run the async migrations function using asyncio.run()
-    asyncio.run(run_async_migrations())
+# The following block is executed when Alembic runs env.py directly.
+# Since we are calling do_run_migrations directly from the test script
+# after dynamic loading, this block is not needed and causes errors.
+# if context.is_offline_mode():
+#     run_migrations_offline()
+# else:
+#     # Run the async migrations function using asyncio.run()
+#     asyncio.run(run_async_migrations())

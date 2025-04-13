@@ -114,6 +114,7 @@ class Agent:
         if isinstance(self.tool_manager, ToolRegistry):
              # Reason: Safely access list_tools only if available on the concrete type.
              tool_specs = [spec.model_dump() for spec in self.tool_manager.list_tools()]
+             logger.debug(f"Generated tool_specs in _get_context: {tool_specs}") # Log the generated specs
 
         # Retrieve short-term context asynchronously from memory
         messages = await self.memory.get_context()
@@ -126,10 +127,14 @@ class Agent:
 
         return context
 
-    def run(self, goal: str) -> Any:
-        """Synchronous wrapper for the main async execution loop."""
-        # Ensure execution happens in an async context
-        return asyncio.run(self.run_async(goal))
+    async def run(self, goal: str) -> Any:
+        """
+        Asynchronous entry point for the main execution loop.
+        This method should be awaited when called from an async context.
+        """
+        # Directly await the async method since we expect Agent.run to be called
+        # from an async context (like the Dramatiq actor)
+        return await self.run_async(goal)
 
     async def run_async(self, goal: str) -> Any:
         """
@@ -169,7 +174,9 @@ class Agent:
 
         # 3. Generate plan
         try:
-            plan_obj: Plan = await self.planner.plan(goal=goal, context=context) # Pass context with LTM
+            # Extract available_tools for planners that might need it directly
+            available_tools = context.get("available_tools", [])
+            plan_obj: Plan = await self.planner.plan(goal=goal, context=context, available_tools=available_tools) # Pass context and tools
             logger.info(f"Plan generated with {len(plan_obj.steps)} steps.")
         except Exception as e:
             # Handle planner errors

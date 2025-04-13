@@ -1,17 +1,26 @@
-import asyncio
 import os
+import sys
+from pathlib import Path
+from dotenv import load_dotenv
+
+# --- Load .env file FIRST ---
+# Load .env file from the root directory before any other imports
+# that might trigger config loading (like sql_store)
+dotenv_path = Path(__file__).parent / '.env'
+load_dotenv(dotenv_path=dotenv_path)
+print(f"INFO: Early .env loading from: {dotenv_path}") # Add print for confirmation
+
+# --- Now other imports ---
+import asyncio
 import subprocess
 # Imports for Alembic programmatic execution added
 from alembic.config import Config
 from alembic import command, context as alembic_context # Import context
 from sqlalchemy import create_engine # Import synchronous engine
-from ops_core.models.base import metadata as target_metadata # Import metadata for sync run
-import sys
+# from ops_core.models.base import metadata as target_metadata # No longer needed here, loaded dynamically
 import time
 import uuid
 import logging
-from pathlib import Path
-from dotenv import load_dotenv
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -19,8 +28,12 @@ logger = logging.getLogger("test_dramatiq_worker")
 
 # Ensure ops_core and agentkit are importable (adjust if needed based on execution context)
 # This assumes running from the root '1-t' directory
+# Add both ops-core/src and ops-core to sys.path
+# src is needed for models, config etc.
+# src paths are needed for models, config etc.
 sys.path.insert(0, str(Path(__file__).parent / "ops-core" / "src"))
 sys.path.insert(0, str(Path(__file__).parent / "agentkit" / "src"))
+# We will load alembic.env directly later, so no need to add ops-core to path here.
 
 # --- Imports (after path setup) ---
 try:
@@ -34,10 +47,8 @@ except ImportError as e:
     sys.exit(1)
 
 # --- Configuration ---
-# Load .env file from the root directory
-dotenv_path = Path(__file__).parent / '.env'
-load_dotenv(dotenv_path=dotenv_path)
-logger.info(f"Loaded .env file from: {dotenv_path}")
+# .env is already loaded at the top
+logger.info(f".env file was loaded early from: {dotenv_path}")
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 RABBITMQ_URL = os.getenv("RABBITMQ_URL") # Dramatiq worker reads this internally
@@ -56,27 +67,27 @@ TEST_INPUT_DATA = {"prompt": TEST_GOAL} # Match input structure if needed
 WORKER_STARTUP_WAIT = 5 # seconds to wait for worker process to initialize
 TASK_COMPLETION_WAIT = 70 # seconds (includes agent timeout + buffer)
 
+# Removed importlib.util as we revert to command.upgrade
+
 def run_sync_migrations():
     """Runs Alembic migrations using a synchronous connection."""
     logger.info("Running Alembic migrations synchronously...")
     alembic_cfg = Config(str(Path(__file__).parent / "ops-core" / "alembic.ini"))
     alembic_cfg.set_main_option("script_location", str(Path(__file__).parent / "ops-core" / "alembic"))
-    alembic_cfg.set_main_option("sqlalchemy.url", DATABASE_URL) # Use URL from .env
- 
-    engine = None
+    # Note: command.upgrade will use the URL from alembic.ini or env.py,
+    # which should resolve to the correct DATABASE_URL from .env
+    # alembic_cfg.set_main_option("sqlalchemy.url", DATABASE_URL) # Not needed when calling command.upgrade
+
     try:
-        engine = create_engine(DATABASE_URL)
-        # Run upgrade command directly, no need for context configuration here
-        # env.py handles context configuration when command.upgrade is called
+        # Let Alembic handle the connection and context via command.upgrade
+        # It should use the synchronous psycopg2 driver if available and configured correctly in env.py logic (which it isn't explicitly, but command might handle it)
+        # or potentially fail if it tries to use asyncpg synchronously.
         command.upgrade(alembic_cfg, "head")
-        logger.info("Alembic migrations completed successfully (synchronous).")
+        logger.info("Alembic migrations completed successfully via command.upgrade.")
     except Exception as alembic_err:
-        logger.error(f"Alembic migration failed (synchronous): {alembic_err}", exc_info=True)
+        logger.error(f"Alembic migration failed via command.upgrade: {alembic_err}", exc_info=True)
         raise RuntimeError("Alembic migration failed.") from alembic_err
-    finally:
-        if engine:
-            engine.dispose()
-            logger.info("Synchronous engine disposed.")
+    # No engine/connection to dispose here as command.upgrade handles it internally
  
 # Removed duplicate run_sync_migrations function definition
 async def main():
@@ -111,13 +122,29 @@ async def main():
 
         # 4. Start worker in subprocess
         worker_env = os.environ.copy() # Pass environment
+        # Explicitly set PYTHONPATH for the worker subprocess
+        src_ops_core = str(Path(__file__).parent / "ops-core" / "src")
+        src_agentkit = str(Path(__file__).parent / "agentkit" / "src")
+        existing_pythonpath = worker_env.get("PYTHONPATH", "")
+        worker_env["PYTHONPATH"] = os.pathsep.join(filter(None, [src_ops_core, src_agentkit, existing_pythonpath]))
+        # Explicitly pass LLM config env vars (and API keys if necessary)
+        # Clients should pick up API keys from the main env if set, but let's be explicit for provider/model
+        worker_env["AGENTKIT_LLM_PROVIDER"] = os.getenv("AGENTKIT_LLM_PROVIDER", "google") # Use main env or default
+        worker_env["AGENTKIT_LLM_MODEL"] = os.getenv("AGENTKIT_LLM_MODEL", "gemini-2.5-pro-exp-03-25") # Use main env or default
+        # Pass API keys if they exist in the main environment
+        for key in ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY", "OPENROUTER_API_KEY"]:
+             if key in os.environ:
+                  worker_env[key] = os.environ[key]
+        logger.info(f"Setting PYTHONPATH for worker subprocess: {worker_env.get('PYTHONPATH')}")
+        logger.info(f"Setting AGENTKIT_LLM_PROVIDER for worker: {worker_env.get('AGENTKIT_LLM_PROVIDER')}")
+        logger.info(f"Setting AGENTKIT_LLM_MODEL for worker: {worker_env.get('AGENTKIT_LLM_MODEL')}")
+        logger.info(f"Passing API keys if set: {' '.join([k for k in ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GOOGLE_API_KEY', 'OPENROUTER_API_KEY'] if k in worker_env])}")
         cmd = [
             sys.executable, # Use the same python interpreter
             "-m", "dramatiq",
             "ops_core.tasks.broker:broker",
-            "ops_core.tasks.worker",
-            "--verbose", # Add verbosity
-            "--logs-config", "/dev/null" # Prevent Dramatiq from overriding logging basicConfig
+            "ops_core.tasks.worker"
+            # Removed --verbose and --logs-config /dev/null as it caused errors
         ]
         logger.info(f"Starting worker subprocess with command: {' '.join(cmd)}")
         # Capture stdout/stderr
