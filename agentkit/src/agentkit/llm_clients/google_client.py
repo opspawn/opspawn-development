@@ -57,15 +57,16 @@ class GoogleClient(BaseLlmClient):
         timeout: Optional[float]
     ) -> Any:
         """Internal helper to make the actual API call with retry logic."""
-        request_options = {}
-        if timeout is not None:
-            request_options['timeout'] = timeout
+        # The generate_content method likely accepts timeout directly
+        # request_options = {}
+        # if timeout is not None:
+        #     request_options['timeout'] = timeout
 
         return await self.client.aio.models.generate_content(
             model=model_name,
             contents=contents_payload,
             config=generation_config_obj,
-            request_options=request_options # Pass timeout via request_options
+            # Removed timeout=timeout argument as it causes TypeError
         )
 
     async def generate(

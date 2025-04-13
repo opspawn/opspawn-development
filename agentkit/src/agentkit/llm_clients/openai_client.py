@@ -58,7 +58,7 @@ class OpenAiClient(BaseLlmClient):
     async def generate(
         self,
         prompt: str,
-        model: Optional[str] = "gpt-4", # Default model
+        model: Optional[str] = "gpt-4o-mini", # Default model (changed to mini)
         stop_sequences: Optional[List[str]] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
