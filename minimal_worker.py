@@ -16,6 +16,26 @@ logger.setLevel(logging.INFO)
 logger.critical("!!!!!! minimal_worker.py module top level START !!!!!!")
 logger.info(f"Python sys.path: {sys.path}")
 logger.info(f"Current working directory: {os.getcwd()}")
+import pprint # Add pprint import
+
+# --- Environment Logging ---
+logger.info(f"Timestamp: {time.time()}")
+try:
+    logger.info(f"User ID: {os.getuid()}, Group ID: {os.getgid()}")
+except AttributeError:
+    logger.info("UID/GID not available on this platform.")
+
+logger.info("--- Environment Variables ---")
+# Use pprint for potentially cleaner multiline output
+logger.info(f"\n{pprint.pformat(dict(os.environ))}")
+
+logger.info("--- sys.path (formatted) ---")
+logger.info(f"\n{pprint.pformat(sys.path)}")
+
+# Log modules *before* broker setup
+logger.info("--- sys.modules (before broker setup) ---")
+logger.info(f"\n{pprint.pformat(sorted(sys.modules.keys()))}")
+# --- End Environment Logging ---
 
 # --- Broker Setup ---
 # Broker configuration is handled by the dramatiq CLI arguments.
