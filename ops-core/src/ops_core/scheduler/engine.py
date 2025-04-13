@@ -195,7 +195,7 @@ async def _run_agent_task_logic(
     metadata_store: BaseMetadataStore, # Accept store instance
     mcp_client: OpsMcpClient # Accept MCP client instance
 ):
-    logger.info(f"[_run_agent_task_logic] Actor logic started for task {task_id}.") # Add start log
+    logger.info(f"VERBOSE_LOG: [_run_agent_task_logic] Actor logic started for task {task_id}.")
     """Helper function containing the core logic for running an agent task."""
     logger.info(f"Starting agent task logic for task_id: {task_id}, goal: {goal}")
     # metadata_store and mcp_client are now passed as arguments
@@ -208,25 +208,28 @@ async def _run_agent_task_logic(
              # Cannot update status without a store
              return
  
-        logger.info(f"Task {task_id}: Updating status to RUNNING.")
+        logger.info(f"VERBOSE_LOG: Task {task_id}: Updating status to RUNNING...")
         await metadata_store.update_task_status(task_id, TaskStatus.RUNNING)
-        logger.info(f"Task {task_id}: Status updated to RUNNING.")
+        logger.info(f"VERBOSE_LOG: Task {task_id}: Status updated to RUNNING.")
 
         # --- Agent Setup ---
-        logger.info(f"Task {task_id}: Initializing agent components (Memory, Tools, Security)...")
+        logger.info(f"VERBOSE_LOG: Task {task_id}: Initializing agent components (Memory, Tools, Security)...")
         memory_instance = ShortTermMemory()
+        logger.info(f"VERBOSE_LOG: Task {task_id}: ShortTermMemory initialized.")
         tool_registry_instance = ToolRegistry()
+        logger.info(f"VERBOSE_LOG: Task {task_id}: ToolRegistry initialized.")
         security_manager_instance = DefaultSecurityManager()
-        logger.info(f"Task {task_id}: Agent components initialized.")
+        logger.info(f"VERBOSE_LOG: Task {task_id}: DefaultSecurityManager initialized.")
+        logger.info(f"VERBOSE_LOG: Task {task_id}: Base agent components initialized.")
 
         # Instantiate LLM Client and Planner based on config
         try:
-            logger.info(f"Task {task_id}: Getting LLM client...")
+            logger.info(f"VERBOSE_LOG: Task {task_id}: Getting LLM client...")
             llm_client_instance = get_llm_client()
-            logger.info(f"Task {task_id}: LLM client obtained: {type(llm_client_instance).__name__}")
-            logger.info(f"Task {task_id}: Getting planner...")
+            logger.info(f"VERBOSE_LOG: Task {task_id}: LLM client obtained: {type(llm_client_instance).__name__}")
+            logger.info(f"VERBOSE_LOG: Task {task_id}: Getting planner...")
             planner_instance = get_planner(llm_client=llm_client_instance)
-            logger.info(f"Task {task_id}: Planner obtained: {type(planner_instance).__name__}")
+            logger.info(f"VERBOSE_LOG: Task {task_id}: Planner obtained: {type(planner_instance).__name__}")
         except Exception as config_err:
              logger.exception(f"Failed to configure LLM/Planner for task {task_id}: {config_err}")
              await metadata_store.update_task_output(
@@ -240,25 +243,26 @@ async def _run_agent_task_logic(
         # Inject MCP Proxy Tool if MCP client is available
         # Note: Checking _is_running might be less reliable if client startup is complex.
         # Consider a more robust check or assume it's ready if provided.
-        logger.info(f"Task {task_id}: Checking for MCP client...")
+        logger.info(f"VERBOSE_LOG: Task {task_id}: Checking for MCP client...")
         if mcp_client:
-             logger.info(f"Task {task_id}: MCP client found. Attempting to inject proxy tool...")
-             try:
-                 proxy_tool = MCPProxyTool(mcp_client=mcp_client)
-                 tool_registry_instance.add_tool(proxy_tool)
-                 logger.info(f"Task {task_id}: MCP Proxy Tool injected.")
-             except ImportError:
-                 logger.warning("MCP Proxy Tool spec not found in agentkit. Skipping injection.")
-             except Exception as proxy_err:
-                 logger.exception(f"Failed to register MCP Proxy tool for task {task_id}: {proxy_err}")
-                          # Decide if this is fatal - maybe just log and continue without proxy?
+            logger.info(f"VERBOSE_LOG: Task {task_id}: MCP client provided.")
+            logger.info(f"Task {task_id}: MCP client found. Attempting to inject proxy tool...")
+            try:
+                proxy_tool = MCPProxyTool(mcp_client=mcp_client)
+                tool_registry_instance.add_tool(proxy_tool)
+                logger.info(f"VERBOSE_LOG: Task {task_id}: MCP Proxy Tool injected.")
+            except ImportError:
+                logger.warning("MCP Proxy Tool spec not found in agentkit. Skipping injection.")
+            except Exception as proxy_err:
+                logger.exception(f"Failed to register MCP Proxy tool for task {task_id}: {proxy_err}")
+                # Decide if this is fatal - maybe just log and continue without proxy?
 
         # Instantiate Long-Term Memory
-        logger.info(f"Task {task_id}: Getting Long-Term Memory...")
+        logger.info(f"VERBOSE_LOG: Task {task_id}: Getting Long-Term Memory...")
         long_term_memory_instance = get_long_term_memory()
-        logger.info(f"Task {task_id}: LTM obtained: {type(long_term_memory_instance).__name__ if long_term_memory_instance else 'None'}")
+        logger.info(f"VERBOSE_LOG: Task {task_id}: LTM obtained: {type(long_term_memory_instance).__name__ if long_term_memory_instance else 'None'}")
 
-        logger.info(f"Task {task_id}: Initializing Agent...")
+        logger.info(f"VERBOSE_LOG: Task {task_id}: Initializing Agent instance...")
         agent = Agent(
             memory=memory_instance,
             long_term_memory=long_term_memory_instance, # Pass LTM instance
@@ -266,21 +270,21 @@ async def _run_agent_task_logic(
             tool_manager=tool_registry_instance,
             security_manager=security_manager_instance,
         )
-        logger.info(f"Task {task_id}: Agent initialized.")
+        logger.info(f"VERBOSE_LOG: Task {task_id}: Agent initialized.")
         # --- Agent Execution ---
-        # logger.warning(f"DEBUG: Skipping agent.run and memory.get_context for task {task_id}") # Restore actual run
-        # await asyncio.sleep(0.01) # Maintain minimal async behavior
-        logger.info(f"Task {task_id}: Starting agent.run(goal='{goal}')...")
-        agent_result = await agent.run(goal=goal) # Restore actual agent run
-        logger.info(f"Task {task_id}: agent.run() finished.")
-        # agent_result = {"status": "Success", "output": "DEBUG: Skipped agent execution"} # Mock result
-        logger.info(f"Agent task {task_id} completed. Result: {agent_result}") # Removed DEBUG MODE
+        # logger.warning(f"DEBUG: Skipping agent.run and memory.get_context for task {task_id}")
+        # await asyncio.sleep(0.01)
+        logger.info(f"VERBOSE_LOG: Task {task_id}: >>> Starting agent.run(goal='{goal}')...")
+        agent_result = await agent.run(goal=goal)
+        logger.info(f"VERBOSE_LOG: Task {task_id}: <<< agent.run() finished.")
+        # agent_result = {"status": "Success", "output": "DEBUG: Skipped agent execution"}
+        logger.info(f"VERBOSE_LOG: Agent task {task_id} completed. Raw Result: {agent_result}")
 
         # --- Update Metadata Store ---
-        # final_status = TaskStatus.COMPLETED # Assume success in debug mode # Determine status based on result
-        logger.info(f"Task {task_id}: Getting final memory context...")
-        memory_content = await agent.memory.get_context() # Restore memory retrieval
-        logger.info(f"Task {task_id}: Final memory context retrieved.")
+        # final_status = TaskStatus.COMPLETED
+        logger.info(f"VERBOSE_LOG: Task {task_id}: Getting final memory context...")
+        memory_content = await agent.memory.get_context()
+        logger.info(f"VERBOSE_LOG: Task {task_id}: Final memory context retrieved.")
         # memory_content = ["DEBUG: Skipped memory retrieval"] # Mock memory
         task_result_data = {
             "agent_outcome": agent_result,
@@ -301,19 +305,18 @@ async def _run_agent_task_logic(
             final_status = TaskStatus.COMPLETED
             error_message = None # Ensure error_message is None on success
 
-        # Update output first (method doesn't take error_message)
-        logger.info(f"Task {task_id}: Updating task output in store...")
+        # Update output first
+        logger.info(f"VERBOSE_LOG: Task {task_id}: Updating task output in store...")
         await metadata_store.update_task_output(
             task_id=task_id,
             result=task_result_data
-            # Removed error_message=error_message
         )
-        logger.info(f"Task {task_id}: Task output updated.")
+        logger.info(f"VERBOSE_LOG: Task {task_id}: Task output updated.")
         # Explicitly update status after output
-        logger.info(f"Task {task_id}: Updating final status to {final_status}...")
-        await metadata_store.update_task_status(task_id, final_status, error_message=error_message) # Pass error message if any
-        logger.info(f"Updated metadata for task {task_id} with status {final_status}")
-        logger.info(f"[_run_agent_task_logic] Agent task {task_id} completed successfully.") # Add success log
+        logger.info(f"VERBOSE_LOG: Task {task_id}: Updating final status to {final_status}...")
+        await metadata_store.update_task_status(task_id, final_status, error_message=error_message)
+        logger.info(f"VERBOSE_LOG: Updated metadata for task {task_id} with status {final_status}")
+        logger.info(f"VERBOSE_LOG: [_run_agent_task_logic] Agent task {task_id} completed successfully.")
 
     except TaskNotFoundError:
         logger.error(f"Task {task_id} not found during agent execution.")
@@ -344,26 +347,29 @@ async def _run_agent_task_logic(
 
 # Define the core implementation function first
 # Define a timeout for agent execution
-AGENT_EXECUTION_TIMEOUT = 5.0 # seconds (Shortened as requested)
+AGENT_EXECUTION_TIMEOUT = 20.0 # seconds (Increased from 5.0)
 
 async def _execute_agent_task_actor_impl(task_id: str, goal: str, input_data: Dict[str, Any]):
     """
     Core logic for the Dramatiq actor that executes agent tasks asynchronously.
     Manages its own database session and metadata store instance.
     """
-    logger.info(f"Dramatiq actor received task: {task_id}")
+    # <<< ADDED DEBUG LOG >>>
+    logger.critical(f"!!!!!! VERBOSE_LOG: ACTOR ENTRY POINT REACHED for task: {task_id} !!!!!!")
+    # <<< END ADDED DEBUG LOG >>>
+    logger.info(f"VERBOSE_LOG: Dramatiq actor received task: {task_id}")
     session: Optional[AsyncSession] = None
     metadata_store: Optional[SqlMetadataStore] = None # Use specific type for instantiation
 
     try:
-        logger.info(f"Actor {task_id}: Creating DB session and metadata store...")
+        logger.info(f"VERBOSE_LOG: Actor {task_id}: Creating DB session and metadata store...")
         # Create a new session for this actor execution
         session = async_session_factory()
         metadata_store = SqlMetadataStore(session)
-        logger.info(f"Actor {task_id}: DB session and store created.")
-        logger.info(f"Actor {task_id}: Getting MCP client...")
+        logger.info(f"VERBOSE_LOG: Actor {task_id}: DB session and store created.")
+        logger.info(f"VERBOSE_LOG: Actor {task_id}: Getting MCP client...")
         mcp_client = get_mcp_client() # Get singleton MCP client
-        logger.info(f"Actor {task_id}: MCP client obtained.")
+        logger.info(f"VERBOSE_LOG: Actor {task_id}: MCP client obtained.")
 
         # --- Load testing hook ---
         mock_delay_ms_str = os.getenv("OPS_CORE_LOAD_TEST_MOCK_AGENT_DELAY_MS")
@@ -390,9 +396,9 @@ async def _execute_agent_task_actor_impl(task_id: str, goal: str, input_data: Di
                  return # Stop execution
 
         # --- Call the actual logic with a timeout ---
-        logger.info(f"Actor {task_id}: Preparing to call _run_agent_task_logic.")
+        logger.info(f"VERBOSE_LOG: Actor {task_id}: Preparing to call _run_agent_task_logic.")
         try:
-            logger.info(f"Running agent logic for task {task_id} with timeout {AGENT_EXECUTION_TIMEOUT}s")
+            logger.info(f"VERBOSE_LOG: Running agent logic for task {task_id} with timeout {AGENT_EXECUTION_TIMEOUT}s")
             await asyncio.wait_for(
                 _run_agent_task_logic(
                     task_id=task_id,
@@ -403,7 +409,7 @@ async def _execute_agent_task_actor_impl(task_id: str, goal: str, input_data: Di
                 ),
                 timeout=AGENT_EXECUTION_TIMEOUT
             )
-            logger.info(f"Actor {task_id}: Agent logic finished successfully (within timeout).")
+            logger.info(f"VERBOSE_LOG: Actor {task_id}: Agent logic finished successfully (within timeout).")
         except asyncio.TimeoutError:
             logger.error(f"Actor {task_id}: Agent execution timed out after {AGENT_EXECUTION_TIMEOUT} seconds.")
             if metadata_store:
@@ -447,17 +453,10 @@ async def _execute_agent_task_actor_impl(task_id: str, goal: str, input_data: Di
     finally:
         # Ensure the session is closed
         if session:
+            logger.info(f"VERBOSE_LOG: Actor {task_id}: Closing database session in finally block...")
             await session.close()
-            logger.info(f"Actor {task_id}: Database session closed.")
+            logger.info(f"VERBOSE_LOG: Actor {task_id}: Database session closed.")
 
-# Get the current broker instance to check registry
-_broker = dramatiq.get_broker()
-_actor_name = "execute_agent_task_actor"
-
-# Only register the actor if it's not already registered
-if _actor_name not in _broker.actors:
-    # Apply the decorator to the implementation function
-    execute_agent_task_actor = dramatiq.actor(_execute_agent_task_actor_impl, actor_name=_actor_name)
-else:
-    # If already registered (e.g., due to multiple imports), get the existing actor instance
-    execute_agent_task_actor = _broker.actors[_actor_name]
+# Apply the decorator directly to the implementation function.
+# Dramatiq handles re-registration gracefully if the module is imported multiple times.
+execute_agent_task_actor = dramatiq.actor(_execute_agent_task_actor_impl, actor_name="execute_agent_task_actor")
