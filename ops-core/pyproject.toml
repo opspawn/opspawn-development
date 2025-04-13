@@ -38,3 +38,7 @@ exclude = ["tests*"] # Exclude the tests directory relative to the root
 [tool.pytest.ini_options]
 asyncio_mode = "auto" # Change from strict to auto
 asyncio_default_fixture_loop_scope = "function" # Revert back to function scope for better isolation
+# Register custom markers
+markers = [
+    "live: mark test as live integration test requiring API keys",
+]

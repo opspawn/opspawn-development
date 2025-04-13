@@ -38,6 +38,16 @@ dotenv_path = os.path.join(os.path.dirname(__file__), '..', '..', '.env')
 load_dotenv(dotenv_path=dotenv_path)
 
 
+# --- Session-Scoped Event Loop for Async Fixtures ---
+# Override the default function-scoped event_loop fixture
+@pytest.fixture(scope="session")
+def event_loop(request):
+    """Create an instance of the default event loop for session-scoped fixtures."""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
+
+
 # --- Database Fixtures for SqlMetadataStore Tests ---
 
 # Use a separate test database URL if possible, or ensure clean state
@@ -119,6 +129,16 @@ async def mock_mcp_client() -> MagicMock:
 # Removed autouse set_stub_broker fixture.
 
 
+# --- pytest-docker Configuration Override ---
+
+@pytest.fixture(scope="session")
+def docker_compose_file(pytestconfig):
+    """Override default location of docker-compose.yml file."""
+    # Construct path relative to the root directory where pytest is invoked
+    # Assuming pytest is run from the workspace root '/home/sf2/Workspace/23-opspawn/1-t'
+    return os.path.join(str(pytestconfig.rootdir), "..", "docker-compose.yml")
+
+
 # --- Live E2E Test Fixtures ---
 
 import subprocess
@@ -144,6 +164,10 @@ def docker_services_ready(docker_ip, docker_services):
     docker_services.wait_until_responsive(
         timeout=30.0, pause=0.5, check=lambda: is_rabbitmq_ready(docker_ip, rmq_port)
     )
+    # Add a longer delay to allow DB to fully initialize internally
+    print("Adding longer delay after DB readiness check...")
+    time.sleep(10)
+    print("Delay finished.")
     return docker_services
 
 def is_postgres_ready(ip, port):
@@ -180,7 +204,8 @@ def run_migrations(docker_services_ready, docker_ip):
     pg_port = docker_services_ready.port_for("postgres_db", 5432)
     # Construct the DATABASE_URL for the container
     # Use credentials from docker-compose.yml
-    live_db_url = f"postgresql+asyncpg://opspawn_user:opspawn_password@{docker_ip}:{pg_port}/opspawn_db"
+    # Add ssl=prefer to handle potential SSL issues with asyncpg
+    live_db_url = f"postgresql+asyncpg://opspawn_user:opspawn_password@{docker_ip}:{pg_port}/opspawn_db?ssl=prefer"
     print(f"Running migrations against: {live_db_url}")
 
     # Set the DATABASE_URL environment variable for Alembic

@@ -7,9 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ops_core.models.tasks import Task, TaskStatus
 
-# Mark all tests in this module as e2e_live
+# Mark all tests in this module as live
 # This assumes the fixtures live_api_server, live_dramatiq_worker are running
-pytestmark = pytest.mark.e2e_live
+pytestmark = pytest.mark.live
 
 
 async def get_task_from_db(session: AsyncSession, task_id: UUID) -> Task | None:
@@ -29,7 +29,10 @@ async def test_submit_task_and_poll_completion(
     Requires OPENAI_API_KEY to be set in the environment where pytest is run,
     as the default agent configuration uses OpenAI.
     """
-    task_input = {"prompt": "Write a short poem about testing code."}
+    task_input = {
+        "prompt": "Write a short poem about testing code.",
+        "task_type": "agent_task" # Added missing required field
+    }
     task_id_str: str | None = None
     task_id: UUID | None = None
 
@@ -107,6 +110,7 @@ async def test_submit_task_and_expect_failure(
     # Let's try forcing a provider that might not have keys set.
     task_input = {
         "prompt": "This prompt is designed to potentially cause an error.",
+        "task_type": "agent_task", # Added missing required field
         "agent_config": { # Assuming API supports overriding agent config
             "llm_provider": "non_existent_provider",
             "llm_model": "error-model"
@@ -193,7 +197,10 @@ async def test_concurrent_task_submissions(
     Tests submitting multiple tasks concurrently and verifying their completion.
     """
     num_tasks = 3
-    task_inputs = [{"prompt": f"Write a haiku about concurrency number {i+1}."} for i in range(num_tasks)]
+    task_inputs = [{
+        "prompt": f"Write a haiku about concurrency number {i+1}.",
+        "task_type": "agent_task" # Added missing required field
+    } for i in range(num_tasks)]
     task_ids = []
     task_id_strs = []
 
