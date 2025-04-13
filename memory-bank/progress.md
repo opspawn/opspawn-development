@@ -1,11 +1,11 @@
 # Progress: Opspawn Core Foundation (Phase 6 In Progress)
 
-## Current Status (Updated 2025-04-13 12:13 PM)
-- **Phase:** Phase 7 (Full Live E2E Testing).
-- **Overall Progress:** Phases 1-6 & 9 completed. Task 7.1 implementation complete. Debugging for Task 7.2 ongoing. New debug plan created (`PLANNING_step_7.2.6_cli_debug.md`). Debugging scripts (`run_minimal_actor_directly.py`) and trace logs (`dramatiq_trace.log`) created. `tox.ini` updated. Debug logs updated.
-- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **Blocked**. Continued debugging Dramatiq worker CLI invocation failure. Compared logs between direct actor call (works) and CLI invocation (fails to process messages). Identified pre-loaded modules in CLI context as key difference. Attempted `python -m trace` to analyze CLI internals, but analysis is incomplete due to difficulties searching/parsing the large trace file (`dramatiq_trace.log`).
-- **Next Task:** Continue analyzing `dramatiq_trace.log` or attempt Phase 3 (Programmatic Worker Startup) from `PLANNING_step_7.2.6_cli_debug.md`. See latest updates in `memory-bank/debugging/2025-04-13_task7.2_subprocess_investigation.md`.
-- **Blockers:** Unresolved Dramatiq worker failure to consume messages when invoked via CLI (Task 7.2). (Google live test remains marked xfail due to suspected SDK issue).
+## Current Status (Updated 2025-04-13 4:38 PM)
+- **Phase:** Phase 7 (Full Live E2E Testing) - Paused.
+- **Overall Progress:** Phases 1-6 & 9 completed. Task 7.1 implementation complete. Task 7.2 debugging paused. Debugging scripts (`run_minimal_actor_directly.py`, `start_worker_programmatically.py`, `send_test_message_clean_env.py`) and trace logs (`dramatiq_trace.log`) created. Debug logs updated.
+- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **Paused**. Debugging revealed persistent issues with Dramatiq worker invocation via CLI/subprocess. Programmatic worker startup in a clean environment succeeded.
+- **Next Task (New Plan):** Analyze external demo project (`/home/sf2/Workspace/23-opspawn/3-FDRMQ/fastapi-rabbitmq-dramatiq-demo`) and create a new minimal test case in `1-t/flask-dramatiq-RabbitMQ-tests` to isolate core functionality and gain insights.
+- **Blockers:** Root cause of worker failure when invoked via CLI/subprocess remains unclear (Task 7.2). (Google live test remains marked xfail due to suspected SDK issue).
 
 ## What Works (As of 2025-04-12 7:43 PM)
 - **Repository Structure:** `ops-core` and `agentkit` have been split into separate repositories (`opspawn/ops-core`, `opspawn/agentkit`) and added back to the main `opspawn-development` repository (`1-t/`) as Git submodules. (Completed 2025-04-13).

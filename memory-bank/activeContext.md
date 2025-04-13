@@ -1,10 +1,10 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
 ## Current Focus (Updated 2025-04-13 11:39 AM)
-- **Task 7.2 (Execute & Debug Live E2E Tests):** **Blocked**.
-    - **Status:** Continued debugging Dramatiq worker CLI invocation failure following plan `PLANNING_step_7.2.6_cli_debug.md`. Compared logs between direct actor call (works) and CLI invocation (fails to process messages). Identified pre-loaded modules in CLI context as key difference. Attempted `python -m trace` on CLI invocation, saved to `dramatiq_trace.log`. Analysis of trace log is ongoing but hampered by search tool issues with the large file.
-    - **Blocker:** Root cause of worker failure to consume messages when invoked via the `dramatiq` CLI in this environment is unknown. Trace analysis incomplete.
-- **Next Step:** Continue analyzing `dramatiq_trace.log` or attempt Phase 3 (Programmatic Worker Startup) from `PLANNING_step_7.2.6_cli_debug.md`. See latest updates in `memory-bank/debugging/2025-04-13_task7.2_subprocess_investigation.md`.
+- **Task 7.2 (Execute & Debug Live E2E Tests):** **Paused**.
+    - **Status:** Debugging revealed persistent issues with Dramatiq worker invocation via CLI and subprocesses, likely related to environment/context interactions. Programmatic worker startup in a clean environment succeeded. Debugging efforts documented in `memory-bank/debugging/2025-04-13_task7.2_subprocess_investigation.md`.
+    - **Blocker:** Root cause of worker failure when invoked via CLI/subprocess remains unclear.
+- **Next Step (New Plan):** Analyze external demo project (`/home/sf2/Workspace/23-opspawn/3-FDRMQ/fastapi-rabbitmq-dramatiq-demo`) and create a new minimal test case in `1-t/flask-dramatiq-RabbitMQ-tests` to isolate core functionality and gain insights.
 
 ## Recent Activities (Current Session - 2025-04-13 10:35 AM - 11:07 AM)
 - **Continued Task 7.2 (Debug Subprocess Worker Invocation):**
