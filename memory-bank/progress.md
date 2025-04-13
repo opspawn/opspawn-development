@@ -2,12 +2,12 @@
 
 ## Current Status (Updated 2025-04-12 12:19 PM)
 - **Phase:** Phase 6 (E2E Test Enablement).
-- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 9 completed. Tasks 5.1, 6.1, 6.2, 6.3 completed. Maintenance tasks Maint.1-Maint.12 completed. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Task 6.4 is in progress.
-- **Current Task:** Task 6.4 (Implement `agentkit` Long-Term Memory MVP).
-- **Next Task:** Task Maint.13 (Fix Google Client Tests).
-- **Blockers:** None currently. (Google live test marked xfail, Google unit tests marked xfail).
+- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 9 completed. Tasks 5.1, 6.1, 6.2, 6.3, 6.4 completed. Maintenance tasks Maint.1-Maint.14 completed. Task 7.1 started. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Backlog Enhancements 6 & 7 added.
+- **Current Task:** Task 7.1 (Implement Full Live E2E Test Suite) - In Progress.
+- **Next Task:** Continue Task 7.1 (Implement Fixtures).
+- **Blockers:** None currently. (Google live test remains marked xfail due to suspected SDK issue).
 
-## What Works (As of 2025-04-12 5:11 PM)
+## What Works (As of 2025-04-12 6:36 PM)
 - **Multi-Repo Structure (Local Subdirectories):** The multi-repository structure with `ops-core` and `agentkit` as subdirectories within `1-t` is now working. The `1-t/tox.ini` file correctly installs these as editable dependencies using absolute paths and runs tests from their respective `tests` directories. All tests (140 passed, 1 skipped) pass using this configuration.
 - **Component Repositories:** The `ops-core` and `agentkit` repositories (as subdirectories) contain the validated code structure.
 - **Management Repository (`1-t`):** The `tox.ini` file is correctly configured for the local subdirectory structure. The `src/` directory (containing build artifacts) has been removed.
@@ -22,9 +22,9 @@
     - Task 2.5: `BaseLlmClient` interface defined (`agentkit/core/interfaces/llm_client.py`).
     - Task 2.6: `OpenAiClient` implemented and tested (`agentkit/llm_clients/openai_client.py`, `tests/llm_clients/test_openai_client.py`).
     - Task 2.7: `AnthropicClient` implemented and tested (`agentkit/llm_clients/anthropic_client.py`, `tests/llm_clients/test_anthropic_client.py`).
-    - Task 2.8: `GoogleClient` implemented and tested (`agentkit/llm_clients/google_client.py`, `tests/llm_clients/test_google_client.py`).
+    - Task 2.8: `GoogleClient` implemented and tested (`agentkit/llm_clients/google_client.py`, `tests/llm_clients/test_google_client.py`). Unit tests pass after Maint.13 fix (payload structure and specific error handling).
     - Task 2.9: `OpenRouterClient` implemented and tested (`agentkit/llm_clients/openrouter_client.py`, `tests/llm_clients/test_openrouter_client.py`).
-    - Task 2.10: `ReActPlanner` implemented and tested (`agentkit/planning/react_planner.py`, `tests/planning/test_react_planner.py`). Depends on missing `BasePlanner`.
+    - Task 2.10: `ReActPlanner` implemented and tested (`agentkit/planning/react_planner.py`, `tests/planning/test_react_planner.py`).
 - **Phase 1:** Setup tasks completed.
 - **Phase 3 (Files Exist, Blocked):**
     - Task 3.1: REST API files exist but depend on missing Task 2.1.
@@ -81,7 +81,7 @@
     - Tests (`test_engine.py`, `test_tasks.py` (API), `test_task_servicer.py`, `test_api_scheduler_integration.py`, `test_e2e_workflow.py`) refactored to use `db_session` fixture and `SqlMetadataStore`.
     - Final verification via `tox -e py312` passed (176 passed, 1 skipped) after fixing gRPC `TaskNotFoundError` import (2025-04-10).
 - **Live LLM Tests (Task 6.3 Completed - Google xfail):** OpenAI, Anthropic, and OpenRouter live tests pass. Google client test (`test_live_google_client`) marked xfail due to persistent SDK errors/interactions.
-- **Long-Term Memory (Task 6.4 In Progress):**
+- **Long-Term Memory (Task 6.4 Completed):**
     - Added `chromadb` dependency.
     - Defined `BaseLongTermMemory` interface.
     - Implemented `ChromaLongTermMemory`.
@@ -89,12 +89,12 @@
     - Added unit tests for `ChromaLongTermMemory`.
     - Updated `Agent` unit tests.
     - Updated `ops-core` scheduler engine for LTM configuration.
-    - Updated documentation (`agentkit_overview.md`, `activeContext.md`).
-- **Test Batch Verification:** Updated batch definitions in `TASK.md`. Fixed `tox.ini` asyncio config. Marked failing Google client unit tests as xfail. Ran all 14 batches successfully (considering xfails).
+    - Updated documentation (`agentkit_overview.md`, `activeContext.md`, `progress.md`).
+- **Test Batch Verification:** Updated batch definitions in `TASK.md`. Fixed `tox.ini` asyncio config. Google client unit tests were marked xfail but are now fixed. Ran all 14 batches successfully.
+- **Google Client Unit Tests (Task Maint.13 Completed):** Payload structure `TypeError` resolved. Specific error handling added. Unit tests pass without `xfail`.
+- **LLM Client Robustness (Task Maint.14 Completed):** All LLM clients (`OpenAIClient`, `AnthropicClient`, `GoogleClient`, `OpenRouterClient`) now include retry logic (using `tenacity`) for transient errors and support a configurable `timeout` parameter. Unit tests verify this functionality.
 
 ## What's Left to Build (Revised Plan - 2025-04-12)
-- **Maintenance:**
-    - [ ] Task Maint.13: Fix Google Client Tests.
 - **Phase 7:** Full Live E2E Testing
     - [ ] Task 7.1: Implement Full Live E2E Test Suite.
     - Task 7.2: Execute & Debug Live E2E Tests.
@@ -114,6 +114,7 @@
 - **Repository Restructure & Collection Fix (Task 9.1) (2025-04-09/10):** Initiated restructuring to `src` layout. Moved code, updated build configs, created root `tox.ini`, fixed script paths, created `metadata/base.py`, fixed various import errors and `TypeError`s. Resolved DB connection errors (`InvalidPasswordError`) and Pika connection errors (`AMQPConnectionError`). Standardized imports to use `src.` prefix (in progress). Fixed `ImportError` in `test_broker.py`. Resolved `sqlalchemy.exc.InvalidRequestError: Table 'task' is already defined` during test collection via fixture scope adjustments. Completed Batches 1-5.
 - **Enhanced Testing Strategy (Task Maint.10) (2025-04-10):** Updated `memory-bank/testing_strategy.md` with granular batching and structured logging. Updated `tox.ini` default command to include both `ops_core` and `agentkit` tests.
 - **Revised Phasing (2025-04-08):** Decided to prioritize core documentation (Task 5.2), then implement prerequisites for live E2E testing (New Phase 6), perform live E2E testing (New Phase 7), and finally complete the remaining documentation tasks (New Phase 8). Tasks 5.3-5.5 deferred to Phase 8.
+- **Task Maint.13 Google Client Fix & Improvement (2025-04-12):** Resolved `TypeError` in `GoogleClient` by changing the payload passed to `generate_content` to the structured `contents=[{"parts": [{"text": prompt}]}]` format. Updated unit tests (`test_google_client.py`) and removed `xfail` markers. Added specific error handling for `google.api_core.exceptions` and updated the corresponding unit test. Added `google-api-core` dependency. Verified tests pass.
 - **Task 6.3 Live LLM Tests Debugging & Conclusion (2025-04-12):** Created test file. Fixed issues in test helper. Attempted multiple fixes for Google client parameter passing (native async vs sync via `asyncio.to_thread`, `GenerationConfig` object vs direct kwargs, different models). Consistently encountered contradictory errors (`TypeError: unexpected keyword argument 'temperature'/'generation_config'`, `AttributeError: 'GenerationConfig' object has no attribute 'automatic_function_calling'`). Isolated tests using `google_test_script.py` confirmed the native async method fails with `TypeError` when passed config params (directly or via object), while the sync method fails with `AttributeError` when run via `asyncio.to_thread` with a config object. A simple, direct synchronous script provided by the user (using sync `generate_content` + `config=`) *did* work when run directly, suggesting the `AttributeError` is related to the `asyncio.to_thread` interaction or test environment. **Conclusion:** Suspected `google-genai` SDK bug/interaction issue prevents reliable parameter passing for the async `GoogleClient`. Marked `test_live_google_client` as xfail (updated reason). Left `GoogleClient` implementation using `asyncio.to_thread` with `config=GenerationConfig(...)`. Updated documentation (`TASK.md`, `activeContext.md`, `progress.md`).
 - **Task Maint.8 Simplified Testing Strategy (2025-04-08):** Due to persistent test environment/patching issues (`AMQPConnectionError`, `AttributeError`) preventing reliable testing of full actor execution via `stub_worker` in `test_async_workflow.py`, adopted a simplified strategy. Tests in this file now verify only the API -> Broker flow. Full actor logic is covered by unit tests (`test_engine.py`).
 - **Task Maint.8 Rebuild Iteration (2025-04-08):** Adopted an iterative approach for Phase 2 rebuild: Reset to isolation state, created new test file, restored actor definition, restored send call (fixing test fixtures), restored actor logic, added unit tests for logic, added simplified integration tests (API -> Broker).

@@ -397,10 +397,15 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 
 ---
 
-### Phase 7: Full Live E2E Testing (New)
+        ### Phase 7: Full Live E2E Testing (New)
 
-- [ ] **Task 7.1: Implement Full Live E2E Test Suite**
-  *Description:* Create tests (marked `@pytest.mark.e2e_live`) that manage the lifecycle of required services (API, Worker, RabbitMQ, DB) and verify full, unmocked agent execution workflows via API calls and DB state checks.
+        - [In Progress] **Task 7.1: Implement Full Live E2E Test Suite** `(Started 2025-04-12)`
+          *Description:* Create tests (marked `@pytest.mark.e2e_live`) that manage the lifecycle of required services (API, Worker, RabbitMQ, DB) and verify full, unmocked agent execution workflows via API calls and DB state checks. This involves:
+            - Created `ops-core/tests/integration/test_live_e2e.py`. `(Done)`
+            - Added `pytest-docker` dependency to `tox.ini`. `(Done)`
+    - Implementing fixtures to manage Docker containers (DB, RabbitMQ) and application processes (API server, Dramatiq worker).
+    - Writing initial tests for task submission, status polling, and result verification using `httpx.AsyncClient` and direct DB checks.
+    - Marking tests with `@pytest.mark.e2e_live`.
   *Dependencies:* Phase 6 Completion
   *Comments:* Requires careful environment setup and management.
 
@@ -505,9 +510,25 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
         - **All runtime test failures resolved.**
     *Comments:* Batch verification completed (2025-04-12). All batches passed, with Google client tests marked xfail as expected.
 
-- [ ] **Task Maint.13: Fix Google Client Tests** `(Next Task)`
-    *Description:* Resolve the `TypeError` in `agentkit/src/agentkit/tests/llm_clients/test_google_client.py` related to the `prompt` vs `messages` argument mismatch. Remove `xfail` markers.
+- [x] **Task Maint.13: Fix Google Client Tests** `(Completed 2025-04-12)`
+    *Description:* Resolved the `TypeError` in `agentkit/src/agentkit/tests/llm_clients/test_google_client.py` related to the `prompt` vs `contents` argument mismatch by updating the client to use the correct payload structure (`contents=[{"parts": [{"text": prompt}]}]`). Removed `xfail` markers from tests and verified they pass.
     *Dependencies:* Task 6.3 (Context)
+
+- [x] **Task Maint.14: Add Retry Logic and Timeout Handling to LLM Clients** `(Completed 2025-04-12)`
+    *Description:* Enhance LLM client robustness by adding retry logic (using `tenacity`) for transient errors (e.g., rate limits, server errors) and implementing configurable request timeouts. This involves:
+        - Added `tenacity` dependency to `agentkit/pyproject.toml`.
+        - Added `@retry` decorator to internal API call methods in `OpenAIClient`, `AnthropicClient`, `GoogleClient`, `OpenRouterClient`, targeting appropriate SDK exceptions.
+        - Added an optional `timeout` parameter to `BaseLlmClient.generate` and all implementations.
+        - Passed the `timeout` value to the underlying SDK calls (`request_timeout`, `timeout`, `request_options={'timeout': ...}`).
+        - Added/updated unit tests in `agentkit/src/agentkit/tests/llm_clients/` to verify retry behavior and timeout parameter passing.
+    *Dependencies:* Stable LLM client implementations (Tasks 2.6-2.9, Maint.13).
+
+- [x] **Task Maint.11: Multi-Repository Restructure** `(Completed 2025-04-10)`
+        - Adding `@retry` decorator to internal API call methods in `OpenAIClient`, `AnthropicClient`, `GoogleClient`, `OpenRouterClient`, targeting appropriate SDK exceptions.
+        - Adding an optional `timeout` parameter to `BaseLlmClient.generate` and all implementations.
+        - Passing the `timeout` value to the underlying SDK calls (`request_timeout`, `timeout`, `request_options={'timeout': ...}`).
+        - Adding/updating unit tests in `agentkit/src/agentkit/tests/llm_clients/` to verify retry behavior and timeout parameter passing.
+    *Dependencies:* Stable LLM client implementations (Tasks 2.6-2.9, Maint.13).
 
 - [x] **Task Maint.11: Multi-Repository Restructure** `(Completed 2025-04-10)`
     *Description:* Transition from single-repo to multi-repo structure (`1-t`, `ops-core`, `agentkit`) while preserving `src` layout.
@@ -529,6 +550,25 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
 - **Enhancement 3:** Develop cross-language support for ops-core and agentkit using language-agnostic protocols.
 - **Enhancement 4:** Create a web-based dashboard (ops-ui) for comprehensive system monitoring.
 - **Enhancement 5:** Build a plugin system for dynamic extension of agentkit functionalities.
+- **Enhancement 6: Implement Native Tool/Function Calling in `agentkit` LLM Clients** `(Added 2025-04-12)`
+  *Description:* Enhance relevant `agentkit` LLM clients (OpenAI, Anthropic, Google) to natively support their respective tool/function calling APIs. This involves:
+    - Modifying the `generate` method (or adding a new method) to accept a list of tool specifications (e.g., based on `agentkit.tools.schemas.ToolSpec` or a simplified version).
+    - Passing these tool definitions to the underlying LLM API call in the format required by each provider.
+    - Modifying the response parsing logic to detect when the LLM requests a tool call (e.g., checking for `tool_calls` in the response).
+    - Returning a structured representation of the requested tool call(s) within the `LlmResponse` (e.g., a new optional field `tool_calls: List[RequestedToolCall]`).
+    - Updating the `Agent` core and potentially `BasePlanner` interface/implementations to handle this structured `tool_calls` output from the LLM client, triggering the `ToolExecutor`.
+    - Adding comprehensive unit tests for tool call request/response handling in each client and integration tests in the agent core.
+  *Dependencies:* Stable LLM client implementations.
+  *Value:* Improves reliability and efficiency of agent tool use compared to parsing text-based action requests.
+- **Enhancement 7: Implement Structured Response Support (e.g., JSON Mode) in `agentkit` LLM Clients** `(Added 2025-04-12)`
+  *Description:* Add support for LLM features that enforce structured output formats (like JSON mode). This involves:
+    - Adding parameters to the `generate` method (e.g., `response_format: Optional[Dict[str, Any]]`) to specify the desired output format (e.g., `{'type': 'json_object'}` for OpenAI).
+    - Passing the appropriate parameters to the underlying LLM API call for providers that support specific modes (e.g., OpenAI, potentially Anthropic/Google via prompting).
+    - Potentially adding validation logic (e.g., using Pydantic) to parse/validate the LLM's structured output against a provided schema.
+    - Updating the `LlmResponse` to potentially include the parsed structured data alongside the raw content.
+    - Adding unit tests to verify the correct API parameters are sent and that structured responses are handled appropriately.
+  *Dependencies:* Stable LLM client implementations.
+  *Value:* Increases reliability of extracting structured data from LLM responses, useful for planners or specific data extraction tasks.
 
 ---
 
