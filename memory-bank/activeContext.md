@@ -1,26 +1,27 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-13 09:07 AM)
+## Current Focus (Updated 2025-04-13 10:26 AM)
 - **Task 7.2 (Execute & Debug Live E2E Tests):** **Blocked**.
-    - **Status:** Debugging confirmed the worker fails to consume messages when run via `test_dramatiq_worker.py` (using `subprocess.Popen`), manually via `tox exec`, or directly using the `.tox/py312` Python interpreter (bypassing `tox exec`). The issue is not the launch method but appears related to the specific Python environment created by `tox` (`.tox/py312`). Pika debug logs show successful connection and consumer setup (`Basic.ConsumeOk`), but the message is never delivered to the worker.
-    - **Blocker:** Suspected dependency conflict within the `.tox/py312` environment (potentially `gevent` from `locust`) interfering with Pika/Dramatiq message consumption.
-- **Next Step:** Test worker execution in a clean virtual environment without potentially conflicting dependencies like `locust`/`gevent`.
+    - **Status:** Manual execution via `tox exec` works. However, launching the worker via `subprocess.Popen` from test scripts (`test_dramatiq_worker.py`) or fixtures (`conftest.py`) consistently fails; the worker starts but does not consume messages. A test using a clean virtual environment (excluding `locust`/`gevent`) also failed, invalidating the dependency conflict hypothesis.
+    - **Blocker:** Root cause of worker failure when launched as a subprocess is unknown. Likely related to subprocess management, environment/path handling, or Dramatiq/Pika/asyncio interactions in that specific context.
+- **Next Step:** Further investigate the differences between direct `tox exec` execution and `subprocess.Popen` execution within test environments, focusing on `test_dramatiq_worker.py` and the `live_dramatiq_worker` fixture in `conftest.py`.
 
-## Recent Activities (Current Session - 2025-04-13 08:33 AM - 09:07 AM)
-- **Continued Task 7.2 (Manual Debugging - Worker Invocation):**
-    - Created plan (`PLANNING_step_7.2.3_manual_debug.md`).
-    - Started Docker services, API server (`uvicorn`), and Dramatiq worker (`dramatiq`) manually via `tox exec`.
-    - Fixed `tox.ini` `allowlist_externals` to permit `env` command.
-    - Fixed `dramatiq` CLI verbosity flag (`-v 2` -> `-vv`).
-    - Submitted task via `curl`. **Confirmed worker invoked actor successfully.**
-    - Diagnosed and fixed `AttributeError: 'SqlMetadataStore' object has no attribute 'session'` in `ops-core/src/ops_core/scheduler/engine.py`.
-    - Diagnosed and fixed `TypeError: ... got an unexpected keyword argument 'context'` by correcting planner call in `agentkit/src/agentkit/core/agent.py` and removing `**kwargs` in `agentkit/src/agentkit/planning/react_planner.py`.
-    - Diagnosed and fixed `TypeError: ... got an unexpected keyword argument 'request_timeout'` by correcting timeout handling in `agentkit/src/agentkit/llm_clients/openai_client.py`.
-    - Diagnosed `NameError: name 'timeout' is not defined` as a symptom of the previous `TypeError`.
-    - Restored retry decorator in `openai_client.py`.
-    - Verified fixes by resubmitting task; worker completed successfully.
-    - Reverted LLM client workaround in `engine.py`.
-    - **Conclusion:** Manual worker execution works. Actor invocation failure is specific to test environments. Task 7.2 remains blocked pending investigation of test environment discrepancy.
+## Recent Activities (Current Session - 2025-04-13 10:05 AM - 10:26 AM)
+- **Continued Task 7.2 (Debug Subprocess Worker Invocation):**
+    - Created plan (`PLANNING_step_7.2.4_clean_env_test.md`) to test worker in a clean venv.
+    - Started Docker services.
+    - Created clean venv (`/tmp/dramatiq_test_env`).
+    - Installed minimal dependencies, encountered and resolved `chromadb` dependency conflict by temporarily commenting out LTM code in `ops_core.scheduler.engine`.
+    - Started worker manually in clean venv.
+    - Sent message using `test_dramatiq_worker.py` (via `tox exec`).
+    - **Result:** Clean environment worker **did not** process the message. Dependency conflict hypothesis invalidated.
+    - Reverted temporary LTM code changes in `ops_core.scheduler.engine`.
+    - Stopped clean environment worker.
+    - Attempted further debugging of `test_dramatiq_worker.py`:
+        - Simplified worker subprocess command args (`-vv`, removed `-p`/`-t`). No change.
+        - Modified subprocess launch to mimic E2E fixture (inherit PYTHONPATH, use `sys.executable`). No change.
+        - Reordered script logic to start worker before sending message. No change.
+    - **Conclusion:** Failure is specific to launching worker via `subprocess.Popen` from test scripts/fixtures. Root cause unknown, possibly related to process management, env/path handling, or asyncio interactions.
 
 ## Recent Activities (Previous Session - 2025-04-13 06:33 AM - 08:21 AM)
 - **Continued Task 7.2 (Execute & Debug Live E2E Tests):**

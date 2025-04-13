@@ -70,7 +70,7 @@ TEST_TASK_ID = f"task_{uuid.uuid4()}"
 TEST_GOAL = "Write a short confirmation message."
 TEST_INPUT_DATA = {"prompt": TEST_GOAL} # Match input structure if needed
 
-WORKER_STARTUP_WAIT = 2 # seconds to wait for worker process to initialize
+WORKER_STARTUP_WAIT = 5 # seconds to wait for worker process to initialize (Increased)
 TASK_COMPLETION_WAIT = 15 # seconds (longer than agent timeout + buffer)
 
 # Removed importlib.util as we revert to command.upgrade
@@ -103,70 +103,32 @@ async def main():
 
     # Migrations are now run synchronously before main()
     try:
-        # 1. Setup DB connection and create task
-        logger.info("Connecting to database and creating test task...")
-        session = AsyncSessionFactory() # Use correct factory name
-        metadata_store = SqlMetadataStore(session)
-
-        test_task = Task(
-            task_id=TEST_TASK_ID,
-            name="Isolation Test Task",
-            task_type="agent_run",
-            input_data=TEST_INPUT_DATA,
-            status=TaskStatus.PENDING,
-        )
-        await metadata_store.add_task(test_task)
-        logger.info(f"Test task {TEST_TASK_ID} created in DB with status PENDING.")
-
-        # 3. Send message to actor
-        logger.info(f"Sending message to actor 'execute_agent_task_actor' for task {TEST_TASK_ID}...")
-        # Ensure the broker is the correct one (RabbitMQ)
-        if not isinstance(broker.broker, broker.RabbitmqBroker):
-             logger.warning(f"Broker is not RabbitmqBroker ({type(broker.broker)}), sending might fail in live env.")
-        # <<< Log message details before sending >>>
-        message_data = {"task_id": TEST_TASK_ID, "goal": TEST_GOAL, "input_data": TEST_INPUT_DATA}
-        logger.info(f"VERBOSE_LOG: Sending message data: {message_data}")
-        execute_agent_task_actor.send(**message_data)
-        logger.info("Message sent.")
-        logger.info(f"VERBOSE_LOG: Message sent for task {TEST_TASK_ID} via broker {type(broker.broker).__name__}")
-
-        # 4. Start worker in subprocess
+        # 1. Start worker in subprocess FIRST
         worker_env = os.environ.copy() # Pass environment
-        # Explicitly set PYTHONPATH for the worker subprocess
-        src_ops_core = str(Path(__file__).parent / "ops-core" / "src")
-        src_agentkit = str(Path(__file__).parent / "agentkit" / "src")
-        existing_pythonpath = worker_env.get("PYTHONPATH", "")
-        worker_env["PYTHONPATH"] = os.pathsep.join(filter(None, [src_ops_core, src_agentkit, existing_pythonpath]))
+        # Keep inherited PYTHONPATH from tox environment
+        logger.info(f"Inheriting PYTHONPATH for worker subprocess: {worker_env.get('PYTHONPATH')}")
         # Explicitly pass LLM config env vars (and API keys if necessary)
-        # Explicitly copy LLM provider and model from the main environment (which loaded .env)
-        # This ensures the worker uses the same config as intended by the test script.
         llm_provider = os.getenv("AGENTKIT_LLM_PROVIDER", "google") # Get from main env or default
         llm_model = os.getenv("AGENTKIT_LLM_MODEL", "gemini-2.5-pro-exp-03-25") # Get from main env or default
         worker_env["AGENTKIT_LLM_PROVIDER"] = llm_provider
         worker_env["AGENTKIT_LLM_MODEL"] = llm_model
-        # Pass API keys if they exist in the main environment
         for key in ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY", "OPENROUTER_API_KEY"]:
              if key in os.environ:
                   worker_env[key] = os.environ[key]
-        logger.info(f"Setting PYTHONPATH for worker subprocess: {worker_env.get('PYTHONPATH')}")
         logger.info(f"Setting AGENTKIT_LLM_PROVIDER for worker: {llm_provider}")
         logger.info(f"Setting AGENTKIT_LLM_MODEL for worker: {llm_model}")
         logger.info(f"Passing API keys if set: {' '.join([k for k in ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GOOGLE_API_KEY', 'OPENROUTER_API_KEY'] if k in worker_env])}")
-        # <<< Ensure DRAMATIQ_TESTING is NOT set for the worker >>>
+        # Ensure DRAMATIQ_TESTING is NOT set for the worker
         if "DRAMATIQ_TESTING" in worker_env:
             del worker_env["DRAMATIQ_TESTING"]
             logger.info("Removed DRAMATIQ_TESTING=1 from worker environment to force RabbitmqBroker.")
         cmd = [
             sys.executable, # Use the same python interpreter
             "-m", "dramatiq",
-            "ops_core.tasks.broker:broker", # Explicitly provide broker path
-            "ops_core.tasks.worker", # Use module path again
-            "-p", "1", # Use 1 worker process
-            "-t", "1", # Use 1 worker thread
-            "-v" # Keep verbose flag
+            "ops_core.tasks.broker:broker",
+            "ops_core.tasks.worker",
         ]
         logger.info(f"Starting worker subprocess with command: {' '.join(cmd)}")
-        # Capture stdout/stderr
         worker_process = subprocess.Popen(
             cmd,
             env=worker_env,
@@ -187,6 +149,34 @@ async def main():
             raise RuntimeError("Worker failed to start.")
         else:
             logger.info("Worker process appears to be running.")
+
+        # 2. Setup DB connection and create task
+        logger.info("Connecting to database and creating test task...")
+        session = AsyncSessionFactory() # Use correct factory name
+        metadata_store = SqlMetadataStore(session)
+
+        test_task = Task(
+            task_id=TEST_TASK_ID,
+            name="Isolation Test Task",
+            task_type="agent_run",
+            input_data=TEST_INPUT_DATA,
+            status=TaskStatus.PENDING,
+        )
+        await metadata_store.add_task(test_task)
+        logger.info(f"Test task {TEST_TASK_ID} created in DB with status PENDING.")
+
+        # 3. Send message to actor
+        logger.info(f"Sending message to actor 'execute_agent_task_actor' for task {TEST_TASK_ID}...")
+        # Ensure the broker is the correct one (RabbitMQ)
+        if not isinstance(broker.broker, broker.RabbitmqBroker):
+             logger.warning(f"Broker is not RabbitmqBroker ({type(broker.broker)}), sending might fail in live env.")
+        message_data = {"task_id": TEST_TASK_ID, "goal": TEST_GOAL, "input_data": TEST_INPUT_DATA}
+        logger.info(f"VERBOSE_LOG: Sending message data: {message_data}")
+        execute_agent_task_actor.send(**message_data)
+        logger.info("Message sent.")
+        logger.info(f"VERBOSE_LOG: Message sent for task {TEST_TASK_ID} via broker {type(broker.broker).__name__}")
+
+        # 4. Wait for task completion (or timeout) - Renumbered from 5
         # 5. Wait for task completion (or timeout)
         logger.info(f"Waiting up to {TASK_COMPLETION_WAIT}s for task {TEST_TASK_ID} to complete...")
         start_wait_time = time.time()
