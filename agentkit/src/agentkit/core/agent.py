@@ -174,9 +174,10 @@ class Agent:
 
         # 3. Generate plan
         try:
-            # Extract available_tools for planners that might need it directly
+            # Extract arguments needed by the planner
             available_tools = context.get("available_tools", [])
-            plan_obj: Plan = await self.planner.plan(goal=goal, context=context, available_tools=available_tools) # Pass context and tools
+            history = context.get("messages", []) # Extract history from context
+            plan_obj: Plan = await self.planner.plan(goal=goal, history=history, available_tools=available_tools) # Pass history, not context
             logger.info(f"Plan generated with {len(plan_obj.steps)} steps.")
         except Exception as e:
             # Handle planner errors

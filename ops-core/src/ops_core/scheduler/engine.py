@@ -213,7 +213,7 @@ async def _run_agent_task_logic(
         logger.info(f"VERBOSE_LOG: Task {task_id}: Updating status to RUNNING...")
         await metadata_store.update_task_status(task_id, TaskStatus.RUNNING)
         # Explicitly commit the session *after* status update, *before* agent run
-        await metadata_store.session.commit()
+        await metadata_store._session.commit()
         logger.info(f"VERBOSE_LOG: Task {task_id}: Status updated to RUNNING and session committed.")
 
         # --- Agent Setup ---

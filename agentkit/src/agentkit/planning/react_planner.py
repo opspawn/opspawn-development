@@ -47,8 +47,8 @@ class ReActPlanner(BasePlanner):
         goal: str,
         available_tools: List[ToolSpec],
         history: Optional[List[Dict[str, Any]]] = None,
-        max_steps: int = 10,
-        **kwargs: Any
+        max_steps: int = 10 # Removed **kwargs
+        # **kwargs: Any
     ) -> Plan:
         """
         Generates a plan using the ReAct strategy.
@@ -98,8 +98,8 @@ class ReActPlanner(BasePlanner):
         # Generate the next thought/action using the LLM
         llm_response: LlmResponse = await self.llm_client.generate(
             prompt=prompt,
-            stop_sequences=["\nObservation:"], # Stop before the next observation
-            **kwargs
+            stop_sequences=["\nObservation:"] # Stop before the next observation
+            # **kwargs # Removed kwargs from LLM call
         )
 
         if llm_response.error:

@@ -18,19 +18,24 @@ from agentkit.core.interfaces.llm_client import BaseLlmClient, LlmResponse
 class OpenAiClient(BaseLlmClient):
     """LLM Client implementation for OpenAI models."""
 
-    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None, timeout: float = 60.0):
         """
         Initializes the OpenAI client.
 
         Args:
             api_key: OpenAI API key. Defaults to OPENAI_API_KEY env var.
             base_url: OpenAI API base URL. Defaults to OpenAI's default.
+            timeout: Default request timeout in seconds.
         """
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             raise ValueError("OpenAI API key not provided or found in environment variables (OPENAI_API_KEY).")
 
-        self.client = AsyncOpenAI(api_key=self.api_key, base_url=base_url)
+        self.client = AsyncOpenAI(
+            api_key=self.api_key,
+            base_url=base_url,
+            timeout=timeout # Pass timeout during client initialization
+        )
         # TODO: Add more robust initialization if needed (e.g., custom httpx client)
 
     @tenacity.retry(
@@ -48,11 +53,12 @@ class OpenAiClient(BaseLlmClient):
         ),
         reraise=True # Reraise the exception if retries fail
     )
-    async def _call_openai_api(self, api_params: Dict[str, Any], timeout: Optional[float]) -> Any:
+    async def _call_openai_api(self, api_params: Dict[str, Any]) -> Any: # Removed timeout parameter
         """Internal helper to make the actual API call with retry logic."""
+        # Timeout is now configured on the client itself
         return await self.client.chat.completions.create(
-            **api_params,
-            request_timeout=timeout # Pass timeout here
+            **api_params
+            # request_timeout=timeout # Removed request_timeout argument
         )
 
     async def generate(
@@ -62,7 +68,7 @@ class OpenAiClient(BaseLlmClient):
         stop_sequences: Optional[List[str]] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
-        timeout: Optional[float] = 60.0, # Default timeout in seconds
+        # timeout: Optional[float] = 60.0, # Removed timeout parameter, handled by client init
         **kwargs: Any
     ) -> LlmResponse:
         """

@@ -1,12 +1,28 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-13 08:21 AM)
+## Current Focus (Updated 2025-04-13 09:07 AM)
 - **Task 7.2 (Execute & Debug Live E2E Tests):** **Blocked**.
-    - **Status:** E2E test setup issues (schema creation, task dispatch, imports, worker env) have been resolved. Tests now successfully submit tasks and dispatch messages to RabbitMQ. However, the tests still time out because the Dramatiq worker, while running, does not execute the actor code upon receiving the message. This confirms the core issue identified in previous manual debugging. E2E test fixture is unable to reliably capture worker logs for further diagnosis.
-    - **Blocker:** Unresolved Dramatiq worker actor invocation issue (See `debugging/2025-04-12_task7.2_worker_actor_invocation.md`).
-- **Next Step:** Manually debug the worker process (`dramatiq ops_core.tasks.worker`) in isolation to determine why the actor code is not executed.
+    - **Status:** Manual debugging session confirmed worker *can* invoke actor when run via `tox exec`. Fixed several downstream bugs (`AttributeError` in DB commit, `TypeError` in planner call, `TypeError` in OpenAI timeout). However, the actor invocation *still fails* in the test environments (`test_dramatiq_worker.py`, E2E tests).
+    - **Blocker:** Discrepancy between manual execution environment and test execution environments preventing actor invocation in tests.
+- **Next Step:** Investigate the test environment discrepancy (e.g., process launch, env vars, fixture interactions in `test_dramatiq_worker.py` and `conftest.py`).
 
-## Recent Activities (Current Session - 2025-04-13 06:33 AM - 08:21 AM)
+## Recent Activities (Current Session - 2025-04-13 08:33 AM - 09:07 AM)
+- **Continued Task 7.2 (Manual Debugging - Worker Invocation):**
+    - Created plan (`PLANNING_step_7.2.3_manual_debug.md`).
+    - Started Docker services, API server (`uvicorn`), and Dramatiq worker (`dramatiq`) manually via `tox exec`.
+    - Fixed `tox.ini` `allowlist_externals` to permit `env` command.
+    - Fixed `dramatiq` CLI verbosity flag (`-v 2` -> `-vv`).
+    - Submitted task via `curl`. **Confirmed worker invoked actor successfully.**
+    - Diagnosed and fixed `AttributeError: 'SqlMetadataStore' object has no attribute 'session'` in `ops-core/src/ops_core/scheduler/engine.py`.
+    - Diagnosed and fixed `TypeError: ... got an unexpected keyword argument 'context'` by correcting planner call in `agentkit/src/agentkit/core/agent.py` and removing `**kwargs` in `agentkit/src/agentkit/planning/react_planner.py`.
+    - Diagnosed and fixed `TypeError: ... got an unexpected keyword argument 'request_timeout'` by correcting timeout handling in `agentkit/src/agentkit/llm_clients/openai_client.py`.
+    - Diagnosed `NameError: name 'timeout' is not defined` as a symptom of the previous `TypeError`.
+    - Restored retry decorator in `openai_client.py`.
+    - Verified fixes by resubmitting task; worker completed successfully.
+    - Reverted LLM client workaround in `engine.py`.
+    - **Conclusion:** Manual worker execution works. Actor invocation failure is specific to test environments. Task 7.2 remains blocked pending investigation of test environment discrepancy.
+
+## Recent Activities (Previous Session - 2025-04-13 06:33 AM - 08:21 AM)
 - **Continued Task 7.2 (Execute & Debug Live E2E Tests):**
     - Repaired `ops-core/tests/conftest.py` using raw SQL schema creation workaround. Committed fix.
     - Ran E2E test. Failed: Task stuck in `pending`. Identified missing dispatch logic for `agent_task` type in `ops-core/src/ops_core/scheduler/engine.py`.
