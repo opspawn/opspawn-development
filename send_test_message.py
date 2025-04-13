@@ -4,6 +4,7 @@ import uuid
 import logging
 from pathlib import Path
 from dotenv import load_dotenv
+import time # Add time for unique message
 
 # --- Load .env file FIRST ---
 dotenv_path = Path(__file__).parent / '.env'
@@ -15,34 +16,33 @@ if "DRAMATIQ_TESTING" in os.environ:
     del os.environ["DRAMATIQ_TESTING"]
     print("INFO: send_test_message: Unset DRAMATIQ_TESTING in main script env before broker import.")
 
-# --- Setup paths ---
-sys.path.insert(0, str(Path(__file__).parent / "ops-core" / "src"))
-sys.path.insert(0, str(Path(__file__).parent / "agentkit" / "src"))
-
 # --- Imports ---
 try:
-    # Import the broker module first to ensure it's configured correctly
-    from ops_core.tasks import broker
-    # Now import the actor
-    from ops_core.scheduler.engine import execute_agent_task_actor
-    print(f"INFO: send_test_message: Imported broker ({type(broker.broker).__name__}) and actor.")
+    # Import the minimal worker module to get its broker and actor
+    # Importing minimal_worker will also execute its dramatiq.set_broker() call
+    import minimal_worker
+    print(f"INFO: send_test_message: Imported minimal_worker module.")
+    print(f"INFO: send_test_message: Using broker configured by minimal_worker: {type(minimal_worker.broker).__name__}")
+
 except ImportError as e:
-    print(f"ERROR: send_test_message: Failed to import modules: {e}")
+    print(f"ERROR: send_test_message: Failed to import minimal_worker: {e}")
+    sys.exit(1)
+except AttributeError:
+    # Handle case where minimal_worker might not have broker attribute if not run correctly
+    print(f"ERROR: send_test_message: Could not access broker in minimal_worker. Ensure it defines and sets the broker.")
     sys.exit(1)
 
+
 # --- Task Details ---
-TEST_TASK_ID = f"task_manual_{uuid.uuid4()}"
-TEST_GOAL = "Manual test confirmation."
-TEST_INPUT_DATA = {"prompt": TEST_GOAL}
+TEST_MESSAGE = f"Hello Minimal Worker from send_test_message.py at {time.time()}"
 
 # --- Send Message ---
-print(f"INFO: send_test_message: Sending message for task {TEST_TASK_ID}...")
-message_data = {"task_id": TEST_TASK_ID, "goal": TEST_GOAL, "input_data": TEST_INPUT_DATA}
-print(f"INFO: send_test_message: Message data: {message_data}")
+print(f"INFO: send_test_message: Sending message: '{TEST_MESSAGE}'...")
 
 try:
-    execute_agent_task_actor.send(**message_data)
-    print(f"INFO: send_test_message: Message sent successfully for task {TEST_TASK_ID}.")
+    # Call send() on the imported actor object
+    minimal_worker.simple_task.send(TEST_MESSAGE)
+    print(f"INFO: send_test_message: Message sent successfully.")
 except Exception as e:
     print(f"ERROR: send_test_message: Failed to send message: {e}")
     sys.exit(1)

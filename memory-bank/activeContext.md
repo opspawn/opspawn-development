@@ -1,10 +1,10 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-13 11:07 AM)
+## Current Focus (Updated 2025-04-13 11:39 AM)
 - **Task 7.2 (Execute & Debug Live E2E Tests):** **Blocked**.
-    - **Status:** Debugging the subprocess invocation failure continues. Manual `tox exec` works. `subprocess.Popen` from `test_dramatiq_worker.py` fails (worker starts, doesn't process). Clean env test failed. Environment comparison showed no major differences. Tuning `subprocess.Popen` args (`cwd`, minimal `env`) didn't help. Detailed logging identified a significant delay (~3-30s) during the import of `ops_core.scheduler.engine` within the worker subprocess. Created minimal worker/test (`minimal_worker.py`, `test_minimal_worker.py`) to isolate the issue. Fixed `AttributeError` in `minimal_worker.py`.
-    - **Blocker:** Root cause of worker failure/delay when launched as a subprocess is still unknown, but narrowed down to the import/initialization phase of `ops_core.scheduler.engine` or Dramatiq internals within that context.
-- **Next Step:** Execute `test_minimal_worker.py` via `tox exec` to see if the simplified case reproduces the failure (Step 4 of `PLANNING_step_7.2.5_subprocess_debug.md`).
+    - **Status:** Debugging the Dramatiq worker message processing failure continues. The issue occurs even with a simplified worker (`minimal_worker.py`) and when the worker is launched directly via the `dramatiq` CLI (bypassing `subprocess.Popen` and `tox exec`). The worker processes start, connect to RabbitMQ, but the actor function (`simple_task`) is never invoked, and no messages are consumed. Simplifying broker configuration and disabling Prometheus middleware did not resolve the issue.
+    - **Blocker:** Root cause of worker failure to consume messages when invoked via the `dramatiq` CLI in this environment is unknown.
+- **Next Step:** Further investigate potential environment variable differences or subtle interactions between the `dramatiq` CLI invocation and the worker's process/module loading within this specific project setup. See `memory-bank/debugging/2025-04-13_task7.2_subprocess_investigation.md`.
 
 ## Recent Activities (Current Session - 2025-04-13 10:35 AM - 11:07 AM)
 - **Continued Task 7.2 (Debug Subprocess Worker Invocation):**

@@ -1,11 +1,11 @@
 # Progress: Opspawn Core Foundation (Phase 6 In Progress)
 
-## Current Status (Updated 2025-04-13 11:07 AM)
+## Current Status (Updated 2025-04-13 11:39 AM)
 - **Phase:** Phase 7 (Full Live E2E Testing).
 - **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 6, 9 completed. Tasks 5.1 completed. Maintenance tasks Maint.1-Maint.14 completed. Task 7.1 implementation complete. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Backlog Enhancements 6 & 7 added. Testing strategy documentation updated. Debug logs updated. Several bugs fixed during manual debugging of Task 7.2. Clean environment test plan created (`PLANNING_step_7.2.4_clean_env_test.md`). Debugging plan for subprocess issue created (`PLANNING_step_7.2.5_subprocess_debug.md`). New debug log created (`memory-bank/debugging/2025-04-13_task7.2_subprocess_investigation.md`). Minimal worker/test files created.
-- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **Blocked**. Debugging subprocess invocation failure. Manual `tox exec` works. `subprocess.Popen` from `test_dramatiq_worker.py` fails (worker starts, doesn't process). Clean env test failed. Env comparison showed no major differences. `subprocess.Popen` tuning (`cwd`, minimal `env`) didn't help. Detailed logging identified significant delay (~3-30s) during `ops_core.scheduler.engine` import within the worker subprocess. Created minimal worker/test case.
-- **Next Task:** Execute `test_minimal_worker.py` via `tox exec` to see if the simplified case reproduces the failure (Step 4 of `PLANNING_step_7.2.5_subprocess_debug.md`).
-- **Blockers:** Unresolved Dramatiq worker actor invocation/delay issue *within subprocess test environments*. (Google live test remains marked xfail due to suspected SDK issue).
+- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **Blocked**. Debugging Dramatiq worker message processing failure. The issue occurs even with a simplified worker (`minimal_worker.py`) and when the worker is launched directly via the `dramatiq` CLI (bypassing `subprocess.Popen` and `tox exec`). The worker processes start, connect to RabbitMQ, but the actor function (`simple_task`) is never invoked, and no messages are consumed. Simplifying broker configuration and disabling Prometheus middleware did not resolve the issue.
+- **Next Task:** Further investigate potential environment variable differences or subtle interactions between the `dramatiq` CLI invocation and the worker's process/module loading within this specific project setup. See `memory-bank/debugging/2025-04-13_task7.2_subprocess_investigation.md`.
+- **Blockers:** Unresolved Dramatiq worker failure to consume messages when invoked via CLI. (Google live test remains marked xfail due to suspected SDK issue).
 
 ## What Works (As of 2025-04-12 7:43 PM)
 - **Repository Structure:** `ops-core` and `agentkit` have been split into separate repositories (`opspawn/ops-core`, `opspawn/agentkit`) and added back to the main `opspawn-development` repository (`1-t/`) as Git submodules. (Completed 2025-04-13).
