@@ -117,3 +117,258 @@ async def mock_mcp_client() -> MagicMock:
 # in src/ops_core/tasks/broker.py based on DRAMATIQ_TESTING env var.
 
 # Removed autouse set_stub_broker fixture.
+
+
+# --- Live E2E Test Fixtures ---
+
+import subprocess
+import time
+import httpx
+from sqlalchemy.ext.asyncio import create_async_engine as create_async_engine_live
+from sqlalchemy.orm import sessionmaker as sessionmaker_live
+from alembic.config import Config as AlembicConfig
+from alembic import command as alembic_command
+import pytest_docker
+
+# Session-scoped fixture to manage Docker containers
+@pytest.fixture(scope="session")
+def docker_services_ready(docker_ip, docker_services):
+    """Ensure that PostgreSQL and RabbitMQ are responsive."""
+    # Wait for PostgreSQL
+    pg_port = docker_services.port_for("postgres_db", 5432)
+    docker_services.wait_until_responsive(
+        timeout=30.0, pause=0.5, check=lambda: is_postgres_ready(docker_ip, pg_port)
+    )
+    # Wait for RabbitMQ
+    rmq_port = docker_services.port_for("rabbitmq", 5672)
+    docker_services.wait_until_responsive(
+        timeout=30.0, pause=0.5, check=lambda: is_rabbitmq_ready(docker_ip, rmq_port)
+    )
+    return docker_services
+
+def is_postgres_ready(ip, port):
+    """Check if PostgreSQL is ready."""
+    try:
+        # Simple check: try to establish a connection
+        # In a real scenario, might use pg_isready or attempt a query
+        import socket
+        sock = socket.create_connection((ip, port), timeout=1)
+        sock.close()
+        print(f"PostgreSQL at {ip}:{port} is ready.")
+        return True
+    except (socket.error, ConnectionRefusedError) as ex:
+        print(f"PostgreSQL at {ip}:{port} not ready yet: {ex}")
+        return False
+
+def is_rabbitmq_ready(ip, port):
+    """Check if RabbitMQ is ready."""
+    try:
+        # Simple check: try to establish a connection
+        import socket
+        sock = socket.create_connection((ip, port), timeout=1)
+        sock.close()
+        print(f"RabbitMQ at {ip}:{port} is ready.")
+        return True
+    except (socket.error, ConnectionRefusedError) as ex:
+        print(f"RabbitMQ at {ip}:{port} not ready yet: {ex}")
+        return False
+
+# Session-scoped fixture to run Alembic migrations
+@pytest.fixture(scope="session")
+def run_migrations(docker_services_ready, docker_ip):
+    """Runs Alembic migrations against the live test database."""
+    pg_port = docker_services_ready.port_for("postgres_db", 5432)
+    # Construct the DATABASE_URL for the container
+    # Use credentials from docker-compose.yml
+    live_db_url = f"postgresql+asyncpg://opspawn_user:opspawn_password@{docker_ip}:{pg_port}/opspawn_db"
+    print(f"Running migrations against: {live_db_url}")
+
+    # Set the DATABASE_URL environment variable for Alembic
+    os.environ["DATABASE_URL"] = live_db_url
+
+    # Find the alembic.ini file relative to this conftest.py
+    alembic_ini_path = os.path.join(os.path.dirname(__file__), '..', 'alembic.ini')
+    if not os.path.exists(alembic_ini_path):
+        raise FileNotFoundError(f"Alembic config not found at expected path: {alembic_ini_path}")
+
+    alembic_cfg = AlembicConfig(alembic_ini_path)
+    # Point Alembic to the correct directory containing the 'versions' folder
+    script_location = os.path.join(os.path.dirname(__file__), '..', 'alembic')
+    alembic_cfg.set_main_option("script_location", script_location)
+    # Ensure Alembic uses the correct DATABASE_URL from the environment
+    alembic_cfg.set_main_option("sqlalchemy.url", live_db_url)
+
+    try:
+        alembic_command.upgrade(alembic_cfg, "head")
+        print("Alembic migrations completed successfully.")
+    except Exception as e:
+        print(f"Alembic migration failed: {e}")
+        raise
+
+    # Yield the URL for other fixtures if needed
+    yield live_db_url
+
+# Session-scoped fixture for the live API server process
+@pytest.fixture(scope="session")
+def live_api_server(run_migrations, docker_services_ready, docker_ip):
+    """Starts the FastAPI server as a subprocess for the test session."""
+    live_db_url = run_migrations # Get the DB URL from the migration fixture
+    rmq_port = docker_services_ready.port_for("rabbitmq", 5672)
+    # Use credentials from docker-compose.yml
+    live_rabbitmq_url = f"amqp://guest:guest@{docker_ip}:{rmq_port}/"
+
+    api_host = "0.0.0.0" # Listen on all interfaces inside the test env
+    api_port = 8000 # Standard FastAPI port
+
+    # Environment variables for the server process
+    server_env = os.environ.copy()
+    server_env["DATABASE_URL"] = live_db_url
+    server_env["RABBITMQ_URL"] = live_rabbitmq_url
+    # Add any other required env vars (e.g., LLM keys if needed by API startup)
+    # server_env["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
+    # server_env["ANTHROPIC_API_KEY"] = os.getenv("ANTHROPIC_API_KEY", "")
+    # server_env["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY", "")
+    # server_env["OPENROUTER_API_KEY"] = os.getenv("OPENROUTER_API_KEY", "")
+    # server_env["AGENTKIT_LLM_PROVIDER"] = os.getenv("AGENTKIT_LLM_PROVIDER", "openai") # Example
+
+    # Command to start the server
+    # Ensure uvicorn and ops_core are available in the environment running pytest
+    # This might require running pytest within the tox environment
+    cmd = [
+        "uvicorn",
+        "ops_core.main:app",
+        "--host", api_host,
+        "--port", str(api_port),
+        # "--reload", # Avoid reload in tests
+    ]
+
+    print(f"Starting API server with command: {' '.join(cmd)}")
+    print(f"  DATABASE_URL={live_db_url}")
+    print(f"  RABBITMQ_URL={live_rabbitmq_url}")
+
+    # Start the server process
+    process = subprocess.Popen(cmd, env=server_env)
+
+    # Wait for the server to be ready
+    api_base_url = f"http://localhost:{api_port}" # Use localhost as tests run on host
+    max_wait = 30
+    start_time = time.time()
+    server_ready = False
+    while time.time() - start_time < max_wait:
+        try:
+            # Check a known endpoint, e.g., /docs
+            response = httpx.get(f"{api_base_url}/docs", timeout=1)
+            if response.status_code == 200:
+                print(f"API server at {api_base_url} is ready.")
+                server_ready = True
+                break
+        except (httpx.ConnectError, httpx.TimeoutException) as e:
+            print(f"API server not ready yet ({e}), waiting...")
+            time.sleep(1)
+        except Exception as e:
+            print(f"Unexpected error checking API server readiness: {e}")
+            time.sleep(1)
+
+
+    if not server_ready:
+        process.terminate() # Clean up if server failed to start
+        process.wait()
+        pytest.fail(f"API server failed to start within {max_wait} seconds.")
+
+    yield api_base_url # Provide the base URL to tests
+
+    # Teardown: Stop the server process
+    print("Stopping API server...")
+    process.terminate()
+    try:
+        process.wait(timeout=5)
+        print("API server stopped.")
+    except subprocess.TimeoutExpired:
+        print("API server did not terminate gracefully, killing.")
+        process.kill()
+        process.wait()
+
+# Session-scoped fixture for the live Dramatiq worker process
+@pytest.fixture(scope="session")
+def live_dramatiq_worker(run_migrations, docker_services_ready, docker_ip):
+    """Starts the Dramatiq worker as a subprocess for the test session."""
+    live_db_url = run_migrations # Get the DB URL
+    rmq_port = docker_services_ready.port_for("rabbitmq", 5672)
+    live_rabbitmq_url = f"amqp://guest:guest@{docker_ip}:{rmq_port}/"
+
+    # Environment variables for the worker process
+    worker_env = os.environ.copy()
+    worker_env["DATABASE_URL"] = live_db_url
+    worker_env["RABBITMQ_URL"] = live_rabbitmq_url
+    # Add any other required env vars (e.g., LLM keys)
+    # worker_env["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
+    # worker_env["ANTHROPIC_API_KEY"] = os.getenv("ANTHROPIC_API_KEY", "")
+    # worker_env["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY", "")
+    # worker_env["OPENROUTER_API_KEY"] = os.getenv("OPENROUTER_API_KEY", "")
+    # worker_env["AGENTKIT_LLM_PROVIDER"] = os.getenv("AGENTKIT_LLM_PROVIDER", "openai") # Example
+
+    # Command to start the worker
+    # Ensure dramatiq and ops_core are available in the environment running pytest
+    cmd = [
+        "dramatiq",
+        "ops_core.tasks.broker:broker",
+        "ops_core.tasks.worker", # Point to the module containing actors
+    ]
+
+    print(f"Starting Dramatiq worker with command: {' '.join(cmd)}")
+    print(f"  DATABASE_URL={live_db_url}")
+    print(f"  RABBITMQ_URL={live_rabbitmq_url}")
+
+    # Start the worker process
+    process = subprocess.Popen(cmd, env=worker_env)
+
+    # Give the worker a moment to initialize
+    # A more robust check might involve querying RabbitMQ or a worker health status
+    time.sleep(5)
+    print("Dramatiq worker assumed started.")
+
+    yield process # Provide the process handle if needed
+
+    # Teardown: Stop the worker process
+    print("Stopping Dramatiq worker...")
+    process.terminate()
+    try:
+        process.wait(timeout=5)
+        print("Dramatiq worker stopped.")
+    except subprocess.TimeoutExpired:
+        print("Dramatiq worker did not terminate gracefully, killing.")
+        process.kill()
+        process.wait()
+
+# Session-scoped engine connected to the live Docker database
+@pytest_asyncio.fixture(scope="session")
+async def live_db_engine(run_migrations):
+    """Provides an async engine connected to the live test database."""
+    live_db_url = run_migrations
+    engine = create_async_engine_live(live_db_url, echo=False)
+    yield engine
+    await engine.dispose()
+
+# Function-scoped session for interacting with the live database during tests
+@pytest_asyncio.fixture(scope="function")
+async def live_db_session(live_db_engine):
+    """
+    Provides an AsyncSession connected to the live test database for a single test.
+    Does NOT manage transactions or table state automatically. Tests are responsible
+    for cleaning up any data they create if necessary, or relying on the
+    session-level setup/teardown for a clean slate between test runs.
+    """
+    async_session_factory = sessionmaker_live(
+        bind=live_db_engine, class_=AsyncSession, expire_on_commit=False
+    )
+    async with async_session_factory() as session:
+        yield session
+        # No automatic rollback - tests interact with live state
+        await session.close()
+
+# Function-scoped HTTP client for interacting with the live API server
+@pytest_asyncio.fixture(scope="function")
+async def live_api_client(live_api_server):
+    """Provides an httpx.AsyncClient configured for the live API server."""
+    async with httpx.AsyncClient(base_url=live_api_server, timeout=30.0) as client:
+        yield client

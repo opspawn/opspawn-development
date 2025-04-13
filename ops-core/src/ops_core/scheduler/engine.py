@@ -61,7 +61,7 @@ class DefaultSecurityManager(BaseSecurityManager):
 
 def get_llm_client() -> BaseLlmClient:
     """Instantiates the appropriate LLM client based on environment variables."""
-    provider = os.getenv("AGENTKIT_LLM_PROVIDER", "openai").lower()
+    provider = os.getenv("AGENTKIT_LLM_PROVIDER", "google").lower() # Default to google
     # Add API key checks if needed, or assume they are handled by the client itself via env vars
     # api_key = os.getenv(f"{provider.upper()}_API_KEY")
     # if not api_key:
@@ -77,9 +77,9 @@ def get_llm_client() -> BaseLlmClient:
     elif provider == "openrouter":
         return OpenRouterClient()
     else:
-        logger.error(f"Unsupported LLM provider specified: {provider}. Falling back to OpenAI.")
-        # Fallback or raise error - let's fallback for now
-        return OpenAiClient()
+        logger.error(f"Unsupported LLM provider specified: {provider}. Falling back to Google.")
+        # Fallback or raise error - let's fallback to the new default
+        return GoogleClient()
 
 def get_long_term_memory() -> Optional[BaseLongTermMemory]:
     """Instantiates the appropriate long-term memory client based on environment variables."""
