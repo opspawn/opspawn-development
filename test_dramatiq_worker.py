@@ -35,7 +35,13 @@ sys.path.insert(0, str(Path(__file__).parent / "ops-core" / "src"))
 sys.path.insert(0, str(Path(__file__).parent / "agentkit" / "src"))
 # We will load alembic.env directly later, so no need to add ops-core to path here.
 
-# --- Imports (after path setup) ---
+# --- Unset DRAMATIQ_TESTING before broker import ---
+# This ensures the main script uses RabbitmqBroker for sending
+if "DRAMATIQ_TESTING" in os.environ:
+    del os.environ["DRAMATIQ_TESTING"]
+    print("INFO: Unset DRAMATIQ_TESTING in main script env before broker import.")
+
+# --- Imports (after path setup and env var unset) ---
 try:
     from ops_core.models.tasks import Task, TaskStatus
     from ops_core.metadata.sql_store import SqlMetadataStore, AsyncSessionFactory # Corrected import name
@@ -146,6 +152,10 @@ async def main():
         logger.info(f"Setting AGENTKIT_LLM_PROVIDER for worker: {llm_provider}")
         logger.info(f"Setting AGENTKIT_LLM_MODEL for worker: {llm_model}")
         logger.info(f"Passing API keys if set: {' '.join([k for k in ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GOOGLE_API_KEY', 'OPENROUTER_API_KEY'] if k in worker_env])}")
+        # <<< Ensure DRAMATIQ_TESTING is NOT set for the worker >>>
+        if "DRAMATIQ_TESTING" in worker_env:
+            del worker_env["DRAMATIQ_TESTING"]
+            logger.info("Removed DRAMATIQ_TESTING=1 from worker environment to force RabbitmqBroker.")
         cmd = [
             sys.executable, # Use the same python interpreter
             "-m", "dramatiq",

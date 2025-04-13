@@ -351,11 +351,14 @@ async def _run_agent_task_logic(
 # Define a timeout for agent execution
 AGENT_EXECUTION_TIMEOUT = 20.0 # seconds (Increased from 5.0)
 
-def _execute_agent_task_actor_impl(task_id: str, goal: str, input_data: Dict[str, Any]): # Changed to sync def
+async def _execute_agent_task_actor_impl(task_id: str, goal: str, input_data: Dict[str, Any]): # Changed back to async def
     """
     Core logic for the Dramatiq actor that executes agent tasks asynchronously.
     Manages its own database session and metadata store instance.
     """
+    # <<< ADDED DEBUG LOG >>>
+    logger.critical(f"!!!!!! ACTOR ENTRY POINT REACHED for task: {task_id} !!!!!!")
+    # <<< END ADDED DEBUG LOG >>>
     # <<< ADDED DEBUG LOG >>>
     logger.critical(f"!!!!!! VERBOSE_LOG: ACTOR ENTRY POINT REACHED for task: {task_id} !!!!!!")
     # <<< END ADDED DEBUG LOG >>>
@@ -366,13 +369,13 @@ def _execute_agent_task_actor_impl(task_id: str, goal: str, input_data: Dict[str
     try:
         logger.info(f"VERBOSE_LOG: Actor {task_id}: Creating DB session and metadata store...")
         # Create a new session for this actor execution
-        # session = async_session_factory() # Commented out for sync test
-        # metadata_store = SqlMetadataStore(session) # Commented out for sync test
-        metadata_store = None # Placeholder for sync test
+        session = async_session_factory() # Use the factory to get a session
+        metadata_store = SqlMetadataStore(session) # Instantiate with the session
+        # metadata_store = None # Placeholder for sync test - REMOVED
         logger.info(f"VERBOSE_LOG: Actor {task_id}: DB session and store created.")
         logger.info(f"VERBOSE_LOG: Actor {task_id}: Getting MCP client...")
-        # mcp_client = get_mcp_client() # Commented out for sync test
-        mcp_client = None # Placeholder for sync test
+        mcp_client = get_mcp_client() # Get the MCP client via dependency function
+        # mcp_client = None # Placeholder for sync test - REMOVED
         logger.info(f"VERBOSE_LOG: Actor {task_id}: MCP client obtained.")
 
         # --- Load testing hook ---
@@ -381,11 +384,11 @@ def _execute_agent_task_actor_impl(task_id: str, goal: str, input_data: Dict[str
             try:
                 delay_ms = int(mock_delay_ms_str)
                 logger.warning(f"LOAD TEST MODE: Mocking agent execution with {delay_ms}ms delay for task {task_id}.")
-                # await asyncio.sleep(delay_ms / 1000.0) # Commented out for sync test
+                await asyncio.sleep(delay_ms / 1000.0) # Use await for sleep
                 # Simulate success for load testing using the actor's store instance
-                # await metadata_store.update_task_output(task_id=task_id, result={"mock_result": "load_test_success"}) # Commented out for sync test
-                # await metadata_store.update_task_status(task_id, TaskStatus.COMPLETED) # Commented out for sync test
-                logger.info(f"LOAD TEST MODE: Mock agent task {task_id} completed (SYNC TEST).")
+                await metadata_store.update_task_output(task_id=task_id, result={"mock_result": "load_test_success"}) # Use await
+                await metadata_store.update_task_status(task_id, TaskStatus.COMPLETED) # Use await
+                logger.info(f"LOAD TEST MODE: Mock agent task {task_id} completed.")
                 return # Skip real execution
             except ValueError:
                 logger.error(f"Invalid OPS_CORE_LOAD_TEST_MOCK_AGENT_DELAY_MS value: {mock_delay_ms_str}. Proceeding with real execution.")
@@ -393,9 +396,9 @@ def _execute_agent_task_actor_impl(task_id: str, goal: str, input_data: Dict[str
                  logger.exception(f"Error during mock agent execution for task {task_id}: {mock_err}")
                  # Attempt to mark as failed even in mock mode
                  try:
-                     # await metadata_store.update_task_output(task_id=task_id, error_message=f"Mock execution error: {mock_err}") # Commented out for sync test
-                     # await metadata_store.update_task_status(task_id, TaskStatus.FAILED) # Commented out for sync test
-                     pass # Placeholder for sync test
+                     await metadata_store.update_task_output(task_id=task_id, result={"error": f"Mock execution error: {mock_err}"}) # Update output on error
+                     await metadata_store.update_task_status(task_id, TaskStatus.FAILED, error_message=f"Mock execution error: {mock_err}") # Update status on error
+                     # pass # Placeholder for sync test - REMOVED
                  except Exception as store_err_mock:
                      logger.exception(f"Failed to update store after mock execution error for task {task_id}: {store_err_mock}")
                  return # Stop execution
@@ -403,34 +406,34 @@ def _execute_agent_task_actor_impl(task_id: str, goal: str, input_data: Dict[str
         # --- Call the actual logic with a timeout ---
         logger.info(f"VERBOSE_LOG: Actor {task_id}: Preparing to call _run_agent_task_logic.")
         try:
-            logger.info(f"VERBOSE_LOG: Running agent logic for task {task_id} (SYNC TEST - SKIPPING wait_for and actual logic)")
-            # await asyncio.wait_for( # Commented out for sync test
-            #     _run_agent_task_logic(
-            #         task_id=task_id,
-            #         goal=goal,
-            #         input_data=input_data,
-            #         metadata_store=metadata_store,
-            #         mcp_client=mcp_client
-            #     ),
-            #     timeout=AGENT_EXECUTION_TIMEOUT
-            # )
-            logger.info(f"VERBOSE_LOG: Actor {task_id}: Agent logic SKIPPED successfully (SYNC TEST).")
+            logger.info(f"VERBOSE_LOG: Running agent logic for task {task_id} via asyncio.wait_for...")
+            await asyncio.wait_for( # Use await for the timeout wrapper
+                _run_agent_task_logic(
+                    task_id=task_id,
+                    goal=goal,
+                    input_data=input_data,
+                    metadata_store=metadata_store,
+                    mcp_client=mcp_client
+                ),
+                timeout=AGENT_EXECUTION_TIMEOUT
+            )
+            logger.info(f"VERBOSE_LOG: Actor {task_id}: Agent logic completed successfully via wait_for.")
         except asyncio.TimeoutError:
             logger.error(f"Actor {task_id}: Agent execution timed out after {AGENT_EXECUTION_TIMEOUT} seconds.")
             if metadata_store:
                 try:
                     # Update output first
-                    # await metadata_store.update_task_output( # Commented out for sync test
-                    #     task_id=task_id,
-                    #     result={"error": f"Agent execution timed out after {AGENT_EXECUTION_TIMEOUT}s."}
-                    # )
+                    await metadata_store.update_task_output( # Use await
+                        task_id=task_id,
+                        result={"error": f"Agent execution timed out after {AGENT_EXECUTION_TIMEOUT}s."}
+                    )
                      # Update status and error message separately
-                    # await metadata_store.update_task_status( # Commented out for sync test
-                    #     task_id=task_id,
-                    #     status=TaskStatus.FAILED,
-                    #     error_message=f"Agent execution timed out after {AGENT_EXECUTION_TIMEOUT}s."
-                    # )
-                    pass # Placeholder for sync test
+                    await metadata_store.update_task_status( # Use await
+                        task_id=task_id,
+                        status=TaskStatus.FAILED,
+                        error_message=f"Agent execution timed out after {AGENT_EXECUTION_TIMEOUT}s."
+                    )
+                    # pass # Placeholder for sync test - REMOVED
                 except Exception as store_err_timeout:
                      logger.exception(f"Actor {task_id}: Failed to update store after agent timeout: {store_err_timeout}")
             # Do not proceed further if timed out
@@ -444,25 +447,24 @@ def _execute_agent_task_actor_impl(task_id: str, goal: str, input_data: Dict[str
         if metadata_store:
             try:
                 # Update output with error info
-                # await metadata_store.update_task_output( # Commented out for sync test
-                #     task_id=task_id,
-                #     result={"error": "Actor execution failed unexpectedly."}
-                # )
+                await metadata_store.update_task_output( # Use await
+                    task_id=task_id,
+                    result={"error": "Actor execution failed unexpectedly."}
+                )
                  # Update status and error message separately
-                # await metadata_store.update_task_status( # Commented out for sync test
-                #     task_id=task_id,
-                #     status=TaskStatus.FAILED,
-                #     error_message=str(actor_err) # Pass error message here
-                # )
-                pass # Placeholder for sync test
+                await metadata_store.update_task_status( # Use await
+                    task_id=task_id,
+                    status=TaskStatus.FAILED,
+                    error_message=str(actor_err) # Pass error message here
+                )
+                # pass # Placeholder for sync test - REMOVED
             except Exception as final_store_err:
                 logger.exception(f"Actor {task_id}: Failed to update store after actor-level failure: {final_store_err}")
     finally:
         # Ensure the session is closed
         if session:
             logger.info(f"VERBOSE_LOG: Actor {task_id}: Closing database session in finally block...")
-            # await session.close() # Commented out for sync test
-            logger.info(f"VERBOSE_LOG: Actor {task_id}: Database session closed.")
+            await session.close() # Use await to close async session
 
 # Apply the decorator directly to the implementation function.
 # Dramatiq handles re-registration gracefully if the module is imported multiple times.

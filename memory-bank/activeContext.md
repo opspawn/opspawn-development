@@ -1,30 +1,34 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-12 10:20 PM)
-- **Task 7.2 (Execute & Debug Live E2E Tests):** **In Progress (Paused for Context Reset)**. Continued debugging the `test_dramatiq_worker.py` isolation script.
-    - Added extensive verbose logging and created detailed debug log (`memory-bank/debugging/2025-04-12_task7.2_worker_actor_invocation.md`).
-    - Updated `memory-bank/testing_strategy.md` with recursive isolation strategy.
-    - Confirmed worker starts, uses RabbitMQ, discovers actor, but does not invoke actor function.
-    - Switched default LLM to OpenAI `gpt-4o-mini` (`ops-core/scheduler/engine.py`, `agentkit/llm_clients/openai_client.py`).
-    - Fixed `TypeError` in `GoogleClient` related to timeout argument (`agentkit/llm_clients/google_client.py`).
-    - Exposed RabbitMQ management UI port (15672) in `docker-compose.yml` and restarted containers.
-    - **Current Issue:** Worker process does not invoke actor function.
-- **Next Step:** Verify RabbitMQ management UI access (`http://localhost:15672`, guest/guest) and check queue/consumer status while running `test_dramatiq_worker.py`.
+## Current Focus (Updated 2025-04-13 05:58 AM)
+- **Task 7.2 (Execute & Debug Live E2E Tests):** **In Progress (Blocked)**. Debugged Dramatiq worker actor invocation using `test_dramatiq_worker.py` and manual execution.
+    - Verified RabbitMQ UI access.
+    - Confirmed message reaches queue and worker connects (message becomes "Unacked").
+    - Isolated issue: Worker receives message but fails silently *before* executing the first line of actor code.
+    - Ruled out: Broker config (`StubBroker` vs `RabbitmqBroker`), `async def` mismatch, `DRAMATIQ_TESTING` env var, Dramatiq version (1.17 vs 1.16), `AsyncIO` middleware, actor code simplification.
+    - **Current Issue:** Root cause likely within Dramatiq internals or dependency conflict in the `tox` environment. Debugging via application code exhausted.
+- **Next Step:** Given the block on the isolation script, attempt running the main E2E tests (`ops-core/tests/integration/test_live_e2e.py`) to see if the issue manifests differently or provides more clues. Alternatively, consider deeper dependency analysis or seeking external help for Dramatiq.
 
-## Recent Activities (Current Session - 2025-04-12 ~9:40 PM - 10:20 PM)
-- **Continued Task 7.2 (Execute & Debug Live E2E Tests via Isolation Script):**
-    - Updated `memory-bank/testing_strategy.md` with recursive isolation strategy.
-    - Created detailed debug log: `memory-bank/debugging/2025-04-12_task7.2_worker_actor_invocation.md`.
-    - Updated `TASK.md`, `activeContext.md`, `progress.md`.
-    - Listed OpenAI models via `curl`.
-    - Switched default LLM provider to `openai` in `ops-core/scheduler/engine.py`.
-    - Switched default OpenAI model to `gpt-4o-mini` in `agentkit/llm_clients/openai_client.py`.
-    - Fixed `TypeError` in `GoogleClient` by removing `timeout` argument from `generate_content` call.
-    - Identified RabbitMQ management UI port (15672) was not exposed.
-    - Uncommented port mapping in `docker-compose.yml`.
-    - Restarted Docker containers using `docker compose down && docker compose up -d`.
-    - Confirmed RabbitMQ default credentials (`guest`/`guest`).
-    - **Prepared for context reset.**
+## Recent Activities (Current Session - 2025-04-13 ~10:25 PM - 05:58 AM)
+- **Continued Task 7.2 (Debug Dramatiq Worker Actor Invocation):**
+    - Verified RabbitMQ UI access.
+    - Executed `test_dramatiq_worker.py` via `tox exec`.
+    - Diagnosed and fixed `ModuleNotFoundError` (running script directly).
+    - Diagnosed and fixed `tox` command errors (running script via `tox -e` vs `tox exec`).
+    - Identified worker using `StubBroker` due to `DRAMATIQ_TESTING=1` env var inheritance.
+    - Modified `test_dramatiq_worker.py` to unset `DRAMATIQ_TESTING` in worker subprocess env.
+    - Identified main script also using `StubBroker`.
+    - Modified `test_dramatiq_worker.py` to unset `DRAMATIQ_TESTING` in main script env before broker import.
+    - Confirmed worker connects with `RabbitmqBroker` but message remains "Ready" (later corrected to "Unacked").
+    - Added critical log to actor entry point (`_execute_agent_task_actor_impl`). Confirmed log is NOT reached.
+    - Isolated worker manually; created `send_test_message.py`. Confirmed worker receives message ("Unacked") but actor code is not invoked.
+    - Hypothesized `AsyncIO` middleware issue; commented out. **Result:** No change. Restored middleware.
+    - Hypothesized Dramatiq version issue; pinned to `1.16.0`. **Result:** No change. Reverted version pin.
+    - Hypothesized actor code issue; simplified actor. **Result:** No change. Restored actor code.
+    - Hypothesized `tox.ini` env var interference; commented out `DRAMATIQ_TESTING=1`. **Result:** No change.
+    - **Conclusion:** Issue likely internal to Dramatiq or dependency conflict. Debugging options via application code exhausted.
+    - Updated documentation (`activeContext.md`, `progress.md`, `TASK.md`).
+    - Updated debug log (`memory-bank/debugging/2025-04-12_task7.2_worker_actor_invocation.md`).
 
 ## Recent Activities (Previous Session - 2025-04-12 Afternoon)
 - **Updated Default LLM Configuration:** Changed default provider to "google" in `ops-core/src/ops_core/scheduler/engine.py` and default model to "gemini-2.5-pro-exp-03-25" in `agentkit/src/agentkit/llm_clients/google_client.py`.
