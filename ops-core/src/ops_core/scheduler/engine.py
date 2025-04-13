@@ -173,7 +173,7 @@ class InMemoryScheduler:
             # Send message to the actor
             logger.info(f"Scheduler submit_task: Sending task {task_id} to Dramatiq actor...")
             # Ensure the actor is imported correctly at the top of the file
-            from ..tasks.broker import execute_agent_task_actor # Ensure actor is imported
+            # Actor is defined in this file, no import needed here
             execute_agent_task_actor.send(task_id=task_id, goal=goal, input_data=input_data)
             logger.info(f"Scheduler submit_task: Task {task_id} sent to actor.")
         else:
