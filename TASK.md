@@ -408,12 +408,12 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
             - Marked tests with `@pytest.mark.e2e_live`. `(Done 2025-04-12)`
             - Adding more complex test cases (e.g., specific agent configs, tool use) deferred pending API/feature support. `(Deferred)`
   *Dependencies:* Phase 6 Completion
-  *Comments:* Requires careful environment setup and management. Needs LLM API keys (e.g., `OPENAI_API_KEY`) in the environment. Initial implementation complete; further test cases depend on feature availability. Task 7.1 implementation is considered complete.
+          *Comments:* Requires careful environment setup and management. Needs LLM API keys (e.g., `OPENAI_API_KEY`) in the environment. Initial implementation complete; further test cases depend on feature availability. Task 7.1 implementation is considered complete.
 
-- [ ] **Task 7.2: Execute & Debug Live E2E Tests**
+- [In Progress] **Task 7.2: Execute & Debug Live E2E Tests** `(Started 2025-04-12)`
   *Description:* Run the live E2E tests in a properly configured environment. Identify and fix bugs related to component interactions in a live setting.
   *Dependencies:* Task 7.1
-  *Comments:* Focus on stability and correctness of the integrated system.
+  *Comments:* Focus on stability and correctness of the integrated system. Debugging steps taken (2025-04-12): Fixed marker name (`e2e_live`->`live`), removed default marker exclusion in `tox.ini`, registered `live` marker in `pyproject.toml`, fixed `docker-compose.yml` path via `conftest.py` fixture, added session-scoped `event_loop` fixture, added `task_type` to API calls in tests, fixed `TaskResponse` schema (`task_id`->`id`), increased DB startup delay in `conftest.py`. Last attempt was running `tox -e py312 -- -m live ops-core/tests/integration/test_live_e2e.py`.
 
 ---
 

@@ -14,10 +14,37 @@
 - **Task 7.1 (Implement Full Live E2E Test Suite):** **Implementation Complete**. Added task definition, `pytest-docker` dependency, service/process fixtures in `conftest.py`, and initial tests (`test_submit_task_and_poll_completion`, `test_submit_task_and_expect_failure`, `test_concurrent_task_submissions`) in `test_live_e2e.py`. Execution/debugging pending (Task 7.2).
 - **Default LLM Configuration Update:** Changed the default LLM provider to "google" and the default model to "gemini-2.5-pro-exp-03-25" in `ops-core` scheduler and `agentkit` Google client.
 - **Phase 5 Deferred:** Tasks 5.3-5.5 remain deferred to Phase 8.
-- **Next Task:** Task 7.2 (Execute & Debug Live E2E Tests).
+- **Next Task:** Task 7.2 (Execute & Debug Live E2E Tests) - Continue debugging test failures.
 
-## Recent Activities (Current Session - 2025-04-12)
-- **Updated Default LLM Configuration:** Changed default provider to "google" in `ops-core/scheduler/engine.py` and default model to "gemini-2.5-pro-exp-03-25" in `agentkit/llm_clients/google_client.py`.
+## Recent Activities (Current Session - 2025-04-12 Evening)
+- **Started Task 7.2 (Execute & Debug Live E2E Tests):**
+    - Attempted to run tests via `tox -e py312 -- -m live ops-core/tests/integration/test_live_e2e.py`.
+    - **Failure 1:** No tests selected due to conflicting markers (`-m "not live"` default vs `-m live` arg) and unknown marker (`e2e_live`).
+        - Fixed marker name in `test_live_e2e.py` (`e2e_live` -> `live`).
+        - Removed default `-m "not live"` from `tox.ini`.
+        - Registered `live` marker in `ops-core/pyproject.toml`.
+    - **Failure 2:** `pytest-docker` failed to find `docker-compose.yml` (looking in `ops-core/tests/`).
+        - Added `docker_compose_files = ["../docker-compose.yml"]` to `[tool.pytest.ini_options]` in `ops-core/pyproject.toml`.
+    - **Failure 3:** `pytest-docker` still failed to find `docker-compose.yml`, and `docker_compose_files` was an unknown config option.
+        - Removed `docker_compose_files` from `ops-core/pyproject.toml`.
+        - Added `docker_compose_file` fixture override to `ops-core/tests/conftest.py` pointing to `../docker-compose.yml`.
+    - **Failure 4:** `docker compose up` failed with container name conflict (`/opspawn_postgres` already in use).
+        - Ran `docker compose down -v` to clean up previous containers/volumes.
+    - **Failure 5:** Tests failed during setup in `run_migrations` fixture with `ConnectionError: unexpected connection_lost() call` (asyncpg SSL issue).
+        - Modified `run_migrations` in `ops-core/tests/conftest.py` to use `?ssl=disable` in DB URL.
+    - **Failure 6:** Tests failed during setup in `run_migrations` fixture with `asyncpg.exceptions.ConnectionDoesNotExistError: connection was closed in the middle of operation`.
+        - Reverted DB URL in `run_migrations` back to `?ssl=prefer`.
+        - Increased `time.sleep()` delay in `docker_services_ready` fixture from 2 to 10 seconds.
+    - **Failure 7:** Tests failed with `ScopeMismatch` error (session-scoped fixture `live_db_engine` tried to use function-scoped `event_loop`).
+        - Added session-scoped `event_loop` fixture override to `ops-core/tests/conftest.py`.
+    - **Failure 8:** Tests failed with `AssertionError: API Error: {"detail":[{"type":"missing","loc":["body","task_type"],"msg":"Field required",...}]}` (API request missing `task_type`).
+        - Added `"task_type": "agent_task"` to API request payloads in `ops-core/tests/integration/test_live_e2e.py`.
+    - **Failure 9:** Tests failed with `fastapi.exceptions.ResponseValidationError: 1 validation errors: {'type': 'missing', 'loc': ('response', 'id'), 'msg': 'Field required', ...}` (API response model mismatch).
+        - Corrected `TaskResponse` schema in `ops-core/src/ops_core/api/v1/schemas/tasks.py` to use `id: uuid.UUID` instead of `task_id: str`.
+    - **Last Action:** Attempted to run `tox -e py312 -- -m live ops-core/tests/integration/test_live_e2e.py` again after fixing the response schema. Result pending.
+
+## Recent Activities (Previous Session - 2025-04-12 Afternoon)
+- **Updated Default LLM Configuration:** Changed default provider to "google" in `ops-core/src/ops_core/scheduler/engine.py` and default model to "gemini-2.5-pro-exp-03-25" in `agentkit/src/agentkit/llm_clients/google_client.py`.
 - **Completed Implementation for Task 7.1 (Implement Full Live E2E Test Suite):**
     - Implemented initial tests in `ops-core/tests/integration/test_live_e2e.py` covering success, failure, and concurrency scenarios using the live fixtures.
     - Implemented pytest fixtures in `ops-core/tests/conftest.py` using `pytest-docker` to manage Docker services (PostgreSQL, RabbitMQ) and `subprocess` to manage application processes (API server, Dramatiq worker). Fixtures include service readiness checks and Alembic migration execution.
@@ -222,3 +249,33 @@
 - **MCP Integration Strategy:** Using **Dynamic Proxy Pattern**. (Decision Date: 2025-04-05).
 - **gRPC Import Strategy:** Using explicit submodule imports (`from grpc import aio`). (Decision Date: 2025-04-06).
 - Adherence to `.clinerules/project-guidelines.md` is mandatory.
+
+</final_file_content>
+
+IMPORTANT: For any future changes to this file, use the final_file_content shown above as your reference. This content reflects the current state of the file, including any auto-formatting (e.g., if you used single quotes but the formatter converted them to double quotes). Always base your SEARCH/REPLACE operations on this final version to ensure accuracy.
+
+<environment_details>
+# VSCode Visible Files
+memory-bank/activeContext.md
+
+# VSCode Open Tabs
+ops-core/src/ops_core/scheduler/engine.py
+agentkit/src/agentkit/llm_clients/google_client.py
+memory-bank/progress.md
+tox.ini
+ops-core/pyproject.toml
+ops-core/tests/integration/test_live_e2e.py
+ops-core/tests/conftest.py
+ops-core/src/ops_core/api/v1/schemas/tasks.py
+TASK.md
+memory-bank/activeContext.md
+
+# Current Time
+4/12/2025, 7:42:24 PM (America/Denver, UTC-6:00)
+
+# Context Window Usage
+415,849 / 1,048.576K tokens used (40%)
+
+# Current Mode
+ACT MODE
+</environment_details>
