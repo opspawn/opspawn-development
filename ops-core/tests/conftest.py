@@ -357,6 +357,11 @@ def live_dramatiq_worker(ensure_live_db_schema, docker_services_ready, docker_ip
     worker_env = os.environ.copy()
     worker_env["DATABASE_URL"] = live_db_url
     worker_env["RABBITMQ_URL"] = live_rabbitmq_url
+    # Explicitly unset DRAMATIQ_TESTING for the live worker process
+    # to ensure it uses the RabbitmqBroker configuration path.
+    if "DRAMATIQ_TESTING" in worker_env:
+        del worker_env["DRAMATIQ_TESTING"]
+        print("Unsetting DRAMATIQ_TESTING for live worker environment.")
     # Explicitly pass common LLM API keys to the worker environment
     for key in ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY", "OPENROUTER_API_KEY", "AGENTKIT_LLM_PROVIDER", "AGENTKIT_LLM_MODEL"]:
         value = os.getenv(key)
