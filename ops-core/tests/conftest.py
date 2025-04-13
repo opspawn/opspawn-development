@@ -383,19 +383,35 @@ def live_dramatiq_worker(ensure_live_db_schema, docker_services_ready, docker_ip
     print(f"  RABBITMQ_URL={live_rabbitmq_url}")
 
     # Start the worker process
-    process = subprocess.Popen(cmd, env=worker_env)
+    # Start the worker process, capturing stdout and stderr
+    process = subprocess.Popen(
+        cmd,
+        env=worker_env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True # Decode stdout/stderr as text
+    )
 
-    # Give the worker a moment to initialize
-    # Check if worker process exited quickly after a short delay
+    # Give the worker a moment to initialize and print initial output
+    print("--- Worker Initial Output (First 2s) ---")
     time.sleep(2) # Wait a couple of seconds
+
+    # Check if worker process exited quickly
     if process.poll() is not None:
-        # Process terminated, capture output if possible (might be complex)
-        # For now, just fail the fixture setup
-        process.terminate()
+        stdout, stderr = process.communicate() # Get all output
+        print("--- Worker stdout ---")
+        print(stdout)
+        print("--- Worker stderr ---")
+        print(stderr)
+        print("---------------------")
+        process.terminate() # Ensure cleanup
         process.wait()
-        pytest.fail(f"Dramatiq worker process exited prematurely with code {process.returncode}. Check worker logs/errors.")
+        pytest.fail(f"Dramatiq worker process exited prematurely with code {process.returncode}. See worker logs above.")
     else:
         print("Dramatiq worker process is running after initial delay.")
+        # Optionally read and print non-blocking output here if needed during setup
+        # For now, we'll capture full output during teardown or if it fails early.
+    print("----------------------------------------")
  
     print("[Fixture live_dramatiq_worker] Setup complete, yielding worker process.")
     yield process # Provide the process handle if needed
@@ -404,12 +420,24 @@ def live_dramatiq_worker(ensure_live_db_schema, docker_services_ready, docker_ip
     print("Stopping Dramatiq worker...")
     process.terminate()
     try:
-        process.wait(timeout=5)
-        print("Dramatiq worker stopped.")
+        stdout, stderr = process.communicate(timeout=5) # Get remaining output
+        print("--- Worker Final stdout ---")
+        print(stdout)
+        print("--- Worker Final stderr ---")
+        print(stderr)
+        print("-------------------------")
+        print(f"Dramatiq worker stopped gracefully (Exit code: {process.returncode}).")
     except subprocess.TimeoutExpired:
         print("Dramatiq worker did not terminate gracefully, killing.")
         process.kill()
-        process.wait()
+        stdout, stderr = process.communicate() # Get output after kill
+        print("--- Worker Final stdout (after kill) ---")
+        print(stdout)
+        print("--- Worker Final stderr (after kill) ---")
+        print(stderr)
+        print("--------------------------------------")
+    except Exception as e:
+        print(f"Error during worker teardown communication: {e}")
 
 # Session-scoped engine connected to the live Docker database
 @pytest_asyncio.fixture(scope="session")
