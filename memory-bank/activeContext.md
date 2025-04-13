@@ -1,41 +1,29 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-12 9:43 PM)
+## Current Focus (Updated 2025-04-12 10:20 PM)
 - **Task 7.2 (Execute & Debug Live E2E Tests):** **In Progress (Paused for Context Reset)**. Continued debugging the `test_dramatiq_worker.py` isolation script.
-    - Verified previous fixes (Alembic, DB conn, worker startup, asyncio loop, planner/security signatures, tool formatting).
-    - Added extensive verbose logging to `test_dramatiq_worker.py`, `ops_core/tasks/worker.py`, `ops_core/scheduler/engine.py`, `ops_core/tasks/broker.py`.
+    - Added extensive verbose logging and created detailed debug log (`memory-bank/debugging/2025-04-12_task7.2_worker_actor_invocation.md`).
     - Updated `memory-bank/testing_strategy.md` with recursive isolation strategy.
-    - Confirmed via logs that the worker process starts, uses RabbitMQ, discovers the `execute_agent_task_actor`, and adds consumers for the 'default' queue.
-    - **Current Issue:** Despite the seemingly correct setup, the worker process is **not** invoking the actor function (`_execute_agent_task_actor_impl`) when the message is sent to the queue. The `!!!!!! VERBOSE_LOG: ACTOR ENTRY POINT REACHED... !!!!!!` log message is never printed by the worker.
-- **Agent Timeout:** Increased agent execution timeout to 20s in `ops-core/scheduler/engine.py`.
-- **Next Step:** Continue debugging the Dramatiq worker message consumption/dispatch mechanism. Potential next steps include checking RabbitMQ management UI or simplifying the actor further (e.g., making it synchronous).
+    - Confirmed worker starts, uses RabbitMQ, discovers actor, but does not invoke actor function.
+    - Switched default LLM to OpenAI `gpt-4o-mini` (`ops-core/scheduler/engine.py`, `agentkit/llm_clients/openai_client.py`).
+    - Fixed `TypeError` in `GoogleClient` related to timeout argument (`agentkit/llm_clients/google_client.py`).
+    - Exposed RabbitMQ management UI port (15672) in `docker-compose.yml` and restarted containers.
+    - **Current Issue:** Worker process does not invoke actor function.
+- **Next Step:** Verify RabbitMQ management UI access (`http://localhost:15672`, guest/guest) and check queue/consumer status while running `test_dramatiq_worker.py`.
 
-## Recent Activities (Current Session - 2025-04-12 ~9:20 PM - 9:43 PM)
+## Recent Activities (Current Session - 2025-04-12 ~9:40 PM - 10:20 PM)
 - **Continued Task 7.2 (Execute & Debug Live E2E Tests via Isolation Script):**
-    - Refreshed context (TASK.md, activeContext.md, progress.md).
-    - Confirmed plan to re-run isolation script.
-    - Switched to Code mode.
-    - Ran `test_dramatiq_worker.py`: Verified previous fix for `ReActPlanner` tool formatting. Task remained PENDING (hit 5s agent timeout).
-    - Reduced polling waits in `test_dramatiq_worker.py`.
-    - Increased agent execution timeout to 20s in `ops-core/scheduler/engine.py`.
-    - Ran script: Task still PENDING. Worker logs showed initialization but no actor invocation.
-    - Simplified actor registration logic in `ops-core/scheduler/engine.py`.
-    - Ran script: Task still PENDING. Worker logs showed initialization but no actor invocation.
-    - Added critical log message at actor entry point in `ops-core/scheduler/engine.py`. Fixed resulting syntax errors.
-    - Ran script: Task still PENDING. Critical log message *not* present in worker output.
-    - Simplified worker command in `test_dramatiq_worker.py` (removed explicit broker).
-    - Ran script: Task still PENDING. Critical log message *not* present.
-    - Reverted worker command simplification in `test_dramatiq_worker.py`.
-    - Added diagnostic print to `ops-core/tasks/broker.py` to confirm broker type in worker.
-    - Ran script: Task still PENDING. Confirmed worker uses `RabbitmqBroker`. Critical log message *not* present.
-    - Forced worker to single process/thread (`-p 1 -t 1`) in `test_dramatiq_worker.py`.
-    - Ran script: Task still PENDING. Critical log message *not* present.
-    - Temporarily removed `AsyncIO` middleware from `ops-core/tasks/broker.py`.
-    - Ran script: Task still PENDING. Critical log message *not* present.
-    - Restored `AsyncIO` middleware and removed `Results` middleware from `ops-core/tasks/broker.py`.
-    - Ran script: Task still PENDING. Critical log message *not* present.
-    - Added verbose logging throughout `test_dramatiq_worker.py`, `ops_core/tasks/worker.py`, `ops_core/scheduler/engine.py`. Fixed resulting indentation errors.
     - Updated `memory-bank/testing_strategy.md` with recursive isolation strategy.
+    - Created detailed debug log: `memory-bank/debugging/2025-04-12_task7.2_worker_actor_invocation.md`.
+    - Updated `TASK.md`, `activeContext.md`, `progress.md`.
+    - Listed OpenAI models via `curl`.
+    - Switched default LLM provider to `openai` in `ops-core/scheduler/engine.py`.
+    - Switched default OpenAI model to `gpt-4o-mini` in `agentkit/llm_clients/openai_client.py`.
+    - Fixed `TypeError` in `GoogleClient` by removing `timeout` argument from `generate_content` call.
+    - Identified RabbitMQ management UI port (15672) was not exposed.
+    - Uncommented port mapping in `docker-compose.yml`.
+    - Restarted Docker containers using `docker compose down && docker compose up -d`.
+    - Confirmed RabbitMQ default credentials (`guest`/`guest`).
     - **Prepared for context reset.**
 
 ## Recent Activities (Previous Session - 2025-04-12 Afternoon)

@@ -19,7 +19,7 @@ services:
     # container_name: opspawn_rabbitmq # Removed to avoid conflicts in tests
     ports:
       - "5672:5672"   # AMQP port
-      # - "15672:15672" # Management UI port (Commented out for tests to avoid host port conflicts)
+      - "15672:15672" # Management UI port (Uncommented for debugging)
     environment:
       RABBITMQ_DEFAULT_USER: guest # Default user/pass for local dev
       RABBITMQ_DEFAULT_PASS: guest

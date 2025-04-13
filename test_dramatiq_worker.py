@@ -132,16 +132,19 @@ async def main():
         existing_pythonpath = worker_env.get("PYTHONPATH", "")
         worker_env["PYTHONPATH"] = os.pathsep.join(filter(None, [src_ops_core, src_agentkit, existing_pythonpath]))
         # Explicitly pass LLM config env vars (and API keys if necessary)
-        # Clients should pick up API keys from the main env if set, but let's be explicit for provider/model
-        worker_env["AGENTKIT_LLM_PROVIDER"] = os.getenv("AGENTKIT_LLM_PROVIDER", "google") # Use main env or default
-        worker_env["AGENTKIT_LLM_MODEL"] = os.getenv("AGENTKIT_LLM_MODEL", "gemini-2.5-pro-exp-03-25") # Use main env or default
+        # Explicitly copy LLM provider and model from the main environment (which loaded .env)
+        # This ensures the worker uses the same config as intended by the test script.
+        llm_provider = os.getenv("AGENTKIT_LLM_PROVIDER", "google") # Get from main env or default
+        llm_model = os.getenv("AGENTKIT_LLM_MODEL", "gemini-2.5-pro-exp-03-25") # Get from main env or default
+        worker_env["AGENTKIT_LLM_PROVIDER"] = llm_provider
+        worker_env["AGENTKIT_LLM_MODEL"] = llm_model
         # Pass API keys if they exist in the main environment
         for key in ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GOOGLE_API_KEY", "OPENROUTER_API_KEY"]:
              if key in os.environ:
                   worker_env[key] = os.environ[key]
         logger.info(f"Setting PYTHONPATH for worker subprocess: {worker_env.get('PYTHONPATH')}")
-        logger.info(f"Setting AGENTKIT_LLM_PROVIDER for worker: {worker_env.get('AGENTKIT_LLM_PROVIDER')}")
-        logger.info(f"Setting AGENTKIT_LLM_MODEL for worker: {worker_env.get('AGENTKIT_LLM_MODEL')}")
+        logger.info(f"Setting AGENTKIT_LLM_PROVIDER for worker: {llm_provider}")
+        logger.info(f"Setting AGENTKIT_LLM_MODEL for worker: {llm_model}")
         logger.info(f"Passing API keys if set: {' '.join([k for k in ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GOOGLE_API_KEY', 'OPENROUTER_API_KEY'] if k in worker_env])}")
         cmd = [
             sys.executable, # Use the same python interpreter

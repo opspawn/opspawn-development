@@ -1,10 +1,10 @@
 # Progress: Opspawn Core Foundation (Phase 6 In Progress)
 
-## Current Status (Updated 2025-04-12 9:45 PM)
+## Current Status (Updated 2025-04-12 10:21 PM)
 - **Phase:** Phase 7 (Full Live E2E Testing).
-- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 6, 9 completed. Tasks 5.1 completed. Maintenance tasks Maint.1-Maint.14 completed. Task 7.1 implementation complete. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Backlog Enhancements 6 & 7 added. Testing strategy documentation updated.
-- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **In Progress (Paused for Context Reset)**. Continued debugging the `test_dramatiq_worker.py` isolation script. Added extensive verbose logging. Confirmed worker starts, connects to RabbitMQ, discovers actor, but does not invoke the actor function when a message is sent. The issue appears to be in the worker's message consumption or dispatch mechanism.
-- **Next Task:** Task 7.2 (Execute & Debug Live E2E Tests) - Continue debugging the Dramatiq worker message consumption/dispatch issue.
+- **Overall Progress:** Phases 1, 2, 3, 3.5 (MCP), 4, 6, 9 completed. Tasks 5.1 completed. Maintenance tasks Maint.1-Maint.14 completed. Task 7.1 implementation complete. Task 5.2 documentation expanded, but further updates deferred to Phase 8. Tasks 5.3-5.5 deferred to Phase 8. Backlog Enhancements 6 & 7 added. Testing strategy documentation updated. Debug log created.
+- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **In Progress (Paused for Context Reset)**. Continued debugging the `test_dramatiq_worker.py` isolation script. Added verbose logging. Confirmed worker starts, connects, discovers actor, but doesn't invoke actor function. Switched default LLM to OpenAI `gpt-4o-mini`. Fixed GoogleClient TypeError. Exposed RabbitMQ management UI port.
+- **Next Task:** Task 7.2 (Execute & Debug Live E2E Tests) - Verify RabbitMQ UI access and check queue/consumer status during test script execution.
 - **Blockers:** Worker not invoking actor function. (Google live test remains marked xfail due to suspected SDK issue).
 
 ## What Works (As of 2025-04-12 7:43 PM)
@@ -95,7 +95,7 @@
 - **LLM Client Robustness (Task Maint.14 Completed):** All LLM clients (`OpenAIClient`, `AnthropicClient`, `GoogleClient`, `OpenRouterClient`) now include retry logic (using `tenacity`) for transient errors and support a configurable `timeout` parameter. Unit tests verify this functionality.
 - **Default LLM Configuration:** Default provider set to "google", default model set to "gemini-2.5-pro-exp-03-25".
 - **Live E2E Test Suite (Task 7.1 Implementation):** Fixtures for managing Docker services (DB, RabbitMQ) and application processes (API, Worker) implemented in `ops-core/tests/conftest.py`. Initial tests covering success, failure, and concurrency implemented in `ops-core/tests/integration/test_live_e2e.py`.
-- **Live E2E Test Debugging (Task 7.2):** Addressed API response validation (ID/type), test code alignment, DB commit in store, Docker conflicts (name/port), worker env vars, worker import path, agent execution timeout, added extensive logging. Created and debugged worker isolation script (`test_dramatiq_worker.py`), resolving issues with Alembic, DB connection, worker startup, asyncio, planner calls, security manager, and tool formatting. Increased agent timeout. Added verbose logging. Confirmed worker starts/connects/discovers but doesn't invoke actor.
+- **Live E2E Test Debugging (Task 7.2):** Addressed API response validation (ID/type), test code alignment, DB commit in store, Docker conflicts (name/port), worker env vars, worker import path, agent execution timeout, added extensive logging. Created and debugged worker isolation script (`test_dramatiq_worker.py`), resolving issues with Alembic, DB connection, worker startup, asyncio, planner calls, security manager, and tool formatting. Increased agent timeout. Added verbose logging. Confirmed worker starts/connects/discovers but doesn't invoke actor. Switched default LLM. Fixed GoogleClient. Exposed RabbitMQ UI port.
 
 ## What's Left to Build (Revised Plan - 2025-04-12)
 - **Phase 7:** Full Live E2E Testing
