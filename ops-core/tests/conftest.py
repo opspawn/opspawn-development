@@ -14,7 +14,7 @@ import dramatiq # Import dramatiq
 from dramatiq.brokers.stub import StubBroker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import delete # Added import
+from sqlalchemy import delete, text # Added import
 # Import SQLModel is no longer needed here if we use the specific metadata
 # from sqlmodel import SQLModel
 
@@ -221,37 +221,43 @@ def ensure_live_db_schema(docker_services_ready, docker_ip): # Make synchronous
     # Create synchronous engine for schema setup
     sync_engine = create_sync_engine(live_db_url_sync, echo=False)
     try:
-        # Log metadata state before operations
-        # Note: Top-level import of models should have populated this
-        print(f"Tables known to metadata before operations: {list(target_metadata.tables.keys())}")
-        if not target_metadata.tables:
-             print("WARNING: Metadata appears empty before schema operations!")
-
-        # Drop and create tables synchronously using metadata
-        print("Dropping existing tables (if any) synchronously...")
-        target_metadata.drop_all(sync_engine)
-        print("Creating tables synchronously using metadata.create_all...")
-        target_metadata.create_all(sync_engine)
-        print("Synchronous schema creation commands executed.")
-
-        # --- Verification Step (using sync engine) ---
-        print("Verifying table existence after synchronous creation...")
+        print("Executing raw SQL schema setup...")
         with sync_engine.connect() as connection:
-            inspector = sqlalchemy_inspect(connection) # Inspect the connection directly
-            found_tables = inspector.get_table_names()
-            print(f"Inspector found tables: {found_tables}")
-            if "task" in found_tables:
-                print("Verification successful: 'task' table exists.")
-            else:
-                print("Verification FAILED: 'task' table DOES NOT exist after sync creation.")
-                raise RuntimeError("Task table not created by sync metadata.create_all, failing test setup.")
-        # --- End Verification Step ---
+            # Combine SQL into a single string or execute separately
+            raw_sql = """
+            DROP TABLE IF EXISTS task;
 
+            CREATE TABLE task (
+                task_id TEXT PRIMARY KEY,
+                task_type TEXT,
+                name TEXT,
+                status TEXT,
+                created_at TIMESTAMP WITH TIME ZONE,
+                updated_at TIMESTAMP WITH TIME ZONE,
+                scheduled_at TIMESTAMP WITH TIME ZONE,
+                started_at TIMESTAMP WITH TIME ZONE,
+                completed_at TIMESTAMP WITH TIME ZONE,
+                input_data JSON,
+                result JSON,
+                error_message TEXT,
+                agent_id TEXT,
+                workflow_id TEXT
+            );
+
+            CREATE INDEX ix_task_task_type ON task (task_type);
+            CREATE INDEX ix_task_status ON task (status);
+            CREATE INDEX ix_task_created_at ON task (created_at);
+            CREATE INDEX ix_task_agent_id ON task (agent_id);
+            CREATE INDEX ix_task_workflow_id ON task (workflow_id);
+            """
+            connection.execute(text(raw_sql))
+            connection.commit() # Ensure changes are committed
+        print("Raw SQL schema setup executed.")
     except Exception as e:
-        print(f"Synchronous schema setup or verification failed: {e}")
+        print(f"Raw SQL schema setup failed: {e}")
         raise
     finally:
-        if sync_engine: # Ensure engine exists before disposing
+        if sync_engine:
              sync_engine.dispose() # Dispose sync engine used for setup
 
     print("[Fixture ensure_live_db_schema] Setup complete, yielding ASYNC DB URL.")
