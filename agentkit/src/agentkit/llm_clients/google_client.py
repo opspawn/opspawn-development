@@ -2,8 +2,12 @@ import os
 import asyncio
 import functools
 from typing import Dict, Any, Optional, List
-import google.genai as genai # Changed import
-from google.genai import types as genai_types # Use alias for types
+
+import tenacity
+import google.genai as genai
+from google.genai import types as genai_types
+# Import specific exceptions from google.api_core
+from google.api_core import exceptions as google_exceptions
 
 from agentkit.core.interfaces.llm_client import BaseLlmClient, LlmResponse
 
@@ -32,6 +36,38 @@ class GoogleClient(BaseLlmClient):
 
         self.client = genai.Client(**client_options)
 
+    @tenacity.retry(
+        stop=tenacity.stop_after_attempt(3),
+        wait=tenacity.wait_fixed(1),
+        retry=tenacity.retry_if_exception_type((
+            google_exceptions.ResourceExhausted, # Rate limits
+            google_exceptions.InternalServerError, # 500 errors
+            google_exceptions.ServiceUnavailable, # 503 errors
+            google_exceptions.DeadlineExceeded, # Timeout on Google's side
+            google_exceptions.Aborted, # Concurrency issues
+            google_exceptions.Unknown, # Generic server error
+        )),
+        reraise=True # Reraise the exception if retries fail
+    )
+    async def _call_google_api(
+        self,
+        model_name: str,
+        contents_payload: List[Dict[str, Any]],
+        generation_config_obj: genai_types.GenerationConfig,
+        timeout: Optional[float]
+    ) -> Any:
+        """Internal helper to make the actual API call with retry logic."""
+        request_options = {}
+        if timeout is not None:
+            request_options['timeout'] = timeout
+
+        return await self.client.aio.models.generate_content(
+            model=model_name,
+            contents=contents_payload,
+            config=generation_config_obj,
+            request_options=request_options # Pass timeout via request_options
+        )
+
     async def generate(
         self,
         prompt: str, # Changed back to prompt: str
@@ -39,6 +75,7 @@ class GoogleClient(BaseLlmClient):
         stop_sequences: Optional[List[str]] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None, # Called max_output_tokens in Gemini
+        timeout: Optional[float] = 60.0, # Default timeout in seconds
         **kwargs: Any
     ) -> LlmResponse:
         """
@@ -50,17 +87,16 @@ class GoogleClient(BaseLlmClient):
             stop_sequences: List of sequences to stop generation at.
             temperature: Sampling temperature.
             max_tokens: Maximum number of tokens (output tokens) to generate.
+            timeout: Optional request timeout in seconds (default: 60.0).
             **kwargs: Additional arguments for the Gemini API (e.g., top_p, top_k, system_prompt).
 
         Returns:
             An LlmResponse object containing the generated content and metadata.
         """
         try:
-            # Convert the prompt string into the required format for the SDK
-            # For simple prompts, just pass the string directly.
-            # For more complex interactions (multi-turn), this client might need enhancement
-            # or users should use the underlying SDK directly.
-            input_content = prompt
+            # 1. Prepare contents structure based on the input prompt string.
+            #    This matches the structure required by the Gemini API for text input.
+            contents_payload = [{"parts": [{"text": prompt}]}]
 
             # 2. Prepare GenerationConfig with standard parameters.
             system_prompt = kwargs.get("system_prompt") # Get system prompt if passed via kwargs
@@ -85,12 +121,13 @@ class GoogleClient(BaseLlmClient):
             # Create the GenerationConfig object
             generation_config_obj = genai_types.GenerationConfig(**filtered_generation_config_params)
 
-            # 3. Call the ASYNCHRONOUS generate_content method.
-            #    Pass the GenerationConfig object via the `config=` argument.
-            response = await self.client.aio.models.generate_content(
-                model=f"models/{model}", # Model name needs prefix here
-                contents=input_content,
-                config=generation_config_obj # Pass the config object here using config=
+            # 3. Call the internal helper method with retry logic
+            model_name_with_prefix = f"models/{model}"
+            response = await self._call_google_api(
+                model_name=model_name_with_prefix,
+                contents_payload=contents_payload,
+                generation_config_obj=generation_config_obj,
+                timeout=timeout
             )
 
             # 4. Map the successful response to LlmResponse
@@ -127,10 +164,25 @@ class GoogleClient(BaseLlmClient):
                 finish_reason=finish_reason, # Use calculated value
                 error=None,
             )
-        # Catch other potential errors (API errors, network issues, SDK internal errors, etc.)
+        # Catch specific Google API errors first
+        except (
+            google_exceptions.InvalidArgument,
+            google_exceptions.PermissionDenied,
+            google_exceptions.ResourceExhausted,
+            google_exceptions.InternalServerError,
+            google_exceptions.ServiceUnavailable,
+            # Add other specific exceptions as needed
+        ) as e:
+            error_type = type(e).__name__
+            return LlmResponse(
+                content="",
+                model_used=model,
+                error=f"Google API error ({error_type}): {str(e)}",
+            )
+        # Catch any other unexpected errors
         except Exception as e:
             return LlmResponse(
                 content="",
                 model_used=model,
-                error=f"Google Gemini API error: {str(e)}", # Explicitly convert e to string
+                error=f"An unexpected error occurred: {str(e)}",
             )

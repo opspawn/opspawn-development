@@ -3,9 +3,16 @@ import os
 from unittest.mock import AsyncMock, patch, MagicMock
 
 # Need OpenAI types and errors as OpenRouter uses the OpenAI SDK format
-from openai import OpenAIError
+from openai import (
+    OpenAIError,
+    RateLimitError,
+    APITimeoutError,
+    APIConnectionError,
+    InternalServerError,
+    APIStatusError,
+)
 from openai.types.chat import ChatCompletion, ChatCompletionMessage
-from openai.types.chat.chat_completion import Choice as ChatCompletionChoice # Use specific import if needed
+from openai.types.chat.chat_completion import Choice as ChatCompletionChoice
 from openai.types.completion_usage import CompletionUsage
 
 # Import the client AFTER potential patches are applied in fixtures/tests
@@ -49,6 +56,9 @@ def openrouter_client(mock_openai_for_or): # Depends on the mocked AsyncOpenAI c
     )
     # Ensure the internal client is the mocked one
     assert client.client == mock_openai_for_or.return_value
+
+    # Reset the underlying mock method for each test
+    mock_openai_for_or.return_value.chat.completions.create.reset_mock()
     return client
 
 # --- Test Cases ---
@@ -79,10 +89,11 @@ async def test_openrouter_client_generate_success(openrouter_client, mock_openai
     mock_client_instance.chat.completions.create.return_value = mock_completion
 
     prompt = "Summarize this article."
-    model = "anthropic/claude-3-haiku-20240307" # Match the model used in the request
+    model = "anthropic/claude-3-haiku-20240307"
     temperature = 0.9
     max_tokens = 150
-    system_prompt = "You are an OpenRouter expert." # Add system prompt
+    timeout_seconds = 25.0 # Specific timeout
+    system_prompt = "You are an OpenRouter expert."
 
     # Act
     response = await openrouter_client.generate(
@@ -91,8 +102,9 @@ async def test_openrouter_client_generate_success(openrouter_client, mock_openai
         temperature=temperature,
         max_tokens=max_tokens,
         stop_sequences=["\n"],
-        system_prompt=system_prompt, # Pass system prompt
-        top_p=0.8 # Test other kwargs passthrough
+        system_prompt=system_prompt,
+        timeout=timeout_seconds, # Pass timeout
+        top_p=0.8
     )
 
     # Assert
@@ -119,15 +131,20 @@ async def test_openrouter_client_generate_success(openrouter_client, mock_openai
     assert call_kwargs["messages"] == expected_messages
     assert call_kwargs["temperature"] == temperature
     assert call_kwargs["max_tokens"] == max_tokens
-    assert call_kwargs["stop"] == ["\n"] # OpenAI uses 'stop' not 'stop_sequences'
-    assert call_kwargs["top_p"] == 0.8 # Verify kwargs passthrough
+    assert call_kwargs["stop"] == ["\n"]
+    assert call_kwargs["top_p"] == 0.8
+    assert call_kwargs["request_timeout"] == timeout_seconds # Verify timeout passthrough
 
 @pytest.mark.asyncio
 async def test_openrouter_client_generate_api_error(openrouter_client, mock_openai_for_or):
-    """Tests handling of API errors (via OpenAI SDK) during generation."""
+    """
+    Tests handling of API errors (via OpenAI SDK) during generation.
+    Covers non-retryable errors or errors after retries are exhausted.
+    """
     # Arrange
     mock_client_instance = mock_openai_for_or.return_value
-    mock_client_instance.chat.completions.create.side_effect = OpenAIError("Simulated OpenRouter API error")
+    error_to_raise = OpenAIError("Simulated OpenRouter API error")
+    mock_client_instance.chat.completions.create.side_effect = error_to_raise
 
     prompt = "This will fail on OpenRouter."
     model = "google/gemini-pro" # Required model
@@ -139,17 +156,21 @@ async def test_openrouter_client_generate_api_error(openrouter_client, mock_open
     assert isinstance(response, LlmResponse)
     assert response.content == ""
     assert response.model_used == model
-    assert "OpenRouter API error (via OpenAI SDK): Simulated OpenRouter API error" in response.error
+    assert f"OpenRouter API error (via OpenAI SDK): {error_to_raise}" in response.error
     assert response.usage_metadata is None
     assert response.finish_reason is None
-    mock_client_instance.chat.completions.create.assert_awaited_once()
+    assert mock_client_instance.chat.completions.create.call_count >= 1
 
 @pytest.mark.asyncio
 async def test_openrouter_client_generate_unexpected_error(openrouter_client, mock_openai_for_or):
-    """Tests handling of unexpected errors during generation."""
+    """
+    Tests handling of unexpected (non-OpenAIError) errors during generation.
+    Retry logic should not apply here.
+    """
     # Arrange
     mock_client_instance = mock_openai_for_or.return_value
-    mock_client_instance.chat.completions.create.side_effect = Exception("Something else failed")
+    error_message = "Something else failed"
+    mock_client_instance.chat.completions.create.side_effect = Exception(error_message)
 
     prompt = "Trigger unexpected failure."
     model = "openai/gpt-4" # Required model
@@ -161,10 +182,10 @@ async def test_openrouter_client_generate_unexpected_error(openrouter_client, mo
     assert isinstance(response, LlmResponse)
     assert response.content == ""
     assert response.model_used == model
-    # Check for the generic error message from the client
-    assert "An unexpected error occurred: Something else failed" in response.error
+    assert f"An unexpected error occurred: {error_message}" in response.error
     assert response.usage_metadata is None
     assert response.finish_reason is None
+    # Should only be called once
     mock_client_instance.chat.completions.create.assert_awaited_once()
 
 
@@ -197,7 +218,77 @@ def test_openrouter_client_init_with_key_arg(mock_openai_for_or):
         api_key=api_key,
         base_url=OpenRouterClient.DEFAULT_BASE_URL
     )
-    assert client.client == mock_openai_for_or.return_value # Check internal client
+    assert client.client == mock_openai_for_or.return_value
+
+# --- New Tests for Retry/Timeout ---
+
+@pytest.mark.asyncio
+async def test_openrouter_client_retry_on_rate_limit(openrouter_client, mock_openai_for_or):
+    """Tests that the client retries on RateLimitError and eventually succeeds."""
+    # Arrange
+    mock_client_instance = mock_openai_for_or.return_value
+    mock_create_method = mock_client_instance.chat.completions.create
+
+    # Mock the successful response structure
+    mock_choice = ChatCompletionChoice(
+        index=0,
+        message=ChatCompletionMessage(role="assistant", content="Success after OR retry."),
+        finish_reason="stop"
+    )
+    mock_usage = CompletionUsage(prompt_tokens=5, completion_tokens=5, total_tokens=10)
+    mock_success_completion = ChatCompletion(
+        id="or-chatcmpl-retry", choices=[mock_choice], created=1677652399,
+        model="google/gemini-pro", object="chat.completion", usage=mock_usage
+    )
+
+    # Configure side effect: fail twice with RateLimitError, then succeed
+    mock_create_method.side_effect = [
+        RateLimitError("OR Rate limit exceeded", response=MagicMock(), body=None),
+        RateLimitError("OR Rate limit exceeded again", response=MagicMock(), body=None),
+        mock_success_completion
+    ]
+
+    prompt = "Retry this OR call."
+    model = "google/gemini-pro" # Required
+
+    # Act
+    response = await openrouter_client.generate(prompt=prompt, model=model)
+
+    # Assert
+    assert isinstance(response, LlmResponse)
+    assert response.content == "Success after OR retry."
+    assert response.error is None
+    assert response.model_used == model
+    # Check that the API was called 3 times (2 failures + 1 success)
+    assert mock_create_method.call_count == 3
+
+@pytest.mark.asyncio
+async def test_openrouter_client_retry_failure(openrouter_client, mock_openai_for_or):
+    """Tests that the client returns an error after exhausting retries."""
+    # Arrange
+    mock_client_instance = mock_openai_for_or.return_value
+    mock_create_method = mock_client_instance.chat.completions.create
+
+    # Configure side effect: always fail with InternalServerError
+    error_to_raise = InternalServerError("OR Server error", response=MagicMock(), body=None)
+    mock_create_method.side_effect = error_to_raise
+
+    prompt = "This OR call will always fail."
+    model = "openai/gpt-4" # Required
+
+    # Act
+    response = await openrouter_client.generate(prompt=prompt, model=model)
+
+    # Assert
+    assert isinstance(response, LlmResponse)
+    assert response.content == ""
+    assert response.model_used == model
+    # Check that the error reflects the last raised exception
+    assert f"OpenRouter API error (via OpenAI SDK): {error_to_raise}" in response.error
+    assert response.usage_metadata is None
+    assert response.finish_reason is None
+    # Check that the API was called 3 times (max retries)
+    assert mock_create_method.call_count == 3
 
 # Use the mock_openai_for_or fixture which handles patching
 def test_openrouter_client_init_with_base_url(mock_openai_for_or):

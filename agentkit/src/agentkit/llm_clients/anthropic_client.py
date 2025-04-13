@@ -1,7 +1,16 @@
 import os
 from typing import Dict, Any, Optional, List
 
-from anthropic import AsyncAnthropic, AnthropicError
+import tenacity
+from anthropic import (
+    AsyncAnthropic,
+    AnthropicError,
+    RateLimitError,
+    APITimeoutError,
+    APIConnectionError,
+    InternalServerError,
+    APIStatusError,
+)
 
 from agentkit.core.interfaces.llm_client import BaseLlmClient, LlmResponse
 
@@ -25,6 +34,28 @@ class AnthropicClient(BaseLlmClient):
         self.client = AsyncAnthropic(api_key=self.api_key, base_url=base_url)
         # TODO: Add more robust initialization if needed
 
+    @tenacity.retry(
+        stop=tenacity.stop_after_attempt(3),
+        wait=tenacity.wait_fixed(1),
+        retry=(
+            tenacity.retry_if_exception_type((
+                RateLimitError,
+                APITimeoutError,
+                APIConnectionError,
+                InternalServerError,
+            )) |
+            # Retry on 5xx status errors specifically
+            tenacity.retry_if_exception(lambda e: isinstance(e, APIStatusError) and e.status_code >= 500)
+        ),
+        reraise=True # Reraise the exception if retries fail
+    )
+    async def _call_anthropic_api(self, api_params: Dict[str, Any], timeout: Optional[float]) -> Any:
+        """Internal helper to make the actual API call with retry logic."""
+        return await self.client.messages.create(
+            **api_params,
+            timeout=timeout # Pass timeout here
+        )
+
     async def generate(
         self,
         prompt: str,
@@ -32,6 +63,7 @@ class AnthropicClient(BaseLlmClient):
         stop_sequences: Optional[List[str]] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = 1024, # Anthropic requires max_tokens
+        timeout: Optional[float] = 60.0, # Default timeout in seconds
         **kwargs: Any
     ) -> LlmResponse:
         """
@@ -44,6 +76,7 @@ class AnthropicClient(BaseLlmClient):
             stop_sequences: List of sequences to stop generation at.
             temperature: Sampling temperature.
             max_tokens: Maximum number of tokens to generate. Required by Anthropic.
+            timeout: Optional request timeout in seconds (default: 60.0).
             **kwargs: Additional arguments for the Anthropic API (e.g., top_p, top_k, system_prompt).
 
         Returns:
@@ -73,8 +106,8 @@ class AnthropicClient(BaseLlmClient):
             api_params["system"] = system_prompt
 
         try:
-            # 4. Call self.client.messages.create(...)
-            response = await self.client.messages.create(**api_params)
+            # 4. Call the internal helper method with retry logic
+            response = await self._call_anthropic_api(api_params, timeout)
 
             # 6. Map the successful response to LlmResponse
             # Assuming the response structure based on documentation

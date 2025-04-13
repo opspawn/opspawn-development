@@ -1,7 +1,16 @@
 import os
 from typing import Dict, Any, Optional, List
 
-from openai import AsyncOpenAI, OpenAIError
+import tenacity
+from openai import (
+    AsyncOpenAI,
+    OpenAIError,
+    RateLimitError,
+    APITimeoutError,
+    APIConnectionError,
+    InternalServerError,
+    APIStatusError,
+)
 
 from agentkit.core.interfaces.llm_client import BaseLlmClient, LlmResponse
 
@@ -24,6 +33,28 @@ class OpenAiClient(BaseLlmClient):
         self.client = AsyncOpenAI(api_key=self.api_key, base_url=base_url)
         # TODO: Add more robust initialization if needed (e.g., custom httpx client)
 
+    @tenacity.retry(
+        stop=tenacity.stop_after_attempt(3),
+        wait=tenacity.wait_fixed(1),
+        retry=(
+            tenacity.retry_if_exception_type((
+                RateLimitError,
+                APITimeoutError,
+                APIConnectionError,
+                InternalServerError,
+            )) |
+            # Retry on 5xx status errors specifically
+            tenacity.retry_if_exception(lambda e: isinstance(e, APIStatusError) and e.status_code >= 500)
+        ),
+        reraise=True # Reraise the exception if retries fail
+    )
+    async def _call_openai_api(self, api_params: Dict[str, Any], timeout: Optional[float]) -> Any:
+        """Internal helper to make the actual API call with retry logic."""
+        return await self.client.chat.completions.create(
+            **api_params,
+            request_timeout=timeout # Pass timeout here
+        )
+
     async def generate(
         self,
         prompt: str,
@@ -31,6 +62,7 @@ class OpenAiClient(BaseLlmClient):
         stop_sequences: Optional[List[str]] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
+        timeout: Optional[float] = 60.0, # Default timeout in seconds
         **kwargs: Any
     ) -> LlmResponse:
         """
@@ -42,6 +74,7 @@ class OpenAiClient(BaseLlmClient):
             stop_sequences: List of sequences to stop generation at.
             temperature: Sampling temperature.
             max_tokens: Maximum number of tokens to generate.
+            timeout: Optional request timeout in seconds (default: 60.0).
             **kwargs: Additional arguments for the OpenAI API (e.g., top_p, frequency_penalty).
 
         Returns:
@@ -68,8 +101,8 @@ class OpenAiClient(BaseLlmClient):
             api_params["max_tokens"] = max_tokens
 
         try:
-            # 3. Call self.client.chat.completions.create(...)
-            response = await self.client.chat.completions.create(**api_params)
+            # 3. Call the internal helper method with retry logic
+            response = await self._call_openai_api(api_params, timeout)
 
             # 5. Map the successful response to LlmResponse
             choice = response.choices[0]

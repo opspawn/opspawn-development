@@ -21,6 +21,7 @@ class BaseLlmClient(ABC):
         stop_sequences: Optional[list[str]] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
+        timeout: Optional[float] = 60.0, # Default timeout in seconds
         **kwargs: Any # Allow provider-specific parameters
     ) -> LlmResponse:
         """
@@ -32,6 +33,7 @@ class BaseLlmClient(ABC):
             stop_sequences: List of sequences to stop generation at.
             temperature: Sampling temperature.
             max_tokens: Maximum number of tokens to generate.
+            timeout: Optional request timeout in seconds (default: 60.0).
             **kwargs: Additional provider-specific arguments.
 
         Returns:

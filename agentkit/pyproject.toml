@@ -13,8 +13,10 @@ dependencies = [
     "openai>=1.0.0,<2.0.0", # Added for OpenAI LLM Client
     "anthropic>=0.20.0,<1.0.0", # Added for Anthropic LLM Client
     "google-genai", # Use the new recommended SDK
+    "google-api-core>=2.11.0", # Add dependency for exceptions
     # "protobuf==4.25.3", # Removed pin, let new SDK manage dependencies
     "numpy<2.0", # Pin numpy to avoid chromadb incompatibility with np.float_
+    "tenacity>=8.0.0,<9.0.0", # Added for retry logic
 ]
 
 [project.optional-dependencies]
