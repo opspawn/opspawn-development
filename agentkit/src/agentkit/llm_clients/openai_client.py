@@ -108,7 +108,7 @@ class OpenAiClient(BaseLlmClient):
 
         try:
             # 3. Call the internal helper method with retry logic
-            response = await self._call_openai_api(api_params, timeout)
+            response = await self._call_openai_api(api_params) # Removed timeout argument
 
             # 5. Map the successful response to LlmResponse
             choice = response.choices[0]
