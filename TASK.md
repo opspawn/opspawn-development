@@ -417,8 +417,9 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
     - Previous debugging revealed persistent issues with Dramatiq worker invocation via CLI/subprocess.
     - **Minimal Test Case (2025-04-13 PM):** Created and successfully ran a minimal Flask/Dramatiq test case (`1-t/flask-dramatiq-RabbitMQ-tests/`), confirming basic Dramatiq CLI invocation works in isolation. See `memory-bank/debugging/2025-04-13_task7.2_minimal_test_and_delay_imports.md`.
     - **Delay Imports Attempt (2025-04-13 PM):** Modified `ops-core` worker/engine to delay heavy imports. Resolved startup errors (`NameError`, `OSError`) but introduced `ActorNotFound` error during message processing. Changes reverted. See `memory-bank/debugging/2025-04-13_task7.2_minimal_test_and_delay_imports.md`.
-    - **Current Status:** Paused.
-    - **Next Step:** Attempt **Idea 3: Refactor Actor Logic Location**. Move `execute_agent_task_actor` definition from `engine.py` to a new `ops_core/tasks/actors.py` module.
+    - **Refactor Actor Location Attempt (2025-04-13 PM):** Moved actor definition/logic to `ops_core/tasks/actors.py`. Resolved worker startup/discovery errors but **did not** resolve message processing failure. Changes reverted. See `memory-bank/debugging/2025-04-13_task7.2_actor_refactor_revert.md` (To be created).
+    - **Current Status:** Paused. Root cause of worker failure to process messages when launched via `tox exec -- dramatiq ...` remains unclear, likely environment-related.
+    - **Next Step:** Investigate running the worker directly within the activated `tox` environment (`source .tox/py/bin/activate && python -m dramatiq ops_core.tasks.worker`).
 
 ---
 

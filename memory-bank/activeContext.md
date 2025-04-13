@@ -1,12 +1,26 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-13 11:39 AM)
+## Current Focus (Updated 2025-04-13 5:38 PM)
 - **Task 7.2 (Execute & Debug Live E2E Tests):** **Paused**.
-    - **Status:** Minimal Flask/Dramatiq test case created and executed successfully, confirming basic CLI worker invocation works. Attempted "Delay Imports" strategy in `ops-core` worker: resolved startup errors but caused `ActorNotFound` during message processing. Changes reverted. Debugging efforts documented in `memory-bank/debugging/2025-04-13_task7.2_minimal_test_and_delay_imports.md`.
-    - **Blocker:** Root cause of worker failure when invoked via CLI/subprocess remains unclear, but likely related to complex imports/initialization within `ops-core`.
-- **Next Step (Plan):** Attempt **Idea 3: Refactor Actor Logic Location**. Move `execute_agent_task_actor` definition from `engine.py` to a new `ops_core/tasks/actors.py` module.
+    - **Status:** Minimal test case confirmed basic CLI invocation works. "Delay Imports" strategy failed (`ActorNotFound`) and was reverted. "Refactor Actor Location" strategy implemented (actor moved to `actors.py`), which fixed worker startup/discovery but *did not* fix message processing failure. Refactor changes reverted. Debugging efforts documented in `memory-bank/debugging/2025-04-13_task7.2_minimal_test_and_delay_imports.md` and `memory-bank/debugging/2025-04-13_task7.2_actor_refactor_revert.md` (To be created).
+    - **Blocker:** Root cause of worker failure to process messages when invoked via `tox exec -- dramatiq ...` remains unclear. Issue seems environment-related (specific to this launch method) rather than core code logic.
+- **Next Step (Plan):** Investigate running the worker directly within the activated `tox` environment (`source .tox/py/bin/activate && python -m dramatiq ops_core.tasks.worker`) to bypass the `tox exec` wrapper.
 
-## Recent Activities (Current Session - 2025-04-13 Afternoon)
+## Recent Activities (Current Session - 2025-04-13 Late Afternoon)
+- **Continued Task 7.2 Debugging:**
+    - **Attempted Fix: Refactor Actor Location (Idea 3):**
+        - Created plan `PLANNING_step_7.2.9_refactor_actor_location.md`.
+        - Created `ops-core/src/ops_core/tasks/actors.py`.
+        - Moved actor definition (`execute_agent_task_actor`), implementation (`_execute_agent_task_actor_impl`, `_run_agent_task_logic`), and helper functions/classes (`get_llm_client`, `get_long_term_memory`, `get_planner`, `DefaultSecurityManager`) from `engine.py` to `actors.py`.
+        - Updated `worker.py` to import from `actors.py`.
+        - Updated `engine.py` to remove moved code and import actor from `actors.py`.
+        - Tested worker CLI startup (`tox exec -- dramatiq ops_core.tasks.worker`): **Success**. Worker started without errors and discovered the actor.
+        - Tested message processing (`tox exec -- python send_test_message_clean_env.py`): **Failure**. Worker still did not process messages (no actor logs appeared in `worker_output_refactored.log`).
+    - **Reverted Changes:** Reverted creation of `actors.py` and modifications to `worker.py`, `engine.py`.
+    - **Created Debug Log:** (To be created) `memory-bank/debugging/2025-04-13_task7.2_actor_refactor_revert.md`.
+    - **Conclusion:** Issue is likely environment-related (specific to `tox exec -- dramatiq ...` invocation) rather than actor code location.
+
+## Recent Activities (Previous Session - 2025-04-13 Afternoon)
 - **Continued Task 7.2 Debugging:**
     - **Minimal Test Case:**
         - Analyzed external demo (`fastapi-rabbitmq-dramatiq-demo`).
