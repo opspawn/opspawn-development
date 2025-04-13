@@ -165,18 +165,20 @@ class InMemoryScheduler:
         logger.info(f"Scheduler submit_task: metadata_store.add_task returned for {task_id}. Persisted task status: {persisted_task.status}")
 
         # Dispatch agent tasks to the broker
-        if task_type == "agent_run":
-            goal = input_data.get("goal", "No goal specified") # Extract goal
+        # Check if it's an agent task that needs dispatching
+        if task_type == "agent_task": # Changed from "agent_run" to "agent_task"
+            # Extract goal from input_data, provide a default if missing
+            goal = input_data.get("prompt", input_data.get("goal", "No goal or prompt specified"))
             logger.info(f"Dispatching agent task {task_id} to broker with goal: '{goal}'")
             # Send message to the actor
             logger.info(f"Scheduler submit_task: Sending task {task_id} to Dramatiq actor...")
+            # Ensure the actor is imported correctly at the top of the file
+            from .tasks.broker import execute_agent_task_actor # Ensure actor is imported
             execute_agent_task_actor.send(task_id=task_id, goal=goal, input_data=input_data)
             logger.info(f"Scheduler submit_task: Task {task_id} sent to actor.")
-            # logger.warning(f"PHASE 1 REBUILD: execute_agent_task_actor.send() commented out for task {task_id}") # Removed warning
         else:
-            # Handle other task types if necessary (e.g., simple execution, workflows)
-            # For now, non-agent tasks remain PENDING unless a worker processes them
-            logger.warning(f"Task {task_id} is non-agent type '{task_type}', requires specific worker processing (not implemented).")
+            # Handle other task types if necessary
+            logger.info(f"Task {task_id} is type '{task_type}', not dispatching to agent worker.")
             # Optionally, mark as failed or completed if it's a simple task type
             # await self.metadata_store.update_task_status(task_id, TaskStatus.COMPLETED) # Example
 
