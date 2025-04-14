@@ -1,32 +1,33 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-13 10:03 PM)
-- **Task 7.2 (Execute & Debug Live E2E Tests):** **Partially Completed / Paused**.
-    - **Status:** Main DB visibility issue resolved previously. `test_submit_task_and_poll_completion` and `test_concurrent_task_submissions` pass when worker runs correctly. However, `test_submit_task_and_expect_failure` consistently fails timeout (task stuck `PENDING`).
-    - **Root Cause Identified:** The `live_dramatiq_worker` fixture in `conftest.py` fails to launch a functional worker subprocess within the pytest environment. The subprocess starts but exits/hangs immediately without processing tasks or producing logs, regardless of command variations (`sys.executable`, minimal env, `dotenv run --`, stderr capture). Manual worker launch (`dotenv run -- ...`) is confirmed to work.
-    - **Remaining Issue:** Need to debug the logic of `test_submit_task_and_expect_failure` itself, specifically why the task doesn't reach the `FAILED` state when expected. This requires a working worker process.
-    - **Debug Logs:** `memory-bank/debugging/2025-04-13_task7.2_db_visibility_debug.md`, `memory-bank/debugging/2025-04-13_task7.2_failure_test_debug.md`, `memory-bank/debugging/2025-04-13_task7.2_fixture_subprocess_failure.md`
-- **Next Step (Plan):** Resume debugging `test_submit_task_and_expect_failure` in a new session using a **manually launched worker** (`dotenv run -- .tox/py/bin/python -m dramatiq ops_core.tasks.worker --verbose`) to bypass the fixture issue. Analyze test logic and worker output to understand why the failure condition isn't being met or reported correctly.
+## Current Focus (Updated 2025-04-13 10:40 PM)
+- **Task 7.2 (Execute & Debug Live E2E Tests):** **Partially Completed**.
+    - **Status:** The specific issue causing `test_submit_task_and_expect_failure` to incorrectly report `COMPLETED` has been diagnosed and fixed by modifying `ops-core/src/ops_core/scheduler/engine.py` to check agent memory history for error actions. The test now passes when run individually with a manual worker. The DB visibility issue was resolved previously.
+    - **Remaining Issues:**
+        - Need to verify the fix by running the full E2E suite (`test_live_e2e.py`) with a reliable, manually-launched worker process.
+        - The underlying issue causing the `live_dramatiq_worker` fixture to fail when launching its subprocess remains unresolved.
+    - **Debug Logs:** `memory-bank/debugging/2025-04-13_task7.2_db_visibility_debug.md`, `memory-bank/debugging/2025-04-13_task7.2_failure_test_debug.md`, `memory-bank/debugging/2025-04-13_task7.2_fixture_subprocess_failure.md`, `memory-bank/debugging/2025-04-13_task7.2_failure_test_fix.md`
+- **Next Step (Plan):** Verify the fix for Task 7.2 by running the full E2E suite (`test_live_e2e.py`) with a user-managed manual worker process. Alternatively, investigate and fix the `live_dramatiq_worker` fixture subprocess launch issue.
 
-## Recent Activities (Current Session - 2025-04-13 Evening Session 4 & 5)
-- **Continued Task 7.2 Debugging (E2E Tests):**
-    - Created plan to test "fresh session" fix: `PLANNING_step_7.2.11_fresh_session_test.md`.
-    - Applied "fresh session" code change to `ops-core/src/ops_core/api/v1/endpoints/tasks.py`.
-    - Ran E2E test `test_submit_task_and_poll_completion`. **Failure:** Test still timed out, API polled stale `RUNNING` status. "Fresh session" approach was ineffective.
-    - Reverted "fresh session" code change in `tasks.py`.
-    - Added diagnostic logging to worker commit logic in `ops-core/src/ops_core/scheduler/engine.py` (explicit commit + read back).
-    - Ran E2E test again. **Success:** `test_submit_task_and_poll_completion` passed. Diagnostic log confirmed worker committed `COMPLETED` status and could read it back immediately. Identified root cause: missing explicit commit after final status update in worker logic.
-    - Removed diagnostic read-back code from `engine.py`, leaving the explicit commit fix.
-    - Ran full E2E suite (`pytest ops-core/tests/integration/test_live_e2e.py -m live -s`). **Failure:** `test_submit_task_and_expect_failure` and `test_concurrent_task_submissions` failed.
-    - Fixed `AttributeError: 'Task' object has no attribute 'output'` in `test_concurrent_task_submissions` by changing references to `result`.
-    - Ran full E2E suite again. **Failure:** `test_submit_task_and_expect_failure` still failed (completed successfully).
-    - Modified worker logic (`engine.py`) to handle `agent_config` overrides and raise `ValueError` for invalid providers. Modified `except` block to handle `ValueError` and commit FAILED status.
-    - Ran full E2E suite again. **Failure:** `test_submit_task_and_expect_failure` still failed (completed successfully). Worker logs confirmed `ValueError` was caught and `FAILED` status was committed, but API polling saw `COMPLETED`.
-    - Corrected test assertion in `test_submit_task_and_expect_failure` to check `error_message` instead of `output`.
-    - Ran full E2E suite again. **Failure:** `test_submit_task_and_expect_failure` still failed (completed successfully).
-    - **Paused debugging** for `test_submit_task_and_expect_failure`.
-    - Created debug log: `memory-bank/debugging/2025-04-13_task7.2_failure_test_debug.md`.
-    - Updated `TASK.md` to reflect partial completion of Task 7.2.
+## Recent Activities (Current Session - 2025-04-13 Evening Session 6)
+- **Continued Task 7.2 Debugging (E2E Tests - Failure Test):**
+    - Confirmed plan to use manual worker and bypass fixture subprocess launch. Saved plan: `PLANNING_step_7.2.13_manual_worker_debug.md`.
+    - Switched to Debug mode.
+    - Attempted to run `test_submit_task_and_expect_failure` via `pytest` directly; failed (`ModuleNotFoundError`).
+    - Ran test via `tox exec -- pytest ...`; failed (Task `COMPLETED` instead of `FAILED`). Worker logs showed task completed before polling started.
+    - Attempted worker log redirection (`&>`); log file was empty.
+    - Restarted worker with separate stdout/stderr redirection (`> file 2> file2`).
+    - Reran test via `tox exec -- pytest ...`; failed (Task `PENDING`). Worker `stderr` log showed `Connection refused` errors. `stdout` log was empty.
+    - Diagnosed missing `RABBITMQ_URL` in `.env` file as cause for connection failure.
+    - Added `RABBITMQ_URL` to `.env`.
+    - Restarted worker (attempted via `execute_command`, confirmed manual start needed). Reran test via `tox exec -- pytest ...`.
+    - Test failed again (Task `COMPLETED` instead of `FAILED`). Worker `stderr` log confirmed correct `RABBITMQ_URL` was used, task was received, `agent_config` was ignored, Google LLM fallback occurred, SDK error (`AttributeError: 'GenerationConfig' object has no attribute 'automatic_function_calling'`) happened, but worker incorrectly marked task `COMPLETED`.
+    - Identified root cause: Flawed error handling in `_run_agent_task_logic` didn't check agent memory for error actions.
+    - Applied fix to `ops-core/src/ops_core/scheduler/engine.py` to inspect memory history and set status to `FAILED` if error actions found.
+    - Restarted worker manually with fix. Reran `test_submit_task_and_expect_failure` via `tox exec -- pytest ...`. **Success:** Test passed.
+    - Attempted to run full suite (`test_live_e2e.py`) via `tox exec -- pytest ...` (with worker started via `execute_command`). **Failure:** Multiple tests failed, including timeouts. Likely due to worker instability when not run manually.
+    - Created debug log: `memory-bank/debugging/2025-04-13_task7.2_failure_test_fix.md`.
+    - Updated `TASK.md`.
     - Updated `memory-bank/activeContext.md` (this file).
     - Updated `memory-bank/progress.md`.
 

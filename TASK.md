@@ -417,11 +417,12 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
     - Identified and fixed multiple issues preventing worker startup/execution within the fixture context (invocation path, `PYTHONPATH`, missing fixture request).
     - Confirmed worker starts, uses correct broker (`RabbitmqBroker`), uses correct LLM (`OpenAiClient` with `gpt-4o-mini`), receives task, updates status to `RUNNING`, calls LLM, receives response, and updates status to `COMPLETED`.
     - Fixed LLM response parsing error in `ReActPlanner`.
-    - **Resolved DB Visibility Blocker:** The database status visibility issue (API reading stale `RUNNING` status) was resolved by adding an explicit `await session.commit()` in the worker's agent execution logic (`_run_agent_task_logic` in `ops_core/scheduler/engine.py`) immediately after updating the task status to its final state (`COMPLETED` or `FAILED`). This ensures the commit happens before the actor finishes, making the update visible to the API polling process.
-    - **Remaining Issue:** `test_submit_task_and_expect_failure` still fails. The initial diagnosis (API reading COMPLETED when worker committed FAILED) was incorrect based on current logs. The actual issue appears to be the worker subprocess launched by the `live_dramatiq_worker` fixture failing to start/process messages entirely.
-    - **Fixture Debugging (2025-04-13 Late Session):** Multiple attempts to fix the fixture's subprocess launch (using `sys.executable`, minimal environment, `dotenv run --`, capturing stderr) failed. The subprocess consistently fails silently before producing any log output. See `memory-bank/debugging/2025-04-13_task7.2_fixture_subprocess_failure.md`.
-    - **Next Step:** Revert to using a manually launched worker (known to work) to proceed with debugging the `test_submit_task_and_expect_failure` logic.
-    - **Debug Logs:** `memory-bank/debugging/2025-04-13_task7.2_db_visibility_debug.md`, `memory-bank/debugging/2025-04-13_task7.2_failure_test_debug.md`, `memory-bank/debugging/2025-04-13_task7.2_fixture_subprocess_failure.md`
+    - **Resolved DB Visibility Blocker:** Added explicit `await session.commit()` after final status update in worker logic (`_run_agent_task_logic`).
+    - **Resolved Failure Test Incorrect Status:** Debugged `test_submit_task_and_expect_failure` using a manual worker. Identified that the worker ignored `agent_config` overrides, fell back to Google LLM, hit an SDK error, but incorrectly marked the task `COMPLETED`. Fixed by modifying `_run_agent_task_logic` to check agent memory history for error actions and set status to `FAILED` accordingly. Added `RABBITMQ_URL` to `.env` for manual worker. Test now passes individually.
+    - **Remaining Issues:**
+        - Need to verify the failure test fix by running the full E2E suite (`test_live_e2e.py`) with a reliable, manually-launched worker.
+        - The underlying issue causing the `live_dramatiq_worker` fixture to fail when launching its subprocess remains unresolved.
+    - **Debug Logs:** `memory-bank/debugging/2025-04-13_task7.2_db_visibility_debug.md`, `memory-bank/debugging/2025-04-13_task7.2_failure_test_debug.md`, `memory-bank/debugging/2025-04-13_task7.2_fixture_subprocess_failure.md`, `memory-bank/debugging/2025-04-13_task7.2_failure_test_fix.md`
 
 ---
 

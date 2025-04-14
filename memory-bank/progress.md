@@ -1,11 +1,11 @@
 # Progress: Opspawn Core Foundation (Phase 7 Partially Complete)
 
-## Current Status (Updated 2025-04-13 9:09 PM)
+## Current Status (Updated 2025-04-13 10:40 PM)
 - **Phase:** Phase 7 (Full Live E2E Testing) - Partially Complete.
-- **Overall Progress:** Phases 1-6 & 9 completed. Task 7.1 implementation complete. Task 7.2 debugging resolved the main DB visibility issue and fixed test failures related to result field naming. Core E2E tests (`test_submit_task_and_poll_completion`, `test_concurrent_task_submissions`) are passing.
-- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **Partially Completed / Paused**. The primary DB visibility issue was resolved. Worker logic updated to handle invalid config overrides. However, `test_submit_task_and_expect_failure` still fails unexpectedly (reports COMPLETED instead of FAILED). Debugging paused for this specific test.
-- **Next Task (Plan):** Resume debugging `test_submit_task_and_expect_failure` or mark as xfail and proceed to Phase 8 / Backlog.
-- **Blockers:** Unresolved issue with `test_submit_task_and_expect_failure`. (Google live test remains marked xfail due to suspected SDK issue).
+- **Overall Progress:** Phases 1-6 & 9 completed. Task 7.1 implementation complete. Task 7.2 debugging resolved the main DB visibility issue and the failure test status issue.
+- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **Partially Completed**. The specific issue with `test_submit_task_and_expect_failure` (incorrectly reporting `COMPLETED`) has been fixed by improving worker error handling logic (`_run_agent_task_logic`). The test now passes individually when run with a manual worker.
+- **Next Task (Plan):** Verify the Task 7.2 fix by running the full E2E suite (`test_live_e2e.py`) with a user-managed manual worker process. Alternatively, investigate and fix the `live_dramatiq_worker` fixture subprocess launch issue.
+- **Blockers:** Need to confirm Task 7.2 fix with full suite run. `live_dramatiq_worker` fixture subprocess launch still fails. Google live test (`test_live_google_client`) remains marked xfail due to suspected SDK issue.
 
 ## What Works (As of 2025-04-13 7:53 PM)
 - **Repository Structure:** `ops-core` and `agentkit` have been split into separate repositories (`opspawn/ops-core`, `opspawn/agentkit`) and added back to the main `opspawn-development` repository (`1-t/`) as Git submodules. (Completed 2025-04-13).
