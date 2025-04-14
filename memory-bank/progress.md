@@ -1,11 +1,11 @@
 # Progress: Opspawn Core Foundation (Phase 6 In Progress)
 
-## Current Status (Updated 2025-04-13 5:38 PM)
+## Current Status (Updated 2025-04-13 6:37 PM)
 - **Phase:** Phase 7 (Full Live E2E Testing) - Paused.
-- **Overall Progress:** Phases 1-6 & 9 completed. Task 7.1 implementation complete. Task 7.2 debugging paused. Minimal test case confirmed basic CLI invocation works. "Delay Imports" and "Refactor Actor Location" strategies attempted and reverted. Debug logs and planning docs updated.
-- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **Paused**. Minimal test case confirmed basic CLI invocation works. "Delay Imports" strategy failed (`ActorNotFound`). "Refactor Actor Location" strategy fixed startup/discovery but not message processing. Both attempts reverted. Root cause likely environment-related.
-- **Next Task (Plan):** Investigate running the worker directly within the activated `tox` environment (`source .tox/py/bin/activate && python -m dramatiq ops_core.tasks.worker`).
-- **Blockers:** Root cause of worker failure when invoked via CLI/subprocess remains unclear (Task 7.2). (Google live test remains marked xfail due to suspected SDK issue).
+- **Overall Progress:** Phases 1-6 & 9 completed. Task 7.1 implementation complete. Task 7.2 debugging identified root causes for worker invocation and DB race condition issues, fixes applied to code and test fixtures. E2E tests still fail due to worker subprocess launch failure within the test fixture. Debug logs updated.
+- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **Paused**. Identified and fixed worker invocation method, DB commit race condition, and broker URL config. E2E tests still fail timeout because the `live_dramatiq_worker` fixture fails to launch the worker subprocess correctly (log file not created).
+- **Next Task (Plan):** Further investigate the `live_dramatiq_worker` fixture's `subprocess.Popen` execution environment to resolve the immediate worker launch failure.
+- **Blockers:** `live_dramatiq_worker` fixture in `ops-core/tests/conftest.py` does not successfully launch the worker subprocess (Task 7.2). (Google live test remains marked xfail due to suspected SDK issue).
 
 ## What Works (As of 2025-04-12 7:43 PM)
 - **Repository Structure:** `ops-core` and `agentkit` have been split into separate repositories (`opspawn/ops-core`, `opspawn/agentkit`) and added back to the main `opspawn-development` repository (`1-t/`) as Git submodules. (Completed 2025-04-13).

@@ -1,24 +1,29 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-13 5:38 PM)
+## Current Focus (Updated 2025-04-13 6:36 PM)
 - **Task 7.2 (Execute & Debug Live E2E Tests):** **Paused**.
-    - **Status:** Minimal test case confirmed basic CLI invocation works. "Delay Imports" strategy failed (`ActorNotFound`) and was reverted. "Refactor Actor Location" strategy implemented (actor moved to `actors.py`), which fixed worker startup/discovery but *did not* fix message processing failure. Refactor changes reverted. Debugging efforts documented in `memory-bank/debugging/2025-04-13_task7.2_minimal_test_and_delay_imports.md` and `memory-bank/debugging/2025-04-13_task7.2_actor_refactor_revert.md` (To be created).
-    - **Blocker:** Root cause of worker failure to process messages when invoked via `tox exec -- dramatiq ...` remains unclear. Issue seems environment-related (specific to this launch method) rather than core code logic.
-- **Next Step (Plan):** Investigate running the worker directly within the activated `tox` environment (`source .tox/py/bin/activate && python -m dramatiq ops_core.tasks.worker`) to bypass the `tox exec` wrapper.
+    - **Status:** Identified root cause of worker invocation failure (incorrect command/env context). Confirmed direct invocation (`.tox/py/bin/python -m dramatiq ...`) works. Fixed DB commit race condition and broker URL config. Updated `live_dramatiq_worker` fixture in `conftest.py` with correct command and `cwd`. E2E tests still fail timeout, and worker log file (`live_worker_output.log`) is not created by the fixture, indicating the worker subprocess fails immediately on launch within the fixture context. Debugging efforts documented in `memory-bank/debugging/2025-04-13_task7.2_direct_worker_test.md` and `memory-bank/debugging/2025-04-13_task7.2_e2e_fixture_debug.md`.
+    - **Blocker:** The `live_dramatiq_worker` fixture fails to launch the worker subprocess correctly, preventing E2E test completion.
+- **Next Step (Plan):** Further investigate the `live_dramatiq_worker` fixture's `subprocess.Popen` execution environment to understand why the worker fails to launch correctly, despite the command working manually.
 
-## Recent Activities (Current Session - 2025-04-13 Late Afternoon)
+## Recent Activities (Current Session - 2025-04-13 Evening)
 - **Continued Task 7.2 Debugging:**
-    - **Attempted Fix: Refactor Actor Location (Idea 3):**
-        - Created plan `PLANNING_step_7.2.9_refactor_actor_location.md`.
-        - Created `ops-core/src/ops_core/tasks/actors.py`.
-        - Moved actor definition (`execute_agent_task_actor`), implementation (`_execute_agent_task_actor_impl`, `_run_agent_task_logic`), and helper functions/classes (`get_llm_client`, `get_long_term_memory`, `get_planner`, `DefaultSecurityManager`) from `engine.py` to `actors.py`.
-        - Updated `worker.py` to import from `actors.py`.
-        - Updated `engine.py` to remove moved code and import actor from `actors.py`.
-        - Tested worker CLI startup (`tox exec -- dramatiq ops_core.tasks.worker`): **Success**. Worker started without errors and discovered the actor.
-        - Tested message processing (`tox exec -- python send_test_message_clean_env.py`): **Failure**. Worker still did not process messages (no actor logs appeared in `worker_output_refactored.log`).
-    - **Reverted Changes:** Reverted creation of `actors.py` and modifications to `worker.py`, `engine.py`.
-    - **Created Debug Log:** (To be created) `memory-bank/debugging/2025-04-13_task7.2_actor_refactor_revert.md`.
-    - **Conclusion:** Issue is likely environment-related (specific to `tox exec -- dramatiq ...` invocation) rather than actor code location.
+    - **Direct Worker Test:**
+        - Created plan `PLANNING_step_7.2.10_direct_worker_test.md`.
+        - Identified `.tox` environment location at project root.
+        - Recreated `.tox` environment (`tox -r`).
+        - Successfully ran worker manually using direct python path: `.tox/py/bin/python -m dramatiq ops_core.tasks.worker --verbose`. Worker processed test message.
+        - **Conclusion:** Confirmed worker invocation method was the root cause of message processing failure. Documented findings in `memory-bank/debugging/2025-04-13_task7.2_direct_worker_test.md`.
+    - **E2E Test Fixture Fixes & Debugging:**
+        - Updated `live_dramatiq_worker` fixture in `ops-core/tests/conftest.py` to use the correct direct python invocation.
+        - Identified and fixed DB commit race condition in `ops-core/src/ops_core/scheduler/engine.py` (commit before send).
+        - Identified and fixed broker configuration in `ops-core/src/ops_core/tasks/broker.py` to use `RABBITMQ_URL` env var.
+        - Debugged persistent Docker port conflicts during test setup, requiring Docker reset and temporary port changes (reverted).
+        - Ran E2E test `test_submit_task_and_poll_completion`. Test failed timeout (task stuck `pending`).
+        - Discovered worker log file (`live_worker_output.log`) was not being created by the fixture.
+        - Updated `live_dramatiq_worker` fixture to explicitly set `cwd` for the subprocess.
+        - Re-ran test. Still failed timeout, log file still not created.
+        - **Conclusion:** Worker subprocess launched by the fixture fails immediately. Debugging paused. Documented findings in `memory-bank/debugging/2025-04-13_task7.2_e2e_fixture_debug.md`.
 
 ## Recent Activities (Previous Session - 2025-04-13 Afternoon)
 - **Continued Task 7.2 Debugging:**

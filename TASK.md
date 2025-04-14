@@ -410,16 +410,18 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
   *Dependencies:* Phase 6 Completion
           *Comments:* Requires careful environment setup and management. Needs LLM API keys (e.g., `OPENAI_API_KEY`) in the environment. Initial implementation complete; further test cases depend on feature availability. Task 7.1 implementation is considered complete.
 
-- [Paused] **Task 7.2: Execute & Debug Live E2E Tests** `(Started 2025-04-12; Paused 2025-04-13)`
+- [Paused] **Task 7.2: Execute & Debug Live E2E Tests** `(Started 2025-04-12; Paused 2025-04-13 Evening)`
   *Description:* Run the live E2E tests in a properly configured environment. Identify and fix bugs related to component interactions in a live setting.
-  *Dependencies:* Task 7.1, Minimal Test Case (`flask-dramatiq-RabbitMQ-tests/`)
+  *Dependencies:* Task 7.1
   *Comments:* Focus on stability and correctness. **Debugging (2025-04-13 Sessions):**
-    - Previous debugging revealed persistent issues with Dramatiq worker invocation via CLI/subprocess.
-    - **Minimal Test Case (2025-04-13 PM):** Created and successfully ran a minimal Flask/Dramatiq test case (`1-t/flask-dramatiq-RabbitMQ-tests/`), confirming basic Dramatiq CLI invocation works in isolation. See `memory-bank/debugging/2025-04-13_task7.2_minimal_test_and_delay_imports.md`.
-    - **Delay Imports Attempt (2025-04-13 PM):** Modified `ops-core` worker/engine to delay heavy imports. Resolved startup errors (`NameError`, `OSError`) but introduced `ActorNotFound` error during message processing. Changes reverted. See `memory-bank/debugging/2025-04-13_task7.2_minimal_test_and_delay_imports.md`.
-    - **Refactor Actor Location Attempt (2025-04-13 PM):** Moved actor definition/logic to `ops_core/tasks/actors.py`. Resolved worker startup/discovery errors but **did not** resolve message processing failure. Changes reverted. See `memory-bank/debugging/2025-04-13_task7.2_actor_refactor_revert.md` (To be created).
-    - **Current Status:** Paused. Root cause of worker failure to process messages when launched via `tox exec -- dramatiq ...` remains unclear, likely environment-related.
-    - **Next Step:** Investigate running the worker directly within the activated `tox` environment (`source .tox/py/bin/activate && python -m dramatiq ops_core.tasks.worker`).
+    - Identified root cause of worker message processing failure: incorrect invocation method (`dramatiq ...` or `tox exec -- dramatiq ...`) within `tox` environment context.
+    - Confirmed direct invocation using `.tox/py/bin/python -m dramatiq ops_core.tasks.worker` works correctly. See `memory-bank/debugging/2025-04-13_task7.2_direct_worker_test.md`.
+    - Identified and fixed DB commit race condition in `scheduler.submit_task`. See `memory-bank/debugging/2025-04-13_task7.2_e2e_fixture_debug.md`.
+    - Identified and fixed broker configuration to respect `RABBITMQ_URL` env var. See `memory-bank/debugging/2025-04-13_task7.2_e2e_fixture_debug.md`.
+    - Updated `live_dramatiq_worker` fixture in `conftest.py` to use correct invocation path and `cwd`. See `memory-bank/debugging/2025-04-13_task7.2_e2e_fixture_debug.md`.
+    - Encountered persistent Docker port conflicts during test fixture setup, requiring Docker reset and non-standard port mapping attempts. Reverted ports to standard after fixing broker config.
+    - **Current Status:** Paused. E2E tests still fail timeout (`test_submit_task_and_poll_completion`), and the worker log file (`live_worker_output.log`) is not being created by the fixture's `subprocess.Popen` call, indicating the worker fails immediately upon launch within the fixture context.
+    - **Next Step:** Further investigate the `live_dramatiq_worker` fixture's `subprocess.Popen` execution environment to understand why the worker fails to launch correctly, despite the command working manually. See `memory-bank/debugging/2025-04-13_task7.2_e2e_fixture_debug.md`.
 
 ---
 
