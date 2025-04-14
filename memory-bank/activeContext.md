@@ -1,12 +1,26 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-13 6:36 PM)
+## Current Focus (Updated 2025-04-13 7:51 PM)
 - **Task 7.2 (Execute & Debug Live E2E Tests):** **Paused**.
-    - **Status:** Identified root cause of worker invocation failure (incorrect command/env context). Confirmed direct invocation (`.tox/py/bin/python -m dramatiq ...`) works. Fixed DB commit race condition and broker URL config. Updated `live_dramatiq_worker` fixture in `conftest.py` with correct command and `cwd`. E2E tests still fail timeout, and worker log file (`live_worker_output.log`) is not created by the fixture, indicating the worker subprocess fails immediately on launch within the fixture context. Debugging efforts documented in `memory-bank/debugging/2025-04-13_task7.2_direct_worker_test.md` and `memory-bank/debugging/2025-04-13_task7.2_e2e_fixture_debug.md`.
-    - **Blocker:** The `live_dramatiq_worker` fixture fails to launch the worker subprocess correctly, preventing E2E test completion.
-- **Next Step (Plan):** Further investigate the `live_dramatiq_worker` fixture's `subprocess.Popen` execution environment to understand why the worker fails to launch correctly, despite the command working manually.
+    - **Status:** Investigated why the `live_dramatiq_worker` fixture fails to launch a functional worker via `subprocess.Popen` or in-process thread. Identified `PYTHONPATH` was missing when using `subprocess.Popen` and fixed it. Confirmed subprocess starts but still fails silently. Attempts to capture stdout/stderr or log files from the subprocess were unsuccessful. Running the worker in-process (thread/asyncio.to_thread) also failed silently, likely due to threading/event loop conflicts or broker initialization timing. Debugging efforts documented in `memory-bank/debugging/2025-04-13_task7.2_fixture_debug_session2.md`.
+    - **Blocker:** The `live_dramatiq_worker` fixture, whether using `subprocess.Popen` or an in-process thread, fails to produce a worker that processes tasks. Output/logging from the worker within the fixture context is unreliable.
+- **Next Step (Plan):** Re-run the test using the `subprocess.Popen` fixture (with `PYTHONPATH` fix) and check for the internal debug log file (`worker_debug_log_{pid}.log`) created by `ops_core/tasks/worker.py` to see how far execution progresses within the worker script itself. (This step was paused by user request before execution).
 
-## Recent Activities (Current Session - 2025-04-13 Evening)
+## Recent Activities (Current Session - 2025-04-13 Evening Session 2)
+- **Continued Task 7.2 Debugging (Fixture Investigation):**
+    - Attempted various methods to capture worker subprocess output (PIPE, stream redirection, wrapper script, internal file logging) - all failed initially.
+    - Discovered and fixed missing `PYTHONPATH` in subprocess environment.
+    - Confirmed subprocess starts correctly with `PYTHONPATH` fix but still doesn't process tasks. Output capture remains unreliable.
+    - Attempted running worker in-process via `threading.Thread` and `asyncio.to_thread`. Threads start but worker remains idle/silent.
+    - Investigated broker configuration timing and middleware conflicts (`AsyncIO`) as potential causes for in-process failure - fixes did not resolve the issue.
+    - Added and reverted debug prints in Dramatiq library code - confirmed worker thread's `run()` method wasn't being entered.
+    - Reverted fixture to `subprocess.Popen` with `PYTHONPATH` fix, relying on internal file logging added to `worker.py` for next debug step.
+    - Reinstalled tox environment packages (`tox -r`) to ensure clean state.
+    - **Paused debugging before executing the next test run** to check internal worker log file, per user request.
+    - Created debug log: `memory-bank/debugging/2025-04-13_task7.2_fixture_debug_session2.md`.
+    - Updated `TASK.md`.
+
+## Recent Activities (Previous Session - 2025-04-13 Evening Session 1)
 - **Continued Task 7.2 Debugging:**
     - **Direct Worker Test:**
         - Created plan `PLANNING_step_7.2.10_direct_worker_test.md`.
@@ -290,33 +304,3 @@
 - **MCP Integration Strategy:** Using **Dynamic Proxy Pattern**. (Decision Date: 2025-04-05).
 - **gRPC Import Strategy:** Using explicit submodule imports (`from grpc import aio`). (Decision Date: 2025-04-06).
 - Adherence to `.clinerules/project-guidelines.md` is mandatory.
-
-</final_file_content>
-
-IMPORTANT: For any future changes to this file, use the final_file_content shown above as your reference. This content reflects the current state of the file, including any auto-formatting (e.g., if you used single quotes but the formatter converted them to double quotes). Always base your SEARCH/REPLACE operations on this final version to ensure accuracy.
-
-<environment_details>
-# VSCode Visible Files
-memory-bank/activeContext.md
-
-# VSCode Open Tabs
-ops-core/src/ops_core/scheduler/engine.py
-agentkit/src/agentkit/llm_clients/google_client.py
-memory-bank/progress.md
-tox.ini
-ops-core/pyproject.toml
-ops-core/tests/integration/test_live_e2e.py
-ops-core/tests/conftest.py
-ops-core/src/ops_core/api/v1/schemas/tasks.py
-TASK.md
-memory-bank/activeContext.md
-
-# Current Time
-4/12/2025, 7:42:24 PM (America/Denver, UTC-6:00)
-
-# Context Window Usage
-415,849 / 1,048.576K tokens used (40%)
-
-# Current Mode
-ACT MODE
-</environment_details>

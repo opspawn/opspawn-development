@@ -420,8 +420,9 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
     - Identified and fixed broker configuration to respect `RABBITMQ_URL` env var. See `memory-bank/debugging/2025-04-13_task7.2_e2e_fixture_debug.md`.
     - Updated `live_dramatiq_worker` fixture in `conftest.py` to use correct invocation path and `cwd`. See `memory-bank/debugging/2025-04-13_task7.2_e2e_fixture_debug.md`.
     - Encountered persistent Docker port conflicts during test fixture setup, requiring Docker reset and non-standard port mapping attempts. Reverted ports to standard after fixing broker config.
-    - **Current Status:** Paused. E2E tests still fail timeout (`test_submit_task_and_poll_completion`), and the worker log file (`live_worker_output.log`) is not being created by the fixture's `subprocess.Popen` call, indicating the worker fails immediately upon launch within the fixture context.
-    - **Next Step:** Further investigate the `live_dramatiq_worker` fixture's `subprocess.Popen` execution environment to understand why the worker fails to launch correctly, despite the command working manually. See `memory-bank/debugging/2025-04-13_task7.2_e2e_fixture_debug.md`.
+    - **Debugging (2025-04-13 Evening Session 2):** Investigated why the `live_dramatiq_worker` fixture fails to launch a functional worker via `subprocess.Popen` or in-process thread. Identified `PYTHONPATH` was missing when using `subprocess.Popen` and fixed it. Confirmed subprocess starts but still fails silently. Attempts to capture stdout/stderr or log files from the subprocess were unsuccessful. Running the worker in-process (thread/asyncio.to_thread) also failed silently, likely due to threading/event loop conflicts or broker initialization timing. See `memory-bank/debugging/2025-04-13_task7.2_fixture_debug_session2.md`.
+    - **Current Status:** Paused. E2E tests still fail timeout (`test_submit_task_and_poll_completion`). The worker process starts correctly when launched via `subprocess.Popen` (with `PYTHONPATH` fix) but does not process tasks and produces no observable output/logs via standard methods.
+    - **Next Step:** Re-run the test using the `subprocess.Popen` fixture (with `PYTHONPATH` fix) and check for the internal debug log file (`worker_debug_log_{pid}.log`) created by `ops_core/tasks/worker.py` to see how far execution progresses within the worker script itself.
 
 ---
 
@@ -499,129 +500,22 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
       - Test Command: `tox -e py312 -- agentkit/src/agentkit/tests/llm_clients/`
     - **Final Step:** Run `tox -e py312` after all batches pass.
 
-- [x] **Task Maint.10: Enhance Testing Strategy** `(Completed 2025-04-10)`
-    *Description:* Refined the testing strategy in `memory-bank/testing_strategy.md` to include more granular batching options (keyword, node ID, marker) and a structured debugging log process. Updated `tox.ini` default command to include both `ops_core` and `agentkit` tests.
-    *Dependencies:* Task 9.1 (Context)
+---
 
-- [x] **Task 9.2: Fix Runtime Test Failures** `(Completed 2025-04-10)`
-    *Description:* Address the remaining runtime test failures identified after the repository restructure (Task 9.1).
-    *Dependencies:* Task 9.1
+### Phase B: Bug Fixing & Refinement (New)
 
-- [x] **Task Maint.15: Split Repositories & Convert to Submodules** `(Completed 2025-04-13)`
-    *Description:* Split `ops-core` and `agentkit` into separate repositories (`opspawn/ops-core`, `opspawn/agentkit`) using `git filter-repo`. Added them back to the main `opspawn-development` repository as Git submodules.
-    *Dependencies:* Task 9.2 (Implied completion of prior structure)
-    *Comments:* Ran tests using the batch strategy defined above. All batches passed.
-        - **Batch 1 (Ops Core - Metadata): Completed (2025-04-10).** Passed.
-        - **Batch 2 (Ops Core - Dependency Injection): Completed (2025-04-10).** Passed.
-        - **Batch 3 (Agentkit - Tools): Completed (2025-04-10).** Passed.
-        - **Batch 4 (Ops Core - Async Workflow): Completed (2025-04-10).** Passed after fixing fixture/patching issues.
-        - **Batch 5 (Ops Core - E2E Workflow): Completed (2025-04-10).** Passed.
-        - **Batch 6 (Ops Core - Scheduler): Completed (2025-04-10).** Passed after fixing mocking/assertion issues.
-        - **Batch 7 (Ops Core - REST API): Completed (2025-04-10).** Fixed `NameError` in `test_create_task_success` and inconsistent `TaskNotFoundError` import causing 500 error in `test_get_task_not_found`. All tests in `test_tasks.py` now pass.
-        - **Batch 8 (Ops Core - gRPC API): Completed (2025-04-10).** Fixed 4 failures in `test_task_servicer.py` related to exception handling, session mismatch, and incorrect patching.
-        - **Batch 9 (Ops Core - Integration): Completed (2025-04-10).** Fixed 4 failures by ensuring consistent session injection in fixtures (`mock_scheduler`, `grpc_server`, `test_client`) and switching REST tests to use `httpx.AsyncClient`.
-        - **All runtime test failures resolved.**
-    *Comments:* Batch verification completed (2025-04-12). All batches passed, with Google client tests marked xfail as expected.
-
-- [x] **Task Maint.13: Fix Google Client Tests** `(Completed 2025-04-12)`
-    *Description:* Resolved the `TypeError` in `agentkit/src/agentkit/tests/llm_clients/test_google_client.py` related to the `prompt` vs `contents` argument mismatch by updating the client to use the correct payload structure (`contents=[{"parts": [{"text": prompt}]}]`). Removed `xfail` markers from tests and verified they pass.
-    *Dependencies:* Task 6.3 (Context)
-
-- [x] **Task Maint.14: Add Retry Logic and Timeout Handling to LLM Clients** `(Completed 2025-04-12)`
-    *Description:* Enhance LLM client robustness by adding retry logic (using `tenacity`) for transient errors (e.g., rate limits, server errors) and implementing configurable request timeouts. This involves:
-        - Added `tenacity` dependency to `agentkit/pyproject.toml`.
-        - Added `@retry` decorator to internal API call methods in `OpenAIClient`, `AnthropicClient`, `GoogleClient`, `OpenRouterClient`, targeting appropriate SDK exceptions.
-        - Added an optional `timeout` parameter to `BaseLlmClient.generate` and all implementations.
-        - Passed the `timeout` value to the underlying SDK calls (`request_timeout`, `timeout`, `request_options={'timeout': ...}`).
-        - Added/updated unit tests in `agentkit/src/agentkit/tests/llm_clients/` to verify retry behavior and timeout parameter passing.
-    *Dependencies:* Stable LLM client implementations (Tasks 2.6-2.9, Maint.13).
-
-- [x] **Task Maint.11: Multi-Repository Restructure** `(Completed 2025-04-10)`
-        - Adding `@retry` decorator to internal API call methods in `OpenAIClient`, `AnthropicClient`, `GoogleClient`, `OpenRouterClient`, targeting appropriate SDK exceptions.
-        - Adding an optional `timeout` parameter to `BaseLlmClient.generate` and all implementations.
-        - Passing the `timeout` value to the underlying SDK calls (`request_timeout`, `timeout`, `request_options={'timeout': ...}`).
-        - Adding/updating unit tests in `agentkit/src/agentkit/tests/llm_clients/` to verify retry behavior and timeout parameter passing.
-    *Dependencies:* Stable LLM client implementations (Tasks 2.6-2.9, Maint.13).
-
-- [x] **Task Maint.11: Multi-Repository Restructure** `(Completed 2025-04-10)`
-    *Description:* Transition from single-repo to multi-repo structure (`1-t`, `ops-core`, `agentkit`) while preserving `src` layout.
-    *Dependencies:* Task 9.2
-    *Comments:* Isolated test environment validation passed. `ops-core` and `agentkit` repositories updated and pushed. `1-t` repository cleaned up (old component dirs removed) and `tox.ini` updated to use local subdirectories (`ops-core/`, `agentkit/`) for dependencies and test paths. Final `tox` run successful.
-
-- [x] **Task Maint.12: Fix `1-t/tox.ini` Dependency Paths & Commands** `(Completed 2025-04-10)`
-    *Description:* Correct the editable dependency paths and command paths in `1-t/tox.ini` to work with the local subdirectory structure (`ops-core/`, `agentkit/`). Verify with `tox -e py312`.
-    *Dependencies:* Task Maint.11
-    *Comments:* Initially failed due to incorrect relative paths, then incorrect absolute paths, then incorrect command paths. Resolved by using absolute paths for editable dependencies and `{toxinidir}/<subdir>/...` paths for commands.
+- [ ] **Task B.1: Fix Skipped Async Workflow Tests** `(Deferred from Maint.8)`
+  *Description:* Resolve the persistent environment/patching errors (`AMQPConnectionError`, `AttributeError`) preventing the tests in `ops_core/tests/integration/test_async_workflow.py` from running reliably. Remove the `@pytest.mark.skip` markers.
+  *Dependencies:* Task 9.1 (Repo Restructure)
+  *Comments:* These tests are crucial for verifying the core async task submission and basic actor execution flow, even if full E2E requires Task 7.2 completion.
 
 ---
 
-## 4. Backlog / Future Enhancements
+## 4. Status Summary
 
-- [Partially Completed & Blocked] **Task B.1: Investigate Test Environment Issues:** `(Updated 2025-04-09)` Debug persistent `tox` environment/import resolution errors (`ModuleNotFoundError` for `ops_core` or `agentkit` during test collection). Attempted various `tox.ini`/`pyproject.toml` configurations (optional deps, PYTHONPATH, explicit pip installs, editable-legacy) without success. **Decision:** Blocked pending repository restructure (Task 9.1).
-- **Enhancement 1:** Explore advanced multi-agent planning algorithms and cross-agent coordination.
-- **Enhancement 2:** Implement real-time streaming updates in API responses for long-running tasks.
-- **Enhancement 3:** Develop cross-language support for ops-core and agentkit using language-agnostic protocols.
-- **Enhancement 4:** Create a web-based dashboard (ops-ui) for comprehensive system monitoring.
-- **Enhancement 5:** Build a plugin system for dynamic extension of agentkit functionalities.
-- **Enhancement 6: Implement Native Tool/Function Calling in `agentkit` LLM Clients** `(Added 2025-04-12)`
-  *Description:* Enhance relevant `agentkit` LLM clients (OpenAI, Anthropic, Google) to natively support their respective tool/function calling APIs. This involves:
-    - Modifying the `generate` method (or adding a new method) to accept a list of tool specifications (e.g., based on `agentkit.tools.schemas.ToolSpec` or a simplified version).
-    - Passing these tool definitions to the underlying LLM API call in the format required by each provider.
-    - Modifying the response parsing logic to detect when the LLM requests a tool call (e.g., checking for `tool_calls` in the response).
-    - Returning a structured representation of the requested tool call(s) within the `LlmResponse` (e.g., a new optional field `tool_calls: List[RequestedToolCall]`).
-    - Updating the `Agent` core and potentially `BasePlanner` interface/implementations to handle this structured `tool_calls` output from the LLM client, triggering the `ToolExecutor`.
-    - Adding comprehensive unit tests for tool call request/response handling in each client and integration tests in the agent core.
-  *Dependencies:* Stable LLM client implementations.
-  *Value:* Improves reliability and efficiency of agent tool use compared to parsing text-based action requests.
-- **Enhancement 7: Implement Structured Response Support (e.g., JSON Mode) in `agentkit` LLM Clients** `(Added 2025-04-12)`
-  *Description:* Add support for LLM features that enforce structured output formats (like JSON mode). This involves:
-    - Adding parameters to the `generate` method (e.g., `response_format: Optional[Dict[str, Any]]`) to specify the desired output format (e.g., `{'type': 'json_object'}` for OpenAI).
-    - Passing the appropriate parameters to the underlying LLM API call for providers that support specific modes (e.g., OpenAI, potentially Anthropic/Google via prompting).
-    - Potentially adding validation logic (e.g., using Pydantic) to parse/validate the LLM's structured output against a provided schema.
-    - Updating the `LlmResponse` to potentially include the parsed structured data alongside the raw content.
-    - Adding unit tests to verify the correct API parameters are sent and that structured responses are handled appropriately.
-  *Dependencies:* Stable LLM client implementations.
-  *Value:* Increases reliability of extracting structured data from LLM responses, useful for planners or specific data extraction tasks.
+- **Overall Progress:** Phase 6 completed. Phase 7 (Live E2E Testing) is blocked by Task 7.2. Phase 9 (Repo Restructure) completed. Phase B (Bug Fixing) pending.
+- **Current Focus:** Debugging Task 7.2 (Live E2E Test Worker Fixture).
+- **Next Steps:** Resume debugging Task 7.2 by checking internal worker log file. Address Task B.1 (Skipped Async Tests).
+- **Risks & Blockers:** Task 7.2 failure prevents validation of the full live workflow. Potential complexities in debugging subprocess/threading interactions within the pytest/tox environment.
 
 ---
-
-## Final Thoughts
-
-This TASK.md document is a living record of actionable tasks for the Opspawn Core Foundation project. It is designed to provide clear guidance from initial setup through to integration, testing, and final documentation. Regular updates and team reviews will ensure that this document remains aligned with evolving project requirements and objectives.
-
----
-
-</file_content>
-
-Now that you have the latest state of the file, try the operation again with fewer, more precise SEARCH blocks. For large files especially, it may be prudent to try to limit yourself to <5 SEARCH/REPLACE blocks at a time, then wait for the user to respond with the result of the operation before following up with another replace_in_file call to make additional edits.
-(If you run into this error 3 times in a row, you may use the write_to_file tool as a fallback.)
-</error><environment_details>
-# VSCode Visible Files
-TASK.md
-
-# VSCode Open Tabs
-google_test_script.py
-agentkit/src/agentkit/llm_clients/google_client.py
-agentkit/tests/integration/test_live_llm_clients.py
-memory-bank/task-6.4-long-term-memory-plan.md
-agentkit/pyproject.toml
-tox.ini
-agentkit/src/agentkit/core/interfaces/long_term_memory.py
-agentkit/src/agentkit/memory/long_term/chroma_memory.py
-agentkit/src/agentkit/core/agent.py
-ops-core/src/ops_core/scheduler/engine.py
-agentkit/src/agentkit/tests/memory/long_term/test_chroma_memory.py
-agentkit/src/agentkit/tests/core/test_agent.py
-memory-bank/agentkit_overview.md
-memory-bank/activeContext.md
-TASK.md
-
-# Current Time
-4/12/2025, 4:13:04 PM (America/Denver, UTC-6:00)
-
-# Context Window Usage
-234,049 / 1,048.576K tokens used (22%)
-
-# Current Mode
-ACT MODE
-</environment_details>

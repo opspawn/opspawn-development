@@ -1,13 +1,13 @@
-# Progress: Opspawn Core Foundation (Phase 6 In Progress)
+# Progress: Opspawn Core Foundation (Phase 7 Paused)
 
-## Current Status (Updated 2025-04-13 6:37 PM)
+## Current Status (Updated 2025-04-13 7:53 PM)
 - **Phase:** Phase 7 (Full Live E2E Testing) - Paused.
 - **Overall Progress:** Phases 1-6 & 9 completed. Task 7.1 implementation complete. Task 7.2 debugging identified root causes for worker invocation and DB race condition issues, fixes applied to code and test fixtures. E2E tests still fail due to worker subprocess launch failure within the test fixture. Debug logs updated.
-- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **Paused**. Identified and fixed worker invocation method, DB commit race condition, and broker URL config. E2E tests still fail timeout because the `live_dramatiq_worker` fixture fails to launch the worker subprocess correctly (log file not created).
-- **Next Task (Plan):** Further investigate the `live_dramatiq_worker` fixture's `subprocess.Popen` execution environment to resolve the immediate worker launch failure.
-- **Blockers:** `live_dramatiq_worker` fixture in `ops-core/tests/conftest.py` does not successfully launch the worker subprocess (Task 7.2). (Google live test remains marked xfail due to suspected SDK issue).
+- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **Paused**. Investigated worker launch failures from fixture (`subprocess.Popen` and in-process thread). Identified and fixed missing `PYTHONPATH` for `subprocess.Popen`. Confirmed subprocess starts but still fails silently without processing tasks. Output capture/logging from fixture context remains unreliable.
+- **Next Task (Plan):** Resume Task 7.2 debugging by running the test with the `subprocess.Popen` fixture (including `PYTHONPATH` fix) and checking for the internal debug log file (`worker_debug_log_{pid}.log`) created by `ops_core/tasks/worker.py`.
+- **Blockers:** `live_dramatiq_worker` fixture in `ops-core/tests/conftest.py` does not successfully launch a *functional* worker process (Task 7.2). (Google live test remains marked xfail due to suspected SDK issue).
 
-## What Works (As of 2025-04-12 7:43 PM)
+## What Works (As of 2025-04-13 7:53 PM)
 - **Repository Structure:** `ops-core` and `agentkit` have been split into separate repositories (`opspawn/ops-core`, `opspawn/agentkit`) and added back to the main `opspawn-development` repository (`1-t/`) as Git submodules. (Completed 2025-04-13).
 - **Component Repositories:** `opspawn/ops-core` and `opspawn/agentkit` now exist as standalone repositories with filtered history.
 - **Management Repository (`1-t` / `opspawn-development`):** Contains `ops-core` and `agentkit` as submodules. `tox.ini` may need updates to work with the submodule structure.
@@ -88,22 +88,22 @@
 - **LLM Client Robustness (Task Maint.14 Completed):** All LLM clients (`OpenAIClient`, `AnthropicClient`, `GoogleClient`, `OpenRouterClient`) now include retry logic (using `tenacity`) for transient errors and support a configurable `timeout` parameter. Unit tests verify this functionality.
 - **Default LLM Configuration:** Default provider set to "google", default model set to "gemini-2.5-pro-exp-03-25".
 - **Live E2E Test Suite (Task 7.1 Implementation):** Fixtures for managing Docker services (DB, RabbitMQ) and application processes (API, Worker) implemented in `ops-core/tests/conftest.py`. Initial tests covering success, failure, and concurrency implemented in `ops-core/tests/integration/test_live_e2e.py`.
-- **Live E2E Test Debugging (Task 7.2):** Addressed API response validation (ID/type), test code alignment, DB commit in store, Docker conflicts (name/port), worker env vars, worker import path, agent execution timeout, added extensive logging. Created and debugged worker isolation script (`test_dramatiq_worker.py`), resolving issues with Alembic, DB connection, worker startup, asyncio, planner calls, security manager, and tool formatting. Increased agent timeout. Added verbose logging. Confirmed worker starts/connects/discovers but doesn't invoke actor. Switched default LLM. Fixed GoogleClient. Exposed RabbitMQ UI port. **Further Debugging (2025-04-13 AM):** Verified RabbitMQ UI access. Fixed `tox exec` usage. Isolated worker/sender manually. Corrected broker configuration issues (`DRAMATIQ_TESTING` env var). Confirmed worker receives message ("Unacked") but fails silently before actor code execution. Ruled out async mismatch, middleware, Dramatiq version, and actor code simplification as causes. Issue likely internal to Dramatiq or dependency conflict. **Live E2E Setup Debugging (2025-04-13 AM):** Fixed `docker-compose.yml` path and port conflicts. Diagnosed and attempted multiple fixes for `relation "task" does not exist` error during test setup, concluding that `metadata.create_all` fails due to metadata registration issues in the test environment. Confirmed raw SQL `CREATE TABLE` works as a workaround. `ops-core/tests/conftest.py` corrupted during diff applications. **Manual Debugging (2025-04-13 AM):** Confirmed worker invokes actor when run manually via `tox exec`. Fixed `AttributeError` in DB commit, `TypeError` in planner call, `TypeError` in OpenAI timeout. Isolated invocation failure to test environments. **Clean Environment Test (2025-04-13 AM):** Created plan (`PLANNING_step_7.2.4_clean_env_test.md`). Executed test by running worker in clean venv and sending message via `test_dramatiq_worker.py`. Encountered and worked around `chromadb` dependency conflict. Clean worker failed to process message, invalidating dependency conflict hypothesis. Reverted temporary code changes. **Subprocess Debugging (2025-04-13 AM):** Modified `test_dramatiq_worker.py` subprocess launch multiple times (simplified args, changed env/path handling, reordered execution) - worker still failed to process message when launched via `subprocess.Popen`. **Minimal Test Case (2025-04-13 PM):** Created and ran minimal Flask/Dramatiq test, confirming basic CLI invocation works. **Delay Imports Attempt (2025-04-13 PM):** Fixed startup errors but caused `ActorNotFound`. Reverted. **Refactor Actor Location Attempt (2025-04-13 PM):** Fixed startup/discovery errors but did not fix message processing. Reverted.
+- **Live E2E Test Debugging (Task 7.2):** Addressed API response validation (ID/type), test code alignment, DB commit in store, Docker conflicts (name/port), worker env vars, worker import path, agent execution timeout, added extensive logging. Created and debugged worker isolation script (`test_dramatiq_worker.py`), resolving issues with Alembic, DB connection, worker startup, asyncio, planner calls, security manager, and tool formatting. Increased agent timeout. Added verbose logging. Confirmed worker starts/connects/discovers but doesn't invoke actor. Switched default LLM. Fixed GoogleClient. Exposed RabbitMQ UI port. **Further Debugging (2025-04-13 AM):** Verified RabbitMQ UI access. Fixed `tox exec` usage. Isolated worker/sender manually. Corrected broker configuration issues (`DRAMATIQ_TESTING` env var). Confirmed worker receives message ("Unacked") but fails silently before actor code execution. Ruled out async mismatch, middleware, Dramatiq version, and actor code simplification as causes. Issue likely internal to Dramatiq or dependency conflict. **Live E2E Setup Debugging (2025-04-13 AM):** Fixed `docker-compose.yml` path and port conflicts. Diagnosed and attempted multiple fixes for `relation "task" does not exist` error during test setup, concluding that `metadata.create_all` fails due to metadata registration issues in the test environment. Confirmed raw SQL `CREATE TABLE` works as a workaround. `ops-core/tests/conftest.py` corrupted during diff applications. **Manual Debugging (2025-04-13 AM):** Confirmed worker invokes actor when run manually via `tox exec`. Fixed `AttributeError` in DB commit, `TypeError` in planner call, `TypeError` in OpenAI timeout. Isolated invocation failure to test environments. **Clean Environment Test (2025-04-13 AM):** Created plan (`PLANNING_step_7.2.4_clean_env_test.md`). Executed test by running worker in clean venv and sending message via `test_dramatiq_worker.py`. Encountered and worked around `chromadb` dependency conflict. Clean worker failed to process message, invalidating dependency conflict hypothesis. Reverted temporary code changes. **Subprocess Debugging (2025-04-13 AM):** Modified `test_dramatiq_worker.py` subprocess launch multiple times (simplified args, changed env/path handling, reordered execution) - worker still failed to process message when launched via `subprocess.Popen`. **Minimal Test Case (2025-04-13 PM):** Created and ran minimal Flask/Dramatiq test, confirming basic CLI invocation works. **Delay Imports Attempt (2025-04-13 PM):** Fixed startup errors but caused `ActorNotFound`. Reverted. **Refactor Actor Location Attempt (2025-04-13 PM):** Fixed startup/discovery errors but did not fix message processing. Reverted. **Fixture Debugging (2025-04-13 Evening):** Investigated `subprocess.Popen` and in-process thread approaches. Fixed missing `PYTHONPATH` for subprocess. Confirmed subprocess starts but output capture fails and worker doesn't process tasks. In-process thread also fails silently. Reverted to `subprocess.Popen` with `PYTHONPATH` fix.
 
 ## What's Left to Build (Revised Plan - 2025-04-12)
 - **Phase 7:** Full Live E2E Testing
     - [x] Task 7.1: Implement Full Live E2E Test Suite `(Implementation Done 2025-04-12)`
-    - [In Progress] Task 7.2: Execute & Debug Live E2E Tests.
+    - [Paused] Task 7.2: Execute & Debug Live E2E Tests.
 - **Phase 8:** Final Documentation Update
     - Task 8.1: Update & Finalize All Documentation (Revisit deferred 5.2-5.5).
 - **Backlog:**
-    - Task B.1: Investigate Test Environment Issues (`tox` import errors) - Believed resolved by Task 9.1, but monitor.
-    - Enhancements 1-5.
+    - Task B.1: Fix Skipped Async Workflow Tests (`test_async_workflow.py`).
+    - Enhancements 1-7.
 
 ## Known Issues / Blockers
-- `InMemoryMetadataStore` is not persistent or thread-safe (Replaced by `SqlMetadataStore`).
+- **Task 7.2 Blocker:** `live_dramatiq_worker` fixture fails to launch a functional worker process.
 - CI workflows currently lack linting/type checking steps (commented out).
-- **Task Maint.8 Resolution:** Original integration tests (`test_async_workflow_old.py`) are skipped. Integration tests in the new `test_async_workflow.py` were simplified to verify dispatch only.
+- Google live test (`test_live_google_client`) marked xfail due to suspected SDK issue.
 
 ## Evolution of Project Decisions
 - **Test Fixing Strategy (2025-04-10):** Confirmed test collection is working. Prioritizing fixing the 22 runtime failures, starting with Batch 6 (DB Layer - Task 9.2). Standardizing imports (removing `src.` prefix) as part of Task 9.1.
@@ -157,10 +157,6 @@
 4.  `agentkit` internal interfaces defined and implemented (**Requires Reimplementation** - Phase 2).
 5.  `ops-core` MCP proxy tool injection implemented (**Blocked** - Phase 3.5).
 6.  `agentkit` MCP proxy tool spec defined (**Blocked** - Phase 3.5).
-7.  MCP integration test verifying end-to-end proxy flow (**Blocked** - Phase 3.5).
-8.  Test consolidation and deprecation warnings fixed (**Completed** - Maintenance).
-9.  `ops-core` MCP Client implemented and tested (**Completed** - Phase 3.5).
-10. `ops-core` MCP Configuration implemented and verified (**Completed** - Phase 3.5).
 7.  MCP integration test verifying end-to-end proxy flow (**Blocked** - Phase 3.5).
 8.  Test consolidation and deprecation warnings fixed (**Completed** - Maintenance).
 9.  `ops-core` MCP Client implemented and tested (**Completed** - Phase 3.5).
