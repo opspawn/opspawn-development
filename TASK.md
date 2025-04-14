@@ -410,19 +410,17 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
   *Dependencies:* Phase 6 Completion
           *Comments:* Requires careful environment setup and management. Needs LLM API keys (e.g., `OPENAI_API_KEY`) in the environment. Initial implementation complete; further test cases depend on feature availability. Task 7.1 implementation is considered complete.
 
-- [Paused] **Task 7.2: Execute & Debug Live E2E Tests** `(Started 2025-04-12; Paused 2025-04-13 Evening)`
+- [Paused] **Task 7.2: Execute & Debug Live E2E Tests** `(Started 2025-04-12; Paused 2025-04-13 Evening Session 3)`
   *Description:* Run the live E2E tests in a properly configured environment. Identify and fix bugs related to component interactions in a live setting.
   *Dependencies:* Task 7.1
   *Comments:* Focus on stability and correctness. **Debugging (2025-04-13 Sessions):**
-    - Identified root cause of worker message processing failure: incorrect invocation method (`dramatiq ...` or `tox exec -- dramatiq ...`) within `tox` environment context.
-    - Confirmed direct invocation using `.tox/py/bin/python -m dramatiq ops_core.tasks.worker` works correctly. See `memory-bank/debugging/2025-04-13_task7.2_direct_worker_test.md`.
-    - Identified and fixed DB commit race condition in `scheduler.submit_task`. See `memory-bank/debugging/2025-04-13_task7.2_e2e_fixture_debug.md`.
-    - Identified and fixed broker configuration to respect `RABBITMQ_URL` env var. See `memory-bank/debugging/2025-04-13_task7.2_e2e_fixture_debug.md`.
-    - Updated `live_dramatiq_worker` fixture in `conftest.py` to use correct invocation path and `cwd`. See `memory-bank/debugging/2025-04-13_task7.2_e2e_fixture_debug.md`.
-    - Encountered persistent Docker port conflicts during test fixture setup, requiring Docker reset and non-standard port mapping attempts. Reverted ports to standard after fixing broker config.
-    - **Debugging (2025-04-13 Evening Session 2):** Investigated why the `live_dramatiq_worker` fixture fails to launch a functional worker via `subprocess.Popen` or in-process thread. Identified `PYTHONPATH` was missing when using `subprocess.Popen` and fixed it. Confirmed subprocess starts but still fails silently. Attempts to capture stdout/stderr or log files from the subprocess were unsuccessful. Running the worker in-process (thread/asyncio.to_thread) also failed silently, likely due to threading/event loop conflicts or broker initialization timing. See `memory-bank/debugging/2025-04-13_task7.2_fixture_debug_session2.md`.
-    - **Current Status:** Paused. E2E tests still fail timeout (`test_submit_task_and_poll_completion`). The worker process starts correctly when launched via `subprocess.Popen` (with `PYTHONPATH` fix) but does not process tasks and produces no observable output/logs via standard methods.
-    - **Next Step:** Re-run the test using the `subprocess.Popen` fixture (with `PYTHONPATH` fix) and check for the internal debug log file (`worker_debug_log_{pid}.log`) created by `ops_core/tasks/worker.py` to see how far execution progresses within the worker script itself.
+    - Identified and fixed multiple issues preventing worker startup/execution within the fixture context (invocation path, `PYTHONPATH`, missing fixture request).
+    - Confirmed worker starts, uses correct broker (`RabbitmqBroker`), uses correct LLM (`OpenAiClient` with `gpt-4o-mini`), receives task, updates status to `RUNNING`, calls LLM, receives response, and updates status to `COMPLETED`.
+    - Fixed LLM response parsing error in `ReActPlanner`.
+    - **Current Blocker:** E2E test (`test_submit_task_and_poll_completion`) still fails timeout because the API endpoint (`GET /tasks/{task_id}`) reads stale data (`RUNNING` status) despite the worker having committed `COMPLETED` status.
+    - **Attempts to Fix DB Visibility:** Modifying API endpoint to use `session.refresh()` and setting engine isolation level to `READ COMMITTED` did not resolve the issue.
+    - **Debug Log:** `memory-bank/debugging/2025-04-13_task7.2_db_visibility_debug.md`
+    - **Next Step:** Resume debugging the DB status visibility issue. The next planned diagnostic was to modify the `get_task` API endpoint to create a fresh, independent database session for each read, bypassing FastAPI's dependency injection for the session in that endpoint (this change was reverted before the session ended).
 
 ---
 

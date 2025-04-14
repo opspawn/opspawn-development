@@ -1,11 +1,11 @@
 # Progress: Opspawn Core Foundation (Phase 7 Paused)
 
-## Current Status (Updated 2025-04-13 7:53 PM)
+## Current Status (Updated 2025-04-13 8:38 PM)
 - **Phase:** Phase 7 (Full Live E2E Testing) - Paused.
-- **Overall Progress:** Phases 1-6 & 9 completed. Task 7.1 implementation complete. Task 7.2 debugging identified root causes for worker invocation and DB race condition issues, fixes applied to code and test fixtures. E2E tests still fail due to worker subprocess launch failure within the test fixture. Debug logs updated.
-- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **Paused**. Investigated worker launch failures from fixture (`subprocess.Popen` and in-process thread). Identified and fixed missing `PYTHONPATH` for `subprocess.Popen`. Confirmed subprocess starts but still fails silently without processing tasks. Output capture/logging from fixture context remains unreliable.
-- **Next Task (Plan):** Resume Task 7.2 debugging by running the test with the `subprocess.Popen` fixture (including `PYTHONPATH` fix) and checking for the internal debug log file (`worker_debug_log_{pid}.log`) created by `ops_core/tasks/worker.py`.
-- **Blockers:** `live_dramatiq_worker` fixture in `ops-core/tests/conftest.py` does not successfully launch a *functional* worker process (Task 7.2). (Google live test remains marked xfail due to suspected SDK issue).
+- **Overall Progress:** Phases 1-6 & 9 completed. Task 7.1 implementation complete. Task 7.2 debugging identified and fixed worker startup issues, LLM parsing errors, and isolated the remaining E2E test failure to a database status visibility problem between the worker and API processes. Debug logs updated.
+- **Current Task:** Task 7.2 (Execute & Debug Live E2E Tests) - **Paused**. Debugging identified the root cause of the E2E test failure as a DB status visibility issue (API reads stale `RUNNING` status after worker commits `COMPLETED`). Attempts to fix via `session.refresh()` and `READ COMMITTED` isolation level failed. Next diagnostic step (using a fresh session in the API endpoint) was prepared but not executed before pausing.
+- **Next Task (Plan):** Resume Task 7.2 debugging by applying and testing the "fresh session" fix in the `get_task` API endpoint.
+- **Blockers:** Database status visibility issue prevents E2E test `test_submit_task_and_poll_completion` from passing (Task 7.2). (Google live test remains marked xfail due to suspected SDK issue).
 
 ## What Works (As of 2025-04-13 7:53 PM)
 - **Repository Structure:** `ops-core` and `agentkit` have been split into separate repositories (`opspawn/ops-core`, `opspawn/agentkit`) and added back to the main `opspawn-development` repository (`1-t/`) as Git submodules. (Completed 2025-04-13).
@@ -101,7 +101,7 @@
     - Enhancements 1-7.
 
 ## Known Issues / Blockers
-- **Task 7.2 Blocker:** `live_dramatiq_worker` fixture fails to launch a functional worker process.
+- **Task 7.2 Blocker:** Database status visibility issue between worker and API processes.
 - CI workflows currently lack linting/type checking steps (commented out).
 - Google live test (`test_live_google_client`) marked xfail due to suspected SDK issue.
 

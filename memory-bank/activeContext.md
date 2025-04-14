@@ -1,23 +1,28 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-13 7:51 PM)
+## Current Focus (Updated 2025-04-13 8:37 PM)
 - **Task 7.2 (Execute & Debug Live E2E Tests):** **Paused**.
-    - **Status:** Investigated why the `live_dramatiq_worker` fixture fails to launch a functional worker via `subprocess.Popen` or in-process thread. Identified `PYTHONPATH` was missing when using `subprocess.Popen` and fixed it. Confirmed subprocess starts but still fails silently. Attempts to capture stdout/stderr or log files from the subprocess were unsuccessful. Running the worker in-process (thread/asyncio.to_thread) also failed silently, likely due to threading/event loop conflicts or broker initialization timing. Debugging efforts documented in `memory-bank/debugging/2025-04-13_task7.2_fixture_debug_session2.md`.
-    - **Blocker:** The `live_dramatiq_worker` fixture, whether using `subprocess.Popen` or an in-process thread, fails to produce a worker that processes tasks. Output/logging from the worker within the fixture context is unreliable.
-- **Next Step (Plan):** Re-run the test using the `subprocess.Popen` fixture (with `PYTHONPATH` fix) and check for the internal debug log file (`worker_debug_log_{pid}.log`) created by `ops_core/tasks/worker.py` to see how far execution progresses within the worker script itself. (This step was paused by user request before execution).
+    - **Status:** Debugging resumed. Identified and fixed issues preventing worker subprocess startup (missing fixture request). Confirmed worker starts, uses correct broker/LLM, receives task, executes agent (including successful OpenAI API call), and commits `COMPLETED` status. Fixed LLM response parsing error in `ReActPlanner`. Identified remaining blocker: API endpoint (`GET /tasks/{task_id}`) reads stale DB status (`RUNNING`) despite worker committing `COMPLETED`. Attempts to fix via `session.refresh()` and `READ COMMITTED` isolation level were unsuccessful. Debugging paused before testing a "fresh session" approach in the API endpoint.
+    - **Blocker:** Database status visibility issue between worker process and API server process prevents E2E test `test_submit_task_and_poll_completion` from passing.
+    - **Debug Log:** `memory-bank/debugging/2025-04-13_task7.2_db_visibility_debug.md`
+- **Next Step (Plan):** Resume debugging Task 7.2 by applying and testing the "fresh session" fix in the `get_task` API endpoint (`ops-core/src/ops_core/api/v1/endpoints/tasks.py`).
 
-## Recent Activities (Current Session - 2025-04-13 Evening Session 2)
-- **Continued Task 7.2 Debugging (Fixture Investigation):**
-    - Attempted various methods to capture worker subprocess output (PIPE, stream redirection, wrapper script, internal file logging) - all failed initially.
-    - Discovered and fixed missing `PYTHONPATH` in subprocess environment.
-    - Confirmed subprocess starts correctly with `PYTHONPATH` fix but still doesn't process tasks. Output capture remains unreliable.
-    - Attempted running worker in-process via `threading.Thread` and `asyncio.to_thread`. Threads start but worker remains idle/silent.
-    - Investigated broker configuration timing and middleware conflicts (`AsyncIO`) as potential causes for in-process failure - fixes did not resolve the issue.
-    - Added and reverted debug prints in Dramatiq library code - confirmed worker thread's `run()` method wasn't being entered.
-    - Reverted fixture to `subprocess.Popen` with `PYTHONPATH` fix, relying on internal file logging added to `worker.py` for next debug step.
-    - Reinstalled tox environment packages (`tox -r`) to ensure clean state.
-    - **Paused debugging before executing the next test run** to check internal worker log file, per user request.
-    - Created debug log: `memory-bank/debugging/2025-04-13_task7.2_fixture_debug_session2.md`.
+## Recent Activities (Current Session - 2025-04-13 Evening Session 3)
+- **Continued Task 7.2 Debugging (E2E Test Failure):**
+    - Created plan to check internal worker log: `memory-bank/debugging/2025-04-13_task7.2_check_internal_log_plan.md`.
+    - Ran E2E test; internal worker log file was *not* created, indicating very early worker failure.
+    - Isolated fixture execution using minimal test (`test_worker_fixture_startup`); confirmed fixture setup/subprocess execution works in isolation.
+    - Identified `live_dramatiq_worker` fixture was not requested by `test_submit_task_and_poll_completion`; added fixture request to test signature.
+    - Re-ran E2E test; worker logs now captured. Confirmed worker starts, initializes, receives task, updates status to `RUNNING`, but hangs during `GoogleClient.generate` call. Test timed out.
+    - Verified worker uses `RabbitmqBroker` (updated worker logging).
+    - Verified OpenAI API key and client (`gpt-4o-mini`) work via temporary script (`temp_openai_test.py`).
+    - Forced worker fixture to use OpenAI via environment variables.
+    - Re-ran E2E test (OpenAI); worker completed task execution (including successful API call) and logged updating status to `COMPLETED`, but API polling still saw `RUNNING`. Identified LLM response parsing error in `ReActPlanner`.
+    - Fixed `ReActPlanner` logging definition and LLM response parsing logic.
+    - Re-ran E2E test (OpenAI, Planner Fix); confirmed parsing success. Test still failed timeout due to API reading stale `RUNNING` status.
+    - Attempted fixing DB visibility: Added `session.refresh()` to `get_task` API endpoint (failed). Set `READ COMMITTED` isolation level on engine (failed).
+    - **Paused debugging** before testing "fresh session" approach in API endpoint.
+    - Created debug log: `memory-bank/debugging/2025-04-13_task7.2_db_visibility_debug.md`.
     - Updated `TASK.md`.
 
 ## Recent Activities (Previous Session - 2025-04-13 Evening Session 1)
