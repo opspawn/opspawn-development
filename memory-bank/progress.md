@@ -166,3 +166,4 @@
 13. API-Scheduler integration for task submission and agent triggering (**Blocked** - Phase 3).
 14. Asynchronous messaging implemented using Dramatiq + RabbitMQ (**Completed & Verified** - Phase 3).
 15. Integration tests for async workflow (**Completed** - Phase 3).
+16. **Task 7.2 Debugging (2025-04-13 Late Session):** Focused on diagnosing the `live_dramatiq_worker` fixture's failure to launch a functional subprocess. Attempts included using `sys.executable`, minimal environment variables, prepending `dotenv run --`, and capturing stderr via PIPE. All attempts failed to produce a working subprocess or capture any output/errors, indicating a fundamental issue with `subprocess.Popen` in the fixture context. Documented findings in `memory-bank/debugging/2025-04-13_task7.2_fixture_subprocess_failure.md`. Confirmed the plan is to revert to using a manually launched worker for the next debugging session.

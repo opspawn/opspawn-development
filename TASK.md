@@ -418,8 +418,10 @@ This document provides a detailed, step-by-step checklist for the Opspawn Core F
     - Confirmed worker starts, uses correct broker (`RabbitmqBroker`), uses correct LLM (`OpenAiClient` with `gpt-4o-mini`), receives task, updates status to `RUNNING`, calls LLM, receives response, and updates status to `COMPLETED`.
     - Fixed LLM response parsing error in `ReActPlanner`.
     - **Resolved DB Visibility Blocker:** The database status visibility issue (API reading stale `RUNNING` status) was resolved by adding an explicit `await session.commit()` in the worker's agent execution logic (`_run_agent_task_logic` in `ops_core/scheduler/engine.py`) immediately after updating the task status to its final state (`COMPLETED` or `FAILED`). This ensures the commit happens before the actor finishes, making the update visible to the API polling process.
-    - **Remaining Issue:** `test_submit_task_and_expect_failure` still fails. Although the worker correctly identifies an invalid LLM provider override, sets status to `FAILED`, and commits, the API polling reads the status as `COMPLETED`. Debugging paused for this specific test. See `memory-bank/debugging/2025-04-13_task7.2_failure_test_debug.md`.
-    - **Debug Logs:** `memory-bank/debugging/2025-04-13_task7.2_db_visibility_debug.md`, `memory-bank/debugging/2025-04-13_task7.2_failure_test_debug.md`
+    - **Remaining Issue:** `test_submit_task_and_expect_failure` still fails. The initial diagnosis (API reading COMPLETED when worker committed FAILED) was incorrect based on current logs. The actual issue appears to be the worker subprocess launched by the `live_dramatiq_worker` fixture failing to start/process messages entirely.
+    - **Fixture Debugging (2025-04-13 Late Session):** Multiple attempts to fix the fixture's subprocess launch (using `sys.executable`, minimal environment, `dotenv run --`, capturing stderr) failed. The subprocess consistently fails silently before producing any log output. See `memory-bank/debugging/2025-04-13_task7.2_fixture_subprocess_failure.md`.
+    - **Next Step:** Revert to using a manually launched worker (known to work) to proceed with debugging the `test_submit_task_and_expect_failure` logic.
+    - **Debug Logs:** `memory-bank/debugging/2025-04-13_task7.2_db_visibility_debug.md`, `memory-bank/debugging/2025-04-13_task7.2_failure_test_debug.md`, `memory-bank/debugging/2025-04-13_task7.2_fixture_subprocess_failure.md`
 
 ---
 

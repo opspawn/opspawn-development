@@ -1,12 +1,12 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-13 9:09 PM)
+## Current Focus (Updated 2025-04-13 10:03 PM)
 - **Task 7.2 (Execute & Debug Live E2E Tests):** **Partially Completed / Paused**.
-    - **Status:** Main DB visibility issue resolved by adding explicit commit in worker. `test_submit_task_and_poll_completion` and `test_concurrent_task_submissions` pass. However, `test_submit_task_and_expect_failure` still fails unexpectedly (reports COMPLETED instead of FAILED) despite worker logic correctly identifying invalid config, setting status to FAILED, and committing.
-    - **Resolution (Partial):** Explicit commit added to worker logic (`_run_agent_task_logic`) fixed the primary DB visibility race condition. Worker now correctly handles invalid config overrides by raising `ValueError`.
-    - **Remaining Issue:** Unexplained discrepancy where API reads `COMPLETED` status even when worker commits `FAILED` for `test_submit_task_and_expect_failure`. Debugging paused.
-    - **Debug Logs:** `memory-bank/debugging/2025-04-13_task7.2_db_visibility_debug.md`, `memory-bank/debugging/2025-04-13_task7.2_failure_test_debug.md`
-- **Next Step (Plan):** Resume debugging `test_submit_task_and_expect_failure` in a new session, potentially by inspecting DB state directly or adding more transaction logging. Alternatively, mark the test as xfail and proceed.
+    - **Status:** Main DB visibility issue resolved previously. `test_submit_task_and_poll_completion` and `test_concurrent_task_submissions` pass when worker runs correctly. However, `test_submit_task_and_expect_failure` consistently fails timeout (task stuck `PENDING`).
+    - **Root Cause Identified:** The `live_dramatiq_worker` fixture in `conftest.py` fails to launch a functional worker subprocess within the pytest environment. The subprocess starts but exits/hangs immediately without processing tasks or producing logs, regardless of command variations (`sys.executable`, minimal env, `dotenv run --`, stderr capture). Manual worker launch (`dotenv run -- ...`) is confirmed to work.
+    - **Remaining Issue:** Need to debug the logic of `test_submit_task_and_expect_failure` itself, specifically why the task doesn't reach the `FAILED` state when expected. This requires a working worker process.
+    - **Debug Logs:** `memory-bank/debugging/2025-04-13_task7.2_db_visibility_debug.md`, `memory-bank/debugging/2025-04-13_task7.2_failure_test_debug.md`, `memory-bank/debugging/2025-04-13_task7.2_fixture_subprocess_failure.md`
+- **Next Step (Plan):** Resume debugging `test_submit_task_and_expect_failure` in a new session using a **manually launched worker** (`dotenv run -- .tox/py/bin/python -m dramatiq ops_core.tasks.worker --verbose`) to bypass the fixture issue. Analyze test logic and worker output to understand why the failure condition isn't being met or reported correctly.
 
 ## Recent Activities (Current Session - 2025-04-13 Evening Session 4 & 5)
 - **Continued Task 7.2 Debugging (E2E Tests):**
