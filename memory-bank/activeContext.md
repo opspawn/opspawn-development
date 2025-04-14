@@ -1,13 +1,36 @@
 # Active Context: Opspawn Core Foundation (Phase 6 Started)
 
-## Current Focus (Updated 2025-04-13 8:37 PM)
-- **Task 7.2 (Execute & Debug Live E2E Tests):** **Paused**.
-    - **Status:** Debugging resumed. Identified and fixed issues preventing worker subprocess startup (missing fixture request). Confirmed worker starts, uses correct broker/LLM, receives task, executes agent (including successful OpenAI API call), and commits `COMPLETED` status. Fixed LLM response parsing error in `ReActPlanner`. Identified remaining blocker: API endpoint (`GET /tasks/{task_id}`) reads stale DB status (`RUNNING`) despite worker committing `COMPLETED`. Attempts to fix via `session.refresh()` and `READ COMMITTED` isolation level were unsuccessful. Debugging paused before testing a "fresh session" approach in the API endpoint.
-    - **Blocker:** Database status visibility issue between worker process and API server process prevents E2E test `test_submit_task_and_poll_completion` from passing.
-    - **Debug Log:** `memory-bank/debugging/2025-04-13_task7.2_db_visibility_debug.md`
-- **Next Step (Plan):** Resume debugging Task 7.2 by applying and testing the "fresh session" fix in the `get_task` API endpoint (`ops-core/src/ops_core/api/v1/endpoints/tasks.py`).
+## Current Focus (Updated 2025-04-13 9:09 PM)
+- **Task 7.2 (Execute & Debug Live E2E Tests):** **Partially Completed / Paused**.
+    - **Status:** Main DB visibility issue resolved by adding explicit commit in worker. `test_submit_task_and_poll_completion` and `test_concurrent_task_submissions` pass. However, `test_submit_task_and_expect_failure` still fails unexpectedly (reports COMPLETED instead of FAILED) despite worker logic correctly identifying invalid config, setting status to FAILED, and committing.
+    - **Resolution (Partial):** Explicit commit added to worker logic (`_run_agent_task_logic`) fixed the primary DB visibility race condition. Worker now correctly handles invalid config overrides by raising `ValueError`.
+    - **Remaining Issue:** Unexplained discrepancy where API reads `COMPLETED` status even when worker commits `FAILED` for `test_submit_task_and_expect_failure`. Debugging paused.
+    - **Debug Logs:** `memory-bank/debugging/2025-04-13_task7.2_db_visibility_debug.md`, `memory-bank/debugging/2025-04-13_task7.2_failure_test_debug.md`
+- **Next Step (Plan):** Resume debugging `test_submit_task_and_expect_failure` in a new session, potentially by inspecting DB state directly or adding more transaction logging. Alternatively, mark the test as xfail and proceed.
 
-## Recent Activities (Current Session - 2025-04-13 Evening Session 3)
+## Recent Activities (Current Session - 2025-04-13 Evening Session 4 & 5)
+- **Continued Task 7.2 Debugging (E2E Tests):**
+    - Created plan to test "fresh session" fix: `PLANNING_step_7.2.11_fresh_session_test.md`.
+    - Applied "fresh session" code change to `ops-core/src/ops_core/api/v1/endpoints/tasks.py`.
+    - Ran E2E test `test_submit_task_and_poll_completion`. **Failure:** Test still timed out, API polled stale `RUNNING` status. "Fresh session" approach was ineffective.
+    - Reverted "fresh session" code change in `tasks.py`.
+    - Added diagnostic logging to worker commit logic in `ops-core/src/ops_core/scheduler/engine.py` (explicit commit + read back).
+    - Ran E2E test again. **Success:** `test_submit_task_and_poll_completion` passed. Diagnostic log confirmed worker committed `COMPLETED` status and could read it back immediately. Identified root cause: missing explicit commit after final status update in worker logic.
+    - Removed diagnostic read-back code from `engine.py`, leaving the explicit commit fix.
+    - Ran full E2E suite (`pytest ops-core/tests/integration/test_live_e2e.py -m live -s`). **Failure:** `test_submit_task_and_expect_failure` and `test_concurrent_task_submissions` failed.
+    - Fixed `AttributeError: 'Task' object has no attribute 'output'` in `test_concurrent_task_submissions` by changing references to `result`.
+    - Ran full E2E suite again. **Failure:** `test_submit_task_and_expect_failure` still failed (completed successfully).
+    - Modified worker logic (`engine.py`) to handle `agent_config` overrides and raise `ValueError` for invalid providers. Modified `except` block to handle `ValueError` and commit FAILED status.
+    - Ran full E2E suite again. **Failure:** `test_submit_task_and_expect_failure` still failed (completed successfully). Worker logs confirmed `ValueError` was caught and `FAILED` status was committed, but API polling saw `COMPLETED`.
+    - Corrected test assertion in `test_submit_task_and_expect_failure` to check `error_message` instead of `output`.
+    - Ran full E2E suite again. **Failure:** `test_submit_task_and_expect_failure` still failed (completed successfully).
+    - **Paused debugging** for `test_submit_task_and_expect_failure`.
+    - Created debug log: `memory-bank/debugging/2025-04-13_task7.2_failure_test_debug.md`.
+    - Updated `TASK.md` to reflect partial completion of Task 7.2.
+    - Updated `memory-bank/activeContext.md` (this file).
+    - Updated `memory-bank/progress.md`.
+
+## Recent Activities (Previous Session - 2025-04-13 Evening Session 3)
 - **Continued Task 7.2 Debugging (E2E Test Failure):**
     - Created plan to check internal worker log: `memory-bank/debugging/2025-04-13_task7.2_check_internal_log_plan.md`.
     - Ran E2E test; internal worker log file was *not* created, indicating very early worker failure.
